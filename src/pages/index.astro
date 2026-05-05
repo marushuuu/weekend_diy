@@ -1,0 +1,99 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NavBar from '../components/NavBar.astro';
+import ToolCard from '../components/ToolCard.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import tools from '../data/tools.json';
+
+const popularTools = tools.filter(t => t.popular);
+---
+
+<Layout>
+  <NavBar />
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <img
+      class="hero-img"
+      src="/images/top_banner.jpeg"
+      alt="工具レンタルのイメージ"
+      width="1400"
+      height="480"
+    />
+    <div class="hero-overlay"></div>
+    <div class="hero-copy">
+      <h1>はじめての工具、<br />借りるからはじめよう。</h1>
+      <p>
+        必要な日だけ、お手頃に。<br />
+        送料無料・最短翌日お届け。返却もかんたん。
+      </p>
+      <a href="#tools" class="hero-cta">▶ 工具を探す</a>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section class="features">
+    <div class="container">
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="icon">📦</div>
+          <h3>送料無料・翌日配送</h3>
+          <p>全国どこでも送料無料。<br />最短翌日にお届けします。</p>
+        </div>
+        <div class="feature-item">
+          <div class="icon">💳</div>
+          <h3>1日¥300〜</h3>
+          <p>日額・週額で選べる料金プラン。<br />必要な期間だけお支払い。</p>
+        </div>
+        <div class="feature-item">
+          <div class="icon">🔄</div>
+          <h3>かんたん返却</h3>
+          <p>返却はコンビニから着払いで。<br />クリーニング不要です。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Popular tools ── -->
+  <section class="section" id="popular">
+    <div class="container">
+      <div class="section-head">
+        <h2><span class="star">★</span>初心者におすすめの工具</h2>
+        <a href="#tools" class="see-all">すべて見る →</a>
+      </div>
+      <div class="tool-grid">
+        {popularTools.map(tool => (
+          <ToolCard
+            name={tool.name}
+            dayPrice={tool.dayPrice}
+            weekPrice={tool.weekPrice}
+            badge={tool.badge}
+            image={tool.image}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── All tools ── -->
+  <section class="section alt" id="tools">
+    <div class="container">
+      <div class="section-head">
+        <h2>工具一覧</h2>
+      </div>
+      <div class="tool-grid">
+        {tools.map(tool => (
+          <ToolCard
+            name={tool.name}
+            dayPrice={tool.dayPrice}
+            weekPrice={tool.weekPrice}
+            badge={tool.badge}
+            image={tool.image}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <SiteFooter />
+</Layout>

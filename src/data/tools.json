@@ -1,0 +1,134 @@
+[
+  {
+    "id": "electric-drill-basic",
+    "name": "電動ドリル ベーシック",
+    "category": "ドリル・ドライバー",
+    "dayPrice": 500,
+    "weekPrice": 2200,
+    "badge": "NEW",
+    "popular": true,
+    "image": "",
+    "description": "初心者でも扱いやすい定番の電動ドリル。木材・石膏ボードへの穴あけに最適です。"
+  },
+  {
+    "id": "impact-driver",
+    "name": "インパクトドライバー",
+    "category": "ドリル・ドライバー",
+    "dayPrice": 700,
+    "weekPrice": 3000,
+    "badge": "",
+    "popular": true,
+    "image": "/images/product_impact.jpg",
+    "description": "ネジ締め・締め外しに大活躍。DIYの必需品です。"
+  },
+  {
+    "id": "circular-saw-165",
+    "name": "丸のこ 165mm",
+    "category": "切断工具",
+    "dayPrice": 900,
+    "weekPrice": 3800,
+    "badge": "人気",
+    "popular": true,
+    "image": "",
+    "description": "木材のまっすぐなカットに。付属ガイドで初心者でも安心。"
+  },
+  {
+    "id": "driver-bit-set",
+    "name": "ドライバービットセット",
+    "category": "付属品",
+    "dayPrice": 300,
+    "weekPrice": 1200,
+    "badge": "",
+    "popular": true,
+    "image": "/images/product_bitset.jpg",
+    "description": "各種ビットを網羅した30本セット。インパクトドライバーと一緒にどうぞ。"
+  },
+  {
+    "id": "jigsaw",
+    "name": "ジグソー",
+    "category": "切断工具",
+    "dayPrice": 600,
+    "weekPrice": 2500,
+    "badge": "",
+    "popular": false,
+    "image": "",
+    "description": "曲線カットが得意な電動のこぎり。DIYの幅が広がります。"
+  },
+  {
+    "id": "random-sander",
+    "name": "ランダムサンダー",
+    "category": "研磨工具",
+    "dayPrice": 500,
+    "weekPrice": 2100,
+    "badge": "",
+    "popular": false,
+    "image": "",
+    "description": "木材の表面を滑らかに仕上げる研磨工具。塗装前の下処理に。"
+  },
+  {
+    "id": "bench-drill",
+    "name": "卓上ボール盤",
+    "category": "ドリル・ドライバー",
+    "dayPrice": 1200,
+    "weekPrice": 5000,
+    "badge": "",
+    "popular": false,
+    "image": "",
+    "description": "垂直穴あけが精度よくできる卓上型ドリル。精密な作業に。"
+  },
+  {
+    "id": "electric-grinder",
+    "name": "電動グラインダー",
+    "category": "研磨工具",
+    "dayPrice": 600,
+    "weekPrice": 2400,
+    "badge": "",
+    "popular": false,
+    "image": "",
+    "description": "金属の切断・研磨に対応。バリ取りや錆落としにも。"
+  },
+  {
+    "id": "pressure-washer",
+    "name": "高圧洗浄機",
+    "category": "清掃工具",
+    "dayPrice": 1500,
+    "weekPrice": 6000,
+    "badge": "人気",
+    "popular": false,
+    "image": "",
+    "description": "外壁・車・デッキの汚れをしっかり落とす。ケルヒャー互換。"
+  },
+  {
+    "id": "electric-planer",
+    "name": "電動かんな",
+    "category": "切断工具",
+    "dayPrice": 800,
+    "weekPrice": 3200,
+    "badge": "",
+    "popular": false,
+    "image": "",
+    "description": "木材の表面を平らに削る電動かんな。ドア・引き出しの調整に。"
+  },
+  {
+    "id": "laser-level",
+    "name": "レーザー墨出し器",
+    "category": "計測工具",
+    "dayPrice": 1000,
+    "weekPrice": 4000,
+    "badge": "",
+    "popular": false,
+    "image": "",
+    "description": "水平・垂直ラインを照射。棚取り付けや壁紙貼りに活躍。"
+  },
+  {
+    "id": "router",
+    "name": "トリマー",
+    "category": "切断工具",
+    "dayPrice": 700,
+    "weekPrice": 2800,
+    "badge": "",
+    "popular": false,
+    "image": "",
+    "description": "木材の端を装飾加工するルーター。家具DIYのクオリティが上がります。"
+  }
+]

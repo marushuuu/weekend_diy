@@ -1,0 +1,32 @@
+---
+interface Props {
+  name: string;
+  dayPrice: number;
+  weekPrice: number;
+  badge?: string;
+  image?: string;
+}
+
+const { name, dayPrice, weekPrice, badge, image } = Astro.props;
+
+const yen = (n: number) => '¥' + n.toLocaleString('ja-JP');
+---
+
+<article class="tool-card">
+  <div class="tool-card-img">
+    {image
+      ? <img src={image} alt={name} loading="lazy" width="400" height="300" />
+      : <div class="tool-card-placeholder">{name}</div>
+    }
+    {badge && <span class="tool-badge">{badge}</span>}
+  </div>
+  <div class="tool-card-body">
+    <h3 class="tool-card-name">{name}</h3>
+    <div class="tool-card-price">
+      <span class="day">{yen(dayPrice)}</span>
+      <span class="day-unit">/日</span>
+      <span class="week">· {yen(weekPrice)}/週</span>
+    </div>
+    <button class="add-btn">＋ カートに追加</button>
+  </div>
+</article>
