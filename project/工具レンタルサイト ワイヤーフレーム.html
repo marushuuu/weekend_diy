@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>工具レンタルサイト ワイヤーフレーム</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Caveat:wght@400;700&family=Zen+Kurenaido&family=Klee+One:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#1f1d1a;
+    --ink-soft:#3b362e;
+    --paper:#f6f1e6;
+    --paper-2:#ece4d2;
+    --line:#1f1d1a;
+    --accent:#e85a2b;     /* 工具っぽいオレンジ */
+    --accent-2:#f7c948;   /* マスキング黄 */
+    --muted:#8a8273;
+    --grid:#1f1d1a14;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#e9e2d0;color:var(--ink);
+    font-family:"Klee One","Zen Kurenaido","Kalam",system-ui,sans-serif;}
+  body{
+    background:
+      radial-gradient(1200px 800px at 20% 0%, #f4ecd6 0%, transparent 60%),
+      radial-gradient(1000px 700px at 100% 100%, #efe6d0 0%, transparent 55%),
+      #e9e2d0;
+    min-height:100vh;
+    padding:40px 28px 80px;
+  }
+  /* ───────── PAGE HEADER ───────── */
+  .page-hd{max-width:1480px;margin:0 auto 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  .page-hd h1{font-family:"Caveat",cursive;font-size:42px;margin:0;font-weight:700;letter-spacing:.5px}
+  .page-hd .sub{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.18em;margin-top:4px}
+  .legend{display:flex;gap:14px;align-items:center;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--ink-soft)}
+  .legend .dot{width:10px;height:10px;border:1.5px solid var(--ink);display:inline-block;margin-right:6px;vertical-align:-1px}
+  .legend .dot.acc{background:var(--accent)}
+  .legend .dot.acc2{background:var(--accent-2)}
+
+  /* ───────── BOARD ───────── */
+  .board{
+    max-width:1480px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(3, 1fr);gap:28px;
+  }
+  .col{
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:14px;
+    padding:18px 18px 22px;
+    box-shadow:6px 6px 0 #00000010;
+    position:relative;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:24px 24px;
+  }
+  .col::before{
+    content:"";position:absolute;top:-12px;left:24px;width:80px;height:22px;
+    background:var(--accent-2);border:1.2px solid var(--ink);
+    transform:rotate(-2deg);box-shadow:2px 2px 0 #00000018;
+  }
+  .col-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;border-bottom:1.5px dashed var(--ink);padding-bottom:10px}
+  .col-hd h2{font-family:"Caveat",cursive;font-size:28px;margin:0;font-weight:700}
+  .col-hd .tag{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase}
+  .col-hd .desc{font-family:"Klee One",sans-serif;font-size:12px;color:var(--ink-soft);margin-top:4px}
+
+  .frames{display:flex;flex-direction:column;gap:18px;align-items:center}
+  .frame-label{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;align-self:flex-start;margin-left:4px}
+
+  /* ───────── DESKTOP / MOBILE FRAMES ───────── */
+  .desktop{
+    width:100%;background:#fff;border:1.5px solid var(--ink);border-radius:6px;
+    overflow:hidden;box-shadow:4px 4px 0 #00000018;
+  }
+  .desktop .browser-bar{height:22px;background:#f1ead8;border-bottom:1.2px solid var(--ink);display:flex;align-items:center;gap:5px;padding:0 8px}
+  .desktop .browser-bar i{width:8px;height:8px;border-radius:50%;border:1px solid var(--ink);background:#fff;display:inline-block}
+  .desktop .browser-bar .url{flex:1;height:12px;background:#fff;border:1px solid var(--ink);border-radius:3px;margin-left:8px;font-family:"JetBrains Mono",monospace;font-size:8px;color:var(--muted);padding:0 6px;display:flex;align-items:center}
+
+  .mobile{
+    width:200px;background:#fff;border:2px solid var(--ink);border-radius:22px;
+    overflow:hidden;box-shadow:4px 4px 0 #00000018;align-self:center;
+  }
+  .mobile .notch{height:18px;background:#f1ead8;border-bottom:1.2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:8px;color:var(--muted)}
+
+  /* shared sketch primitives */
+  .sk-line{height:1.5px;background:var(--ink);border:0;margin:6px 0;border-radius:1px}
+  .sk-line.short{width:40%}
+  .sk-line.mid{width:65%}
+  .sk-line.thin{height:1px;background:#1f1d1a55}
+  .sk-box{border:1.3px solid var(--ink);background:#fff;border-radius:4px}
+  .sk-box.dim{background:repeating-linear-gradient(135deg, #fff 0 6px, #f0e9d5 6px 7px)}
+  .sk-pill{border:1.2px solid var(--ink);background:#fff;border-radius:999px;padding:3px 8px;font-family:"Klee One",sans-serif;font-size:10px;display:inline-flex;align-items:center;gap:4px}
+  .sk-pill.fill{background:var(--accent);color:#fff;border-color:var(--ink)}
+  .sk-pill.fill2{background:var(--accent-2)}
+  .sk-btn{border:1.3px solid var(--ink);background:#fff;border-radius:5px;padding:5px 10px;font-family:"Klee One",sans-serif;font-size:11px;display:inline-flex;align-items:center;gap:5px}
+  .sk-btn.primary{background:var(--accent);color:#fff}
+  .sk-handwrite{font-family:"Caveat",cursive}
+  .sk-mono{font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--muted);letter-spacing:.04em}
+  .sk-x{position:relative}
+  .sk-x::before,.sk-x::after{content:"";position:absolute;inset:6px;border-top:1px solid #1f1d1a55}
+  .sk-x::before{transform:rotate(-12deg)}
+  .sk-x::after{transform:rotate(102deg)}
+
+  /* ───────── COMMON SECTIONS (used in all variants) ───────── */
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1.5px solid var(--ink);background:#fffdf6}
+  .logo{display:flex;align-items:center;gap:6px;font-family:"Caveat",cursive;font-size:18px;font-weight:700}
+  .logo .mark{width:22px;height:22px;border:1.5px solid var(--ink);border-radius:5px;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;font-family:"Klee One",sans-serif}
+  .navlinks{display:flex;gap:14px;font-size:11px;color:var(--ink-soft)}
+  .navicons{display:flex;gap:8px}
+  .navicons .ic{width:22px;height:22px;border:1.2px solid var(--ink);border-radius:4px;display:grid;place-items:center;font-size:11px;background:#fff}
+
+  /* HERO */
+  .hero{position:relative;border-bottom:1.5px solid var(--ink)}
+  .hero .img{
+    background-image:url("assets/top_banner.jpeg");
+    background-size:cover;background-position:center;
+    border-bottom:1.2px dashed var(--ink);
+    display:grid;place-items:end start;color:var(--muted);
+    position:relative;
+  }
+  .hero .img::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg, transparent 30%, rgba(0,0,0,.55) 100%);
+    pointer-events:none;
+  }
+  .hero .img .ph{display:none}
+  .hero .copy{position:absolute;left:18px;bottom:14px;max-width:60%;z-index:1}
+  .hero h3{font-family:"Caveat",cursive;font-weight:700;margin:0;font-size:22px;line-height:1.05;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .hero p{margin:4px 0 8px;font-size:11px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+
+  /* SEARCH */
+  .search-row{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1.2px dashed var(--ink);background:#fffdf6}
+  .search-row .input{flex:1;height:26px;border:1.3px solid var(--ink);border-radius:5px;background:#fff;display:flex;align-items:center;padding:0 10px;font-size:11px;color:var(--muted);gap:6px}
+  .filters{display:flex;gap:5px;flex-wrap:wrap;padding:8px 14px;border-bottom:1.2px dashed var(--ink);background:#fffdf6}
+
+  /* GRID */
+  .section-title{display:flex;align-items:baseline;justify-content:space-between;padding:14px 14px 6px}
+  .section-title h4{font-family:"Caveat",cursive;font-size:22px;margin:0;font-weight:700}
+  .section-title a{font-size:10px;color:var(--accent);text-decoration:underline;font-family:"Klee One",sans-serif}
+
+  .grid{display:grid;gap:10px;padding:6px 14px 16px}
+  .card{border:1.3px solid var(--ink);background:#fff;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:5px;position:relative}
+  .card .pic{aspect-ratio:1.2/1;background:repeating-linear-gradient(45deg,#f7efd9 0 8px,#efe5c8 8px 9px);border:1px dashed var(--ink);border-radius:4px;display:grid;place-items:center;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.06em;position:relative;overflow:hidden}
+  .card .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .card .pic.has-img{border-style:solid;background:#fff}
+  .card .pic.has-img>span{display:none}
+  .card .pic .badge{position:absolute;top:4px;left:4px;background:var(--accent-2);border:1px solid var(--ink);border-radius:3px;padding:1px 5px;font-size:8px;font-family:"Klee One",sans-serif}
+  .card h5{margin:0;font-size:11.5px;font-weight:600;font-family:"Klee One",sans-serif;color:var(--ink)}
+  .card .price{display:flex;align-items:baseline;gap:4px;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--ink)}
+  .card .price b{font-size:13px;color:var(--accent);font-weight:700}
+  .card .price .week{color:var(--muted);font-size:9px}
+  .card .add{margin-top:auto;background:var(--ink);color:#fff;border:0;border-radius:4px;padding:5px 6px;font-family:"Klee One",sans-serif;font-size:10.5px;display:flex;align-items:center;justify-content:center;gap:4px;cursor:default}
+  .card .add.outline{background:#fff;color:var(--ink);border:1.3px solid var(--ink)}
+
+  /* DESKTOP-specific size mapping */
+  .desktop .hero .img{height:160px}
+  .desktop .hero h3{font-size:24px}
+  .desktop .grid{grid-template-columns:repeat(4,1fr)}
+
+  /* MOBILE-specific size mapping */
+  .mobile .nav{padding:6px 10px}
+  .mobile .navlinks{display:none}
+  .mobile .hero .img{height:110px}
+  .mobile .hero h3{font-size:16px}
+  .mobile .hero .copy{left:10px;bottom:8px}
+  .mobile .search-row{padding:8px 10px}
+  .mobile .filters{padding:6px 10px}
+  .mobile .section-title{padding:10px 10px 4px}
+  .mobile .section-title h4{font-size:16px}
+  .mobile .grid{grid-template-columns:repeat(2,1fr);padding:4px 10px 12px}
+  .mobile .card h5{font-size:10px}
+  .mobile .card .price b{font-size:11px}
+  .mobile .card .add{font-size:9px;padding:4px}
+  .mobile .logo{font-size:13px}
+
+  /* ───────── PATTERN-SPECIFIC OVERRIDES ───────── */
+  /* Pattern A: クラシックEC */
+  .pa .filters .sk-pill.fill{background:var(--ink);color:#fff}
+
+  /* Pattern B: カテゴリ強調 + 大胆ヒーロー(分割) */
+  .pb .hero{display:grid;grid-template-columns:2fr 1fr;border-bottom:1.5px solid var(--ink)}
+  .pb .hero .img{border-right:1.2px dashed var(--ink);border-bottom:0}
+  .pb .hero .img::after{background:linear-gradient(90deg, transparent 50%, rgba(0,0,0,.15) 100%)}
+  .pb .hero .side{padding:10px 12px;display:flex;flex-direction:column;justify-content:space-between;background:var(--accent-2);border-bottom:0}
+  .pb .hero .side h3{font-family:"Caveat",cursive;font-size:18px;margin:0;line-height:1.1}
+  .pb .hero .side p{font-size:10px;margin:4px 0;color:var(--ink-soft)}
+  .pb .hero .side .sk-btn{align-self:flex-start;background:var(--ink);color:#fff;border-color:var(--ink)}
+  .pb .hero .copy{display:none}
+  .pb .cat-strip{display:flex;gap:6px;padding:10px 14px;border-bottom:1.2px dashed var(--ink);overflow:hidden;background:#fffdf6}
+  .pb .cat-chip{flex:1;border:1.3px solid var(--ink);border-radius:6px;padding:6px;text-align:center;background:#fff;font-size:10px;font-family:"Klee One",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .pb .cat-chip .ic{width:24px;height:24px;border:1px dashed var(--ink);border-radius:4px;background:#f7efd9;display:grid;place-items:center;font-family:"JetBrains Mono",monospace;font-size:8px;color:var(--muted)}
+  .pb .cat-chip.on{background:var(--accent);color:#fff;border-color:var(--ink)}
+  .pb .cat-chip.on .ic{background:#fff;border-style:solid}
+
+  .pb .mobile .hero{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .pb .mobile .hero .img{border-right:0;border-bottom:1.2px dashed var(--ink)}
+  .pb .mobile .cat-strip{overflow-x:auto}
+  .pb .mobile .cat-chip{min-width:54px;flex:0 0 auto}
+
+  /* Pattern C: フルブリード + ストーリー */
+  .pc .hero{background:var(--ink)}
+  .pc .hero .img{height:200px;border-bottom:0}
+  .pc .hero .img::after{background:linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.7) 100%)}
+  .pc .desktop .hero .img{height:200px}
+  .pc .mobile .hero .img{height:140px}
+  .pc .hero .copy{color:#fff;max-width:65%;left:24px;bottom:18px}
+  .pc .hero h3{color:#fff;font-size:26px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+  .pc .hero p{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+  .pc .hero .sk-btn.primary{background:var(--accent-2);color:var(--ink);border-color:var(--accent-2)}
+  .pc .mobile .hero h3{font-size:14px}
+  .pc .stat-row{display:flex;gap:0;border-bottom:1.5px solid var(--ink);background:#fffdf6}
+  .pc .stat{flex:1;padding:10px 12px;border-right:1.2px dashed var(--ink);text-align:center}
+  .pc .stat:last-child{border-right:0}
+  .pc .stat b{display:block;font-family:"Caveat",cursive;font-size:22px;color:var(--accent)}
+  .pc .stat span{font-size:10px;color:var(--ink-soft)}
+  .pc .step-row{display:flex;gap:8px;padding:12px 14px;border-bottom:1.2px dashed var(--ink);background:#fffdf6}
+  .pc .step{flex:1;border:1.3px solid var(--ink);border-radius:6px;padding:8px;background:#fff;display:flex;flex-direction:column;gap:4px;position:relative}
+  .pc .step .num{position:absolute;top:-10px;left:-10px;width:22px;height:22px;background:var(--accent);color:#fff;border:1.2px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-family:"Caveat",cursive;font-weight:700;font-size:13px}
+  .pc .step h6{margin:0;font-size:11px;font-family:"Klee One",sans-serif;font-weight:600}
+  .pc .step p{margin:0;font-size:9.5px;color:var(--muted)}
+  .pc .mobile .step-row{flex-direction:column}
+  .pc .mobile .stat-row{font-size:9px}
+
+  /* Tweak: density */
+  .density-compact .grid{gap:6px;padding:4px 10px 12px}
+  .density-compact .card{padding:4px;gap:3px}
+  .density-compact .card .pic{aspect-ratio:1.4/1}
+  .density-compact .card h5{font-size:10.5px}
+  .density-compact .card .add{padding:3px;font-size:9.5px}
+
+  .density-comfy .grid{gap:14px;padding:8px 16px 22px}
+  .density-comfy .card{padding:8px;gap:7px}
+  .density-comfy .card .pic{aspect-ratio:1/1}
+
+  /* Tweak: cols */
+  .cols-2 .desktop .grid{grid-template-columns:repeat(2,1fr)}
+  .cols-3 .desktop .grid{grid-template-columns:repeat(3,1fr)}
+  .cols-4 .desktop .grid{grid-template-columns:repeat(4,1fr)}
+  .cols-5 .desktop .grid{grid-template-columns:repeat(5,1fr)}
+
+  /* Tweak: dark */
+  body.theme-dark{background:#1c1a16;color:#f6f1e6}
+  body.theme-dark .col{background:#26231d;border-color:#f6f1e6;color:#f6f1e6;
+    background-image:linear-gradient(#ffffff10 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff10 1px, transparent 1px);background-size:24px 24px}
+  body.theme-dark .col-hd{border-color:#f6f1e6}
+  body.theme-dark .desktop,body.theme-dark .mobile{background:#1f1d1a;border-color:#f6f1e6}
+  body.theme-dark .desktop .browser-bar,body.theme-dark .mobile .notch{background:#2a2721;border-color:#f6f1e6}
+  body.theme-dark .nav,body.theme-dark .search-row,body.theme-dark .filters,body.theme-dark .pb .cat-strip,body.theme-dark .pc .stat-row,body.theme-dark .pc .step-row{background:#1f1d1a;border-color:#f6f1e6}
+  body.theme-dark .card,body.theme-dark .pb .cat-chip,body.theme-dark .pc .step,body.theme-dark .navicons .ic,body.theme-dark .sk-pill,body.theme-dark .sk-btn,body.theme-dark .search-row .input{background:#26231d;border-color:#f6f1e6;color:#f6f1e6}
+  body.theme-dark .sk-pill.fill,body.theme-dark .sk-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  body.theme-dark .sk-pill.fill2{background:var(--accent-2);color:var(--ink)}
+  body.theme-dark .card .add{background:var(--accent);color:#fff;border-color:var(--accent)}
+  body.theme-dark .card .add.outline{background:transparent;color:#f6f1e6;border-color:#f6f1e6}
+  body.theme-dark .card .pic{background:repeating-linear-gradient(45deg,#2a2721 0 8px,#1f1d1a 8px 9px);border-color:#f6f1e6;color:#f6f1e6aa}
+  body.theme-dark .hero .img{border-color:#f6f1e6}
+  body.theme-dark .navlinks,body.theme-dark .col-hd .desc{color:#f6f1e6cc}
+  body.theme-dark .section-title h4,body.theme-dark .logo{color:#f6f1e6}
+  body.theme-dark .pb .cat-chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  body.theme-dark .pb .hero .side{background:var(--accent-2);color:var(--ink)}
+  body.theme-dark .legend,body.theme-dark .page-hd .sub{color:#f6f1e6cc}
+  body.theme-dark .frame-label,body.theme-dark .col-hd .tag,body.theme-dark .sk-mono{color:#f6f1e6aa}
+
+  @media (max-width:1100px){
+    .board{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="page-hd">
+  <div>
+    <h1>工具レンタルサイト · ワイヤーフレーム</h1>
+    <div class="sub">DIY beginners // 3 patterns × Desktop + Mobile</div>
+  </div>
+  <div class="legend">
+    <span><i class="dot"></i>骨組み</span>
+    <span><i class="dot acc"></i>主要アクション</span>
+  </div>
+</div>
+
+<div class="board" id="board">
+  <!-- ============ PATTERN A ============ -->
+  <section class="col pa">
+    <div class="col-hd">
+      <div>
+        <h2>A. 王道EC型</h2>
+        <div class="desc">ヒーロー → 人気 → 一覧。シンプルで迷わない。</div>
+      </div>
+      <div class="tag">Pattern A</div>
+    </div>
+    <div class="frames">
+      <div style="width:100%">
+        <div class="frame-label">Desktop</div>
+        <div class="desktop" data-frame>
+          <div class="browser-bar"><i></i><i></i><i></i><div class="url">tool-rental.example/</div></div>
+          <div class="nav">
+            <div class="logo"><span class="mark">T</span>みんなの工具レンタル</div>
+            <div class="navlinks"><span>使い方</span><span>料金</span><span>FAQ</span></div>
+            <div class="navicons"><div class="ic">🛒</div></div>
+          </div>
+          <div class="hero">
+            <div class="img"></div>
+            <div class="copy">
+              <h3>はじめての工具、<br/>借りるからはじめよう。</h3>
+              <p>必要な日だけ、お手頃に。送料無料・最短翌日。</p>
+              <button class="sk-btn primary">▶ 工具を探す</button>
+            </div>
+          </div>
+          <div class="section-title"><h4>★ 人気の工具</h4><a>すべて見る →</a></div>
+          <div class="grid"></div>
+          <div class="section-title"><h4>工具一覧</h4></div>
+          <div class="grid" data-main></div>
+        </div>
+      </div>
+      <div style="width:100%;display:flex;justify-content:center">
+        <div>
+          <div class="frame-label" style="text-align:center">Mobile</div>
+          <div class="mobile" data-frame>
+            <div class="notch">9:41 ●●●</div>
+            <div class="nav">
+              <div class="logo"><span class="mark">T</span>工具レンタル</div>
+              <div class="navicons"><div class="ic">🛒</div></div>
+            </div>
+            <div class="hero">
+              <div class="img"></div>
+              <div class="copy">
+                <h3>借りるから、<br/>はじめよう。</h3>
+                <button class="sk-btn primary" style="font-size:9px;padding:3px 6px">▶ 探す</button>
+              </div>
+            </div>
+            <div class="section-title"><h4>★ 人気</h4></div>
+            <div class="grid"></div>
+            <div class="section-title"><h4>一覧</h4></div>
+            <div class="grid" data-main></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PATTERN B ============ -->
+  <section class="col pb">
+    <div class="col-hd">
+      <div>
+        <h2>B. サイドCTA型</h2>
+        <div class="desc">ヒーロー横にコピー+CTAを配置。すっきり、行動を促す。</div>
+      </div>
+      <div class="tag">Pattern B</div>
+    </div>
+    <div class="frames">
+      <div style="width:100%">
+        <div class="frame-label">Desktop</div>
+        <div class="desktop" data-frame>
+          <div class="browser-bar"><i></i><i></i><i></i><div class="url">tool-rental.example/</div></div>
+          <div class="nav">
+            <div class="logo"><span class="mark">T</span>みんなの工具レンタル</div>
+            <div class="navlinks"><span>使い方</span><span>料金</span><span>サポート</span></div>
+            <div class="navicons"><div class="ic">🛒</div></div>
+          </div>
+          <div class="hero">
+            <div class="img"></div>
+            <div class="side">
+              <div>
+                <h3>週末DIY、<br/>道具は借りればいい。</h3>
+                <p>1日¥500〜。最短翌日お届け。返却もカンタン。</p>
+              </div>
+              <button class="sk-btn">→ 今すぐ探す</button>
+            </div>
+          </div>
+          <div class="section-title"><h4>★ 初心者におすすめ</h4><a>すべて見る →</a></div>
+          <div class="grid"></div>
+          <div class="section-title"><h4>工具一覧</h4></div>
+          <div class="grid" data-main></div>
+        </div>
+      </div>
+      <div style="width:100%;display:flex;justify-content:center">
+        <div>
+          <div class="frame-label" style="text-align:center">Mobile</div>
+          <div class="mobile" data-frame>
+            <div class="notch">9:41 ●●●</div>
+            <div class="nav">
+              <div class="logo"><span class="mark">T</span>工具レンタル</div>
+              <div class="navicons"><div class="ic">🛒</div></div>
+            </div>
+            <div class="hero">
+              <div class="img"></div>
+              <div class="side">
+                <h3>週末DIY、<br/>借りればいい。</h3>
+                <button class="sk-btn" style="font-size:9px;padding:3px 6px">→ 探す</button>
+              </div>
+            </div>
+            <div class="section-title"><h4>★ おすすめ</h4></div>
+            <div class="grid"></div>
+            <div class="section-title"><h4>一覧</h4></div>
+            <div class="grid" data-main></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PATTERN C ============ -->
+  <section class="col pc">
+    <div class="col-hd">
+      <div>
+        <h2>C. フルブリード型</h2>
+        <div class="desc">大きな1枚絵で世界観を伝える。装飾を削ぎ落とした、ミニマル構成。</div>
+      </div>
+      <div class="tag">Pattern C</div>
+    </div>
+    <div class="frames">
+      <div style="width:100%">
+        <div class="frame-label">Desktop</div>
+        <div class="desktop" data-frame>
+          <div class="browser-bar"><i></i><i></i><i></i><div class="url">tool-rental.example/</div></div>
+          <div class="nav">
+            <div class="logo"><span class="mark">T</span>みんなの工具レンタル</div>
+            <div class="navlinks"><span>使い方</span><span>料金</span><span>FAQ</span></div>
+            <div class="navicons"><div class="ic">🛒</div></div>
+          </div>
+          <div class="hero">
+            <div class="img"></div>
+            <div class="copy">
+              <h3>工具を、買わずに、<br/>借りる時代へ。</h3>
+              <p>必要なときだけ。置き場所いらず。</p>
+              <button class="sk-btn primary">▶ 工具を探す</button>
+            </div>
+          </div>
+          <div class="section-title"><h4>★ DIY初心者に人気</h4><a>すべて見る →</a></div>
+          <div class="grid"></div>
+          <div class="section-title"><h4>工具一覧</h4></div>
+          <div class="grid" data-main></div>
+        </div>
+      </div>
+      <div style="width:100%;display:flex;justify-content:center">
+        <div>
+          <div class="frame-label" style="text-align:center">Mobile</div>
+          <div class="mobile" data-frame>
+            <div class="notch">9:41 ●●●</div>
+            <div class="nav">
+              <div class="logo"><span class="mark">T</span>工具レンタル</div>
+              <div class="navicons"><div class="ic">🛒</div></div>
+            </div>
+            <div class="hero">
+              <div class="img"></div>
+              <div class="copy">
+                <h3>買わずに、<br/>借りる時代へ。</h3>
+                <button class="sk-btn primary" style="font-size:9px;padding:3px 6px">▶ 探す</button>
+              </div>
+            </div>
+            <div class="section-title"><h4>★ 人気</h4></div>
+            <div class="grid"></div>
+            <div class="section-title"><h4>一覧</h4></div>
+            <div class="grid" data-main></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- React + Babel for Tweaks panel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script>
+  // ─── seed product cards into every grid ───
+  const TOOLS = [
+    { name:"電動ドリル ベーシック", day:500, week:2200, badge:"NEW" },
+    { name:"インパクトドライバー", day:700, week:3000, badge:"", img:"assets/product_impact.jpg" },
+    { name:"丸のこ 165mm", day:900, week:3800, badge:"人気" },
+    { name:"ドライバービットセット", day:300, week:1200, badge:"", img:"assets/product_bitset.jpg" },
+    { name:"ジグソー", day:600, week:2500, badge:"" },
+    { name:"ランダムサンダー", day:500, week:2100, badge:"" },
+    { name:"卓上ボール盤", day:1200, week:5000, badge:"" },
+    { name:"電動グラインダー", day:600, week:2400, badge:"" },
+    { name:"高圧洗浄機", day:1500, week:6000, badge:"人気" },
+    { name:"電動かんな", day:800, week:3200, badge:"" },
+    { name:"レーザー墨出し器", day:1000, week:4000, badge:"" },
+    { name:"トリマー", day:700, week:2800, badge:"" },
+  ];
+
+  function card(t, i){
+    const yen = (n)=>"¥"+n.toLocaleString();
+    const picInner = t.img
+      ? `<img src="${t.img}" alt="${t.name}" loading="lazy"/>`
+      : `<span>[ ${t.name} ]</span>`;
+    return `<div class="card">
+      <div class="pic ${t.img?'has-img':''}">${t.badge?`<span class="badge">${t.badge}</span>`:""}${picInner}</div>
+      <h5>${t.name}</h5>
+      <div class="price"><b>${yen(t.day)}</b><span>/日</span><span class="week">· ${yen(t.week)}/週</span></div>
+      <button class="add">＋ カートに追加</button>
+    </div>`;
+  }
+
+  document.querySelectorAll(".desktop [data-main]").forEach(g=>{
+    g.innerHTML = TOOLS.map(card).join("");
+  });
+  document.querySelectorAll(".desktop .grid:not([data-main])").forEach(g=>{
+    g.innerHTML = TOOLS.slice(0,4).map(card).join("");
+  });
+  document.querySelectorAll(".mobile [data-main]").forEach(g=>{
+    g.innerHTML = TOOLS.slice(0,6).map(card).join("");
+  });
+  document.querySelectorAll(".mobile .grid:not([data-main])").forEach(g=>{
+    g.innerHTML = TOOLS.slice(0,4).map(card).join("");
+  });
+</script>
+
+<script type="text/babel">
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "cols": 3,
+    "density": "comfy",
+    "dark": false
+  }/*EDITMODE-END*/;
+
+  function App(){
+    const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+    React.useEffect(()=>{
+      const body = document.body;
+      body.classList.remove("cols-2","cols-3","cols-4","cols-5");
+      body.classList.add("cols-"+t.cols);
+      body.classList.remove("density-compact","density-regular","density-comfy");
+      body.classList.add("density-"+t.density);
+      body.classList.toggle("theme-dark", !!t.dark);
+    }, [t.cols, t.density, t.dark]);
+
+    return (
+      <TweaksPanel title="Tweaks">
+        <TweakSection label="Layout" />
+        <TweakRadio label="カード列数 (Desktop)" value={t.cols}
+          options={[{label:"2",value:2},{label:"3",value:3},{label:"4",value:4},{label:"5",value:5}]}
+          onChange={(v)=>setTweak('cols', v)} />
+        <TweakRadio label="カード密度" value={t.density}
+          options={[{label:"コンパクト",value:"compact"},{label:"標準",value:"regular"},{label:"ゆったり",value:"comfy"}]}
+          onChange={(v)=>setTweak('density', v)} />
+        <TweakSection label="Theme" />
+        <TweakToggle label="ダークモード" value={t.dark}
+          onChange={(v)=>setTweak('dark', v)} />
+      </TweaksPanel>
+    );
+  }
+
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  ReactDOM.createRoot(root).render(<App/>);
+</script>
+</body>
+</html>
