@@ -206,6 +206,60 @@ class Kogu_Email_Handler {
         self::send( $email, $name, '【工具レンタル】返却受付完了 #' . $rental_id, self::wrap( $content ) );
     }
 
+    // ── 管理者：新規予約通知 ──────────────────────────────────────────────────
+    public static function send_admin_new_booking( $rental_id ) {
+        $rental     = Kogu_Rental_Manager::get( $rental_id );
+        if ( ! $rental ) return;
+
+        $admin_email = get_option( 'admin_email' );
+        $name        = $rental->user_id ? get_userdata( $rental->user_id )->display_name : $rental->guest_name;
+        $fee         = number_format( $rental->rental_fee );
+        $deposit     = number_format( $rental->deposit_amount );
+        $detail_url  = admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id );
+
+        $content = "
+            <h2 style='color:#e85a2b;'>新規レンタル予約が入りました</h2>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル番号</td><td style='padding:8px 12px;'>#{$rental_id}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>お客様</td><td style='padding:8px 12px;'>{$name}（{$rental->guest_email}）</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>電話</td><td style='padding:8px 12px;'>{$rental->guest_phone}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>住所</td><td style='padding:8px 12px;'>{$rental->guest_postal_code} {$rental->guest_address}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>貸出開始</td><td style='padding:8px 12px;'>{$rental->rental_start_date}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限</td><td style='padding:8px 12px;font-weight:bold;color:#e85a2b;'>{$rental->rental_end_date}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル料金</td><td style='padding:8px 12px;'>¥{$fee}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥{$deposit}</td></tr>
+            </table>
+            <p><a href='{$detail_url}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>管理画面で確認・発送処理をする</a></p>";
+
+        self::send( $admin_email, get_bloginfo( 'name' ), "【要対応】新規レンタル予約 #{$rental_id}", self::wrap( $content ) );
+    }
+
+    // ── 管理者：返却証跡が提出された通知 ─────────────────────────────────────
+    public static function send_admin_return_submitted( $rental_id ) {
+        $rental     = Kogu_Rental_Manager::get( $rental_id );
+        if ( ! $rental ) return;
+
+        $admin_email = get_option( 'admin_email' );
+        $name        = $rental->user_id ? get_userdata( $rental->user_id )->display_name : $rental->guest_name;
+        $detail_url  = admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id );
+        $on_time     = $rental->actual_return_date <= $rental->rental_end_date ? '✅ 期限内' : '⚠️ 期限超過';
+
+        $content = "
+            <h2 style='color:#e85a2b;'>返却証跡が提出されました</h2>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル番号</td><td style='padding:8px 12px;'>#{$rental_id}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>お客様</td><td style='padding:8px 12px;'>{$name}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>返送追跡番号</td><td style='padding:8px 12px;font-size:16px;font-weight:bold;'>{$rental->tracking_return}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>証跡提出日</td><td style='padding:8px 12px;'>{$rental->actual_return_date}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>返却期限</td><td style='padding:8px 12px;'>{$rental->rental_end_date}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>期限判定</td><td style='padding:8px 12px;font-weight:bold;'>{$on_time}</td></tr>
+            </table>
+            <p>商品到着後、状態を確認して返却完了処理を行ってください。</p>
+            <p><a href='{$detail_url}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>管理画面で返却確認・精算をする</a></p>";
+
+        self::send( $admin_email, get_bloginfo( 'name' ), "【要対応】返却証跡提出 #{$rental_id}", self::wrap( $content ) );
+    }
+
     // ── 返却完了・精算通知 ────────────────────────────────────────────────────
     public static function send_return_complete( $rental_id, $refund, $late_fee, $damage_fee ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );

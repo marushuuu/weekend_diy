@@ -209,24 +209,106 @@ class Kogu_Admin {
 
     // ── 在庫管理 ──────────────────────────────────────────────────────────────
     public static function page_inventory() {
+        global $wpdb;
+        $table = Kogu_Database::inventory_table();
+
+        // 台数追加
+        if ( isset( $_POST['kogu_add_unit'] ) && check_admin_referer( 'kogu_inventory_action' ) ) {
+            $max = (int) $wpdb->get_var( "SELECT MAX(unit_number) FROM $table" );
+            $wpdb->insert( $table, [
+                'unit_number' => $max + 1,
+                'status'      => 'available',
+                'condition'   => 'excellent',
+            ] );
+        }
+
+        // シリアル番号・状態の保存
+        if ( isset( $_POST['kogu_save_units'] ) && check_admin_referer( 'kogu_inventory_action' ) ) {
+            foreach ( $_POST['serial'] as $id => $serial ) {
+                $wpdb->update( $table, [
+                    'serial_number' => sanitize_text_field( $serial ),
+                    'condition'     => sanitize_text_field( $_POST['condition'][ $id ] ?? 'excellent' ),
+                    'status'        => sanitize_text_field( $_POST['unit_status'][ $id ] ?? 'available' ),
+                    'notes'         => sanitize_textarea_field( $_POST['notes'][ $id ] ?? '' ),
+                ], [ 'id' => (int) $id ] );
+            }
+            echo '<div class="notice notice-success"><p>保存しました。</p></div>';
+        }
+
         $units = Kogu_Inventory::get_all_units();
+        $nonce = wp_create_nonce( 'kogu_inventory_action' );
         ?>
         <div class="wrap">
           <h1>在庫管理（インパクトドライバー）</h1>
-          <p>初期台数: 5台。台数を追加する場合はデータベースに直接レコードを追加してください。</p>
-          <table class="wp-list-table widefat fixed striped">
-            <thead><tr><th>#台目</th><th>シリアル番号</th><th>状態</th><th>ステータス</th></tr></thead>
-            <tbody>
-              <?php foreach ( $units as $u ) : ?>
+
+          <form method="post" style="margin-bottom:24px;">
+            <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
+            <table class="wp-list-table widefat fixed striped">
+              <thead>
                 <tr>
-                  <td><?php echo (int) $u->unit_number; ?>台目</td>
-                  <td><?php echo esc_html( $u->serial_number ?: '未設定' ); ?></td>
-                  <td><?php echo esc_html( $u->condition ); ?></td>
-                  <td><?php echo esc_html( $u->status ); ?></td>
+                  <th style="width:60px">#台目</th>
+                  <th>シリアル番号</th>
+                  <th style="width:120px">状態</th>
+                  <th style="width:130px">ステータス</th>
+                  <th>メモ</th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php foreach ( $units as $u ) :
+                  $row_color = $u->status === 'rented' ? '#fff8e1' : ( $u->status === 'maintenance' ? '#fde8e8' : '' );
+                ?>
+                  <tr style="background:<?php echo esc_attr( $row_color ); ?>">
+                    <td style="font-weight:700;"><?php echo (int) $u->unit_number; ?>台目</td>
+                    <td>
+                      <input type="text" name="serial[<?php echo (int) $u->id; ?>]"
+                             value="<?php echo esc_attr( $u->serial_number ); ?>"
+                             placeholder="例: SN-00001" style="width:100%;padding:4px 8px;" />
+                    </td>
+                    <td>
+                      <select name="condition[<?php echo (int) $u->id; ?>]" style="width:100%;padding:4px;">
+                        <?php foreach ( [ 'excellent' => '良好', 'good' => '普通', 'fair' => '使用感あり', 'damaged' => '破損' ] as $v => $l ) : ?>
+                          <option value="<?php echo $v; ?>" <?php selected( $u->condition, $v ); ?>><?php echo esc_html( $l ); ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="unit_status[<?php echo (int) $u->id; ?>]" style="width:100%;padding:4px;"
+                              <?php echo $u->status === 'rented' ? 'disabled' : ''; ?>>
+                        <?php foreach ( [ 'available' => '貸出可', 'maintenance' => 'メンテ中', 'retired' => '廃棄' ] as $v => $l ) : ?>
+                          <option value="<?php echo $v; ?>" <?php selected( $u->status, $v ); ?>><?php echo esc_html( $l ); ?></option>
+                        <?php endforeach; ?>
+                        <?php if ( $u->status === 'rented' ) : ?>
+                          <option value="rented" selected>貸出中</option>
+                        <?php endif; ?>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" name="notes[<?php echo (int) $u->id; ?>]"
+                             value="<?php echo esc_attr( $u->notes ); ?>"
+                             placeholder="メモ" style="width:100%;padding:4px 8px;" />
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+            <div style="margin-top:12px;display:flex;gap:12px;">
+              <button type="submit" name="kogu_save_units" class="button button-primary">変更を保存</button>
+              <button type="submit" name="kogu_add_unit" class="button"
+                      onclick="return confirm('台数を1台追加しますか？');">＋ 1台追加</button>
+            </div>
+          </form>
+
+          <h3>現在の空き状況</h3>
+          <?php
+          $available = Kogu_Inventory::available_count( date('Y-m-d'), date('Y-m-d') );
+          $total     = count( $units );
+          $rented    = $total - $available;
+          ?>
+          <p>
+            全 <strong><?php echo $total; ?></strong> 台中、
+            貸出中 <strong style="color:#e85a2b;"><?php echo $rented; ?></strong> 台 /
+            貸出可 <strong style="color:#27ae60;"><?php echo $available; ?></strong> 台
+          </p>
         </div>
         <?php
     }

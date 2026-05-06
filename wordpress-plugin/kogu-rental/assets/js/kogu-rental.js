@@ -284,6 +284,11 @@
       const $msg     = $form.find('.kogu-return-msg');
 
       if (!tracking) { $msg.text('追跡番号を入力してください。').show(); return; }
+      if (!/^\d{12,13}$/.test(tracking.replace(/\s/g,''))) {
+        $msg.text('ゆうパックの追跡番号は12〜13桁の数字です。再確認してください。').css('color','red').show();
+        return;
+      }
+      tracking = tracking.replace(/\s/g,'');
 
       $.post(KoguData.ajax_url, {
         action:    'kogu_submit_return',
