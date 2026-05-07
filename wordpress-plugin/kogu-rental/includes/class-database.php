@@ -4,6 +4,7 @@ defined( 'ABSPATH' ) || exit;
 class Kogu_Database {
 
     // ── Table names ───────────────────────────────────────────────────────────
+    public static function products_table()        { global $wpdb; return $wpdb->prefix . 'kogu_products'; }
     public static function rentals_table()         { global $wpdb; return $wpdb->prefix . 'kogu_rentals'; }
     public static function inventory_table()       { global $wpdb; return $wpdb->prefix . 'kogu_inventory'; }
     public static function return_evidence_table() { global $wpdb; return $wpdb->prefix . 'kogu_return_evidence'; }
@@ -15,22 +16,36 @@ class Kogu_Database {
         $charset = $wpdb->get_charset_collate();
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        // ── 在庫ユニット（物理的な1台ごと） ──────────────────────────────────
+        // ── 商品（レンタル可能な工具の種類）───────────────────────────────────
+        dbDelta( "CREATE TABLE " . self::products_table() . " (
+            id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            name             VARCHAR(200) NOT NULL DEFAULT '',
+            description      TEXT DEFAULT '',
+            price_per_week   INT UNSIGNED NOT NULL DEFAULT 4900  COMMENT '1週間のレンタル料金（円）',
+            deposit_amount   INT UNSIGNED NOT NULL DEFAULT 10000 COMMENT 'デポジット（円）',
+            status           ENUM('active','inactive') NOT NULL DEFAULT 'active',
+            created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
+        ) $charset;" );
+
+        // ── 在庫ユニット（物理的な1台ごと）──────────────────────────────────
         dbDelta( "CREATE TABLE " . self::inventory_table() . " (
             id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            unit_number   TINYINT UNSIGNED NOT NULL COMMENT '1〜5台目',
+            product_id    BIGINT UNSIGNED NOT NULL DEFAULT 1,
+            unit_number   TINYINT UNSIGNED NOT NULL COMMENT '商品内の通し番号',
             serial_number VARCHAR(100) DEFAULT '',
             condition     ENUM('excellent','good','fair','damaged') NOT NULL DEFAULT 'excellent',
             status        ENUM('available','rented','maintenance','retired') NOT NULL DEFAULT 'available',
             notes         TEXT DEFAULT '',
             created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            UNIQUE KEY unit_number (unit_number)
+            KEY product_id (product_id)
         ) $charset;" );
 
         // ── レンタル注文 ──────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE " . self::rentals_table() . " (
             id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            product_id               BIGINT UNSIGNED DEFAULT NULL,
             user_id                  BIGINT UNSIGNED DEFAULT NULL COMMENT 'NULLはゲスト',
             guest_name               VARCHAR(100) DEFAULT '',
             guest_email              VARCHAR(200) DEFAULT '',
@@ -39,7 +54,7 @@ class Kogu_Database {
             guest_address            TEXT DEFAULT '',
             inventory_unit_id        BIGINT UNSIGNED DEFAULT NULL,
             rental_start_date        DATE NOT NULL,
-            rental_end_date          DATE NOT NULL  COMMENT 'この日までに発送すること',
+            rental_end_date          DATE NOT NULL  COMMENT 'rental_start_date + rental_weeks*7 - 1日',
             actual_return_date       DATE DEFAULT NULL,
             status                   ENUM(
                 'pending',
@@ -51,7 +66,8 @@ class Kogu_Database {
                 'overdue',
                 'cancelled'
             ) NOT NULL DEFAULT 'pending',
-            rental_days              SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+            rental_weeks             SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+            rental_days              SMALLINT UNSIGNED NOT NULL DEFAULT 7,
             rental_fee               INT UNSIGNED NOT NULL DEFAULT 0  COMMENT '円',
             deposit_amount           INT UNSIGNED NOT NULL DEFAULT 0  COMMENT '円',
             late_fee_days            SMALLINT UNSIGNED NOT NULL DEFAULT 0,
@@ -71,21 +87,22 @@ class Kogu_Database {
             created_at               DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at               DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
+            KEY product_id (product_id),
             KEY user_id (user_id),
             KEY status (status),
             KEY rental_end_date (rental_end_date),
             KEY inventory_unit_id (inventory_unit_id)
         ) $charset;" );
 
-        // ── 返却証跡（ゆうパック追跡番号の提出） ─────────────────────────────
+        // ── 返却証跡 ─────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE " . self::return_evidence_table() . " (
-            id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            rental_id      BIGINT UNSIGNED NOT NULL,
+            id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            rental_id       BIGINT UNSIGNED NOT NULL,
             tracking_number VARCHAR(30) NOT NULL,
-            submitted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            submitted_date DATE NOT NULL COMMENT '返却証跡の提出日（延滞判定基準）',
-            status         ENUM('pending','verified_on_time','verified_late','rejected') NOT NULL DEFAULT 'pending',
-            notes          TEXT DEFAULT '',
+            submitted_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            submitted_date  DATE NOT NULL COMMENT '返却証跡の提出日（延滞判定基準）',
+            status          ENUM('pending','verified_on_time','verified_late','rejected') NOT NULL DEFAULT 'pending',
+            notes           TEXT DEFAULT '',
             PRIMARY KEY (id),
             KEY rental_id (rental_id)
         ) $charset;" );
@@ -104,24 +121,49 @@ class Kogu_Database {
             KEY fee_date (fee_date)
         ) $charset;" );
 
-        // 初期在庫5台を投入
-        self::seed_inventory();
-
+        self::seed();
         update_option( 'kogu_db_version', KOGU_VERSION );
     }
 
-    private static function seed_inventory() {
+    private static function seed() {
         global $wpdb;
-        $table = self::inventory_table();
-        $existing = $wpdb->get_var( "SELECT COUNT(*) FROM $table" );
-        if ( $existing > 0 ) return;
+        $products_table  = self::products_table();
+        $inventory_table = self::inventory_table();
+
+        if ( (int) $wpdb->get_var( "SELECT COUNT(*) FROM $products_table" ) > 0 ) return;
+
+        $wpdb->insert( $products_table, [
+            'name'           => 'インパクトドライバー',
+            'description'    => '18V コードレスインパクトドライバー。DIYから本格作業まで対応。',
+            'price_per_week' => 4900,
+            'deposit_amount' => 10000,
+            'status'         => 'active',
+        ] );
+        $product_id = $wpdb->insert_id;
 
         for ( $i = 1; $i <= 5; $i++ ) {
-            $wpdb->insert( $table, [
+            $wpdb->insert( $inventory_table, [
+                'product_id'  => $product_id,
                 'unit_number' => $i,
                 'status'      => 'available',
                 'condition'   => 'excellent',
             ] );
         }
+    }
+
+    // ── Product helpers ───────────────────────────────────────────────────────
+    public static function get_active_products(): array {
+        global $wpdb;
+        return $wpdb->get_results(
+            "SELECT * FROM " . self::products_table() . " WHERE status = 'active' ORDER BY id ASC"
+        ) ?: [];
+    }
+
+    public static function get_product( int $id ): ?object {
+        global $wpdb;
+        return $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM " . self::products_table() . " WHERE id = %d",
+            $id
+        ) ) ?: null;
     }
 }

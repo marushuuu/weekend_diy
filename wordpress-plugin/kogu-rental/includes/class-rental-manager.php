@@ -3,14 +3,15 @@ defined( 'ABSPATH' ) || exit;
 
 class Kogu_Rental_Manager {
 
-    const LATE_FEE_PER_DAY = 500; // 円
+    const LATE_FEE_PER_DAY   = 500;  // 円/日
+    const WEEK_DISCOUNT_RATE = 0.70; // 2週目以降 30%OFF
 
     // ── 新規レンタル作成 ─────────────────────────────────────────────────────
     /**
      * @param array $args {
+     *   product_id, rental_weeks, rental_start_date,
      *   user_id, guest_name, guest_email, guest_phone,
      *   guest_postal_code, guest_address,
-     *   rental_start_date, rental_end_date,
      *   rental_fee, deposit_amount,
      *   stripe_payment_intent_id, stripe_customer_id, stripe_payment_method_id,
      *   wc_order_id
@@ -20,20 +21,18 @@ class Kogu_Rental_Manager {
     public static function create( array $args ) {
         global $wpdb;
 
-        $start = $args['rental_start_date'];
-        $end   = $args['rental_end_date'];
+        $product_id = (int) ( $args['product_id'] ?? 1 );
+        $weeks      = max( 1, (int) ( $args['rental_weeks'] ?? 1 ) );
+        $start      = $args['rental_start_date'];
+        $end        = self::calc_end_date( $start, $weeks );
 
-        // 空きユニットを確保
-        $unit_id = Kogu_Inventory::get_available_unit_id( $start, $end );
-        if ( ! $unit_id ) {
-            return false; // 在庫なし
-        }
-
-        $days = self::calc_days( $start, $end );
+        $unit_id = Kogu_Inventory::get_available_unit_id( $start, $end, $product_id );
+        if ( ! $unit_id ) return false;
 
         $inserted = $wpdb->insert(
             Kogu_Database::rentals_table(),
             [
+                'product_id'               => $product_id,
                 'user_id'                  => $args['user_id']                  ?? null,
                 'guest_name'               => $args['guest_name']               ?? '',
                 'guest_email'              => $args['guest_email']               ?? '',
@@ -44,7 +43,8 @@ class Kogu_Rental_Manager {
                 'rental_start_date'        => $start,
                 'rental_end_date'          => $end,
                 'status'                   => 'confirmed',
-                'rental_days'              => $days,
+                'rental_weeks'             => $weeks,
+                'rental_days'              => $weeks * 7,
                 'rental_fee'               => $args['rental_fee'],
                 'deposit_amount'           => $args['deposit_amount'],
                 'total_charged'            => $args['rental_fee'] + $args['deposit_amount'],
@@ -88,10 +88,10 @@ class Kogu_Rental_Manager {
         $rental = self::get( $rental_id );
         if ( ! $rental ) return false;
 
-        $today         = new DateTime( 'today' );
-        $end_date      = new DateTime( $rental->rental_end_date );
+        $today          = new DateTime( 'today' );
+        $end_date       = new DateTime( $rental->rental_end_date );
         $submitted_date = $today->format( 'Y-m-d' );
-        $is_on_time    = $today <= $end_date;
+        $is_on_time     = $today <= $end_date;
 
         $wpdb->insert( Kogu_Database::return_evidence_table(), [
             'rental_id'       => $rental_id,
@@ -101,11 +101,10 @@ class Kogu_Rental_Manager {
         ] );
 
         self::update_status( $rental_id, 'return_evidence_submitted', [
-            'tracking_return'  => $tracking_number,
+            'tracking_return'    => $tracking_number,
             'actual_return_date' => $submitted_date,
         ] );
 
-        // 延滞の場合：遅延日数を計算して延滞料金レコードを生成
         if ( ! $is_on_time ) {
             self::generate_late_fees( $rental_id );
         }
@@ -123,24 +122,21 @@ class Kogu_Rental_Manager {
         $rental = self::get( $rental_id );
         if ( ! $rental ) return false;
 
-        // 延滞料金の合計を集計
         $late_fee_total = (int) $wpdb->get_var( $wpdb->prepare(
             'SELECT COALESCE(SUM(amount),0) FROM ' . Kogu_Database::late_fees_table() .
             ' WHERE rental_id = %d',
             $rental_id
         ) );
 
-        $deposit        = (int) $rental->deposit_amount;
-        $deduction      = $late_fee_total + $damage_fee;
-        $refund_amount  = max( 0, $deposit - $deduction );
-        $extra_charge   = max( 0, $deduction - $deposit );
+        $deposit       = (int) $rental->deposit_amount;
+        $deduction     = $late_fee_total + $damage_fee;
+        $refund_amount = max( 0, $deposit - $deduction );
+        $extra_charge  = max( 0, $deduction - $deposit );
 
-        // Stripeデポジット返金
         if ( $refund_amount > 0 ) {
             Kogu_Stripe_Handler::refund_deposit( $rental->stripe_payment_intent_id, $refund_amount );
         }
 
-        // デポジットを超える延滞・破損費用は追加請求
         if ( $extra_charge > 0 && $rental->stripe_payment_method_id ) {
             Kogu_Stripe_Handler::charge_additional(
                 $rental->stripe_customer_id,
@@ -151,14 +147,12 @@ class Kogu_Rental_Manager {
         }
 
         self::update_status( $rental_id, 'returned', [
-            'damage_fee'         => $damage_fee,
-            'late_fee_total'     => $late_fee_total,
-            'deposit_refunded'   => $refund_amount,
+            'damage_fee'       => $damage_fee,
+            'late_fee_total'   => $late_fee_total,
+            'deposit_refunded' => $refund_amount,
         ] );
 
-        // ユニットを空きに戻す
         Kogu_Inventory::set_unit_status( $rental->inventory_unit_id, 'available' );
-
         Kogu_Email_Handler::send_return_complete( $rental_id, $refund_amount, $late_fee_total, $damage_fee );
 
         return true;
@@ -172,12 +166,11 @@ class Kogu_Rental_Manager {
         $end_date = new DateTime( $rental->rental_end_date );
         $today    = new DateTime( 'today' );
 
-        // 期限の翌日から今日まで1日500円
         $cursor = clone $end_date;
         $cursor->modify( '+1 day' );
 
         while ( $cursor <= $today ) {
-            $date = $cursor->format( 'Y-m-d' );
+            $date   = $cursor->format( 'Y-m-d' );
             $exists = $wpdb->get_var( $wpdb->prepare(
                 'SELECT id FROM ' . Kogu_Database::late_fees_table() .
                 ' WHERE rental_id=%d AND fee_date=%s',
@@ -194,10 +187,8 @@ class Kogu_Rental_Manager {
             $cursor->modify( '+1 day' );
         }
 
-        // rentalテーブルも更新
-        $total_late_days = $wpdb->get_var( $wpdb->prepare(
-            'SELECT COUNT(*) FROM ' . Kogu_Database::late_fees_table() .
-            ' WHERE rental_id=%d',
+        $total_late_days = (int) $wpdb->get_var( $wpdb->prepare(
+            'SELECT COUNT(*) FROM ' . Kogu_Database::late_fees_table() . ' WHERE rental_id=%d',
             $rental_id
         ) );
         $wpdb->update( Kogu_Database::rentals_table(), [
@@ -205,6 +196,28 @@ class Kogu_Rental_Manager {
             'late_fee_total' => $total_late_days * self::LATE_FEE_PER_DAY,
             'status'         => 'overdue',
         ], [ 'id' => $rental_id ] );
+    }
+
+    // ── 料金計算 ──────────────────────────────────────────────────────────────
+
+    /**
+     * 週単位の料金計算。
+     * 1週目: price_per_week
+     * 2週目以降: round(price_per_week * 0.70) / 週 (30%OFF)
+     *
+     * 例) price_per_week=4900, weeks=2 → 4900 + 3430 = 8330円
+     */
+    public static function calc_rental_fee( int $weeks, int $price_per_week ): int {
+        if ( $weeks <= 0 ) return 0;
+        $discounted_week = (int) round( $price_per_week * self::WEEK_DISCOUNT_RATE );
+        return $price_per_week + ( $weeks - 1 ) * $discounted_week;
+    }
+
+    /**
+     * 開始日から週数で終了日を計算（rental_end_date = start + weeks*7 - 1日）
+     */
+    public static function calc_end_date( string $start, int $weeks ): string {
+        return date( 'Y-m-d', strtotime( $start . ' +' . ( $weeks * 7 - 1 ) . ' days' ) );
     }
 
     // ── ヘルパー ──────────────────────────────────────────────────────────────
@@ -236,19 +249,10 @@ class Kogu_Rental_Manager {
         ) );
     }
 
+    /** 後方互換のため残す */
     public static function calc_days( $start, $end ) {
         $s = new DateTime( $start );
         $e = new DateTime( $end );
         return max( 1, (int) $s->diff( $e )->days + 1 );
-    }
-
-    /**
-     * レンタル料金を計算する
-     * 設定: 1日あたり単価（wp option: kogu_price_per_day）
-     */
-    public static function calc_rental_fee( $start, $end ) {
-        $days        = self::calc_days( $start, $end );
-        $price_per_day = (int) get_option( 'kogu_price_per_day', 1000 );
-        return $days * $price_per_day;
     }
 }

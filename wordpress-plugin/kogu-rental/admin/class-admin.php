@@ -4,9 +4,10 @@ defined( 'ABSPATH' ) || exit;
 class Kogu_Admin {
 
     public static function init() {
-        add_action( 'admin_menu',            [ __CLASS__, 'register_menu' ] );
-        add_action( 'admin_post_kogu_admin_action', [ __CLASS__, 'handle_admin_action' ] );
-        add_action( 'admin_init',            [ __CLASS__, 'register_settings' ] );
+        add_action( 'admin_menu',                        [ __CLASS__, 'register_menu' ] );
+        add_action( 'admin_post_kogu_admin_action',      [ __CLASS__, 'handle_admin_action' ] );
+        add_action( 'admin_post_kogu_save_product',      [ __CLASS__, 'handle_save_product' ] );
+        add_action( 'admin_init',                        [ __CLASS__, 'register_settings' ] );
     }
 
     // ── メニュー登録 ──────────────────────────────────────────────────────────
@@ -16,22 +17,28 @@ class Kogu_Admin {
             'kogu-rentals', [ __CLASS__, 'page_rentals' ],
             'dashicons-hammer', 26
         );
-        add_submenu_page( 'kogu-rentals', 'レンタル一覧', 'レンタル一覧', 'manage_options', 'kogu-rentals',          [ __CLASS__, 'page_rentals' ] );
-        add_submenu_page( 'kogu-rentals', '延滞一覧',     '⚠️ 延滞一覧', 'manage_options', 'kogu-overdue',          [ __CLASS__, 'page_overdue' ] );
-        add_submenu_page( 'kogu-rentals', '在庫管理',     '在庫管理',   'manage_options', 'kogu-inventory',        [ __CLASS__, 'page_inventory' ] );
-        add_submenu_page( 'kogu-rentals', '設定',         '設定',       'manage_options', 'kogu-settings',         [ __CLASS__, 'page_settings' ] );
+        add_submenu_page( 'kogu-rentals', 'レンタル一覧', 'レンタル一覧', 'manage_options', 'kogu-rentals',    [ __CLASS__, 'page_rentals' ] );
+        add_submenu_page( 'kogu-rentals', '延滞一覧',     '⚠️ 延滞一覧', 'manage_options', 'kogu-overdue',    [ __CLASS__, 'page_overdue' ] );
+        add_submenu_page( 'kogu-rentals', '在庫管理',     '在庫管理',    'manage_options', 'kogu-inventory',  [ __CLASS__, 'page_inventory' ] );
+        add_submenu_page( 'kogu-rentals', '商品管理',     '商品管理',    'manage_options', 'kogu-products',   [ __CLASS__, 'page_products' ] );
+        add_submenu_page( 'kogu-rentals', '設定',         '設定',        'manage_options', 'kogu-settings',   [ __CLASS__, 'page_settings' ] );
     }
 
     // ── レンタル一覧 ──────────────────────────────────────────────────────────
     public static function page_rentals() {
         global $wpdb;
         $table = Kogu_Database::rentals_table();
+        $ptbl  = Kogu_Database::products_table();
 
         $status_filter = sanitize_text_field( $_GET['status'] ?? '' );
-        $where = $status_filter ? $wpdb->prepare( "WHERE status = %s", $status_filter ) : '';
+        $where = $status_filter ? $wpdb->prepare( 'WHERE r.status = %s', $status_filter ) : '';
 
         $rentals = $wpdb->get_results(
-            "SELECT * FROM $table $where ORDER BY created_at DESC LIMIT 200"
+            "SELECT r.*, p.name AS product_name
+             FROM $table r
+             LEFT JOIN $ptbl p ON p.id = r.product_id
+             $where
+             ORDER BY r.created_at DESC LIMIT 200"
         );
 
         $status_labels = [
@@ -48,7 +55,7 @@ class Kogu_Admin {
         <div class="wrap">
           <h1>レンタル一覧</h1>
           <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-            <a href="?page=kogu-rentals" class="button <?php echo !$status_filter ? 'button-primary' : ''; ?>">すべて</a>
+            <a href="?page=kogu-rentals" class="button <?php echo ! $status_filter ? 'button-primary' : ''; ?>">すべて</a>
             <?php foreach ( $status_labels as $s => $l ) : ?>
               <a href="?page=kogu-rentals&status=<?php echo esc_attr( $s ); ?>"
                  class="button <?php echo $status_filter === $s ? 'button-primary' : ''; ?>">
@@ -62,6 +69,7 @@ class Kogu_Admin {
               <tr>
                 <th style="width:50px">#</th>
                 <th>お客様</th>
+                <th>商品</th>
                 <th>期間</th>
                 <th>料金</th>
                 <th>デポジット</th>
@@ -75,6 +83,7 @@ class Kogu_Admin {
                 $label = $status_labels[ $r->status ] ?? $r->status;
                 $name  = $r->user_id ? get_userdata( $r->user_id )->display_name : $r->guest_name;
                 $email = $r->user_id ? get_userdata( $r->user_id )->user_email   : $r->guest_email;
+                $weeks = (int) $r->rental_weeks ?: 1;
               ?>
                 <tr>
                   <td><?php echo (int) $r->id; ?></td>
@@ -82,9 +91,11 @@ class Kogu_Admin {
                     <strong><?php echo esc_html( $name ); ?></strong><br>
                     <small><?php echo esc_html( $email ); ?></small>
                   </td>
+                  <td><?php echo esc_html( $r->product_name ?? '—' ); ?></td>
                   <td>
                     <?php echo esc_html( $r->rental_start_date ); ?> 〜<br>
                     <strong style="color:#e85a2b;"><?php echo esc_html( $r->rental_end_date ); ?></strong>
+                    <small>(<?php echo $weeks; ?>週間)</small>
                   </td>
                   <td>¥<?php echo number_format( $r->rental_fee ); ?></td>
                   <td>¥<?php echo number_format( $r->deposit_amount ); ?></td>
@@ -96,42 +107,50 @@ class Kogu_Admin {
                 </tr>
               <?php endforeach; ?>
               <?php if ( empty( $rentals ) ) : ?>
-                <tr><td colspan="8" style="text-align:center;padding:24px;">該当するレンタルはありません。</td></tr>
+                <tr><td colspan="9" style="text-align:center;padding:24px;">該当するレンタルはありません。</td></tr>
               <?php endif; ?>
             </tbody>
           </table>
         </div>
         <?php
 
-        // 詳細表示
         if ( isset( $_GET['detail'] ) ) {
             self::render_rental_detail( (int) $_GET['detail'] );
         }
     }
 
     private static function render_rental_detail( $rental_id ) {
-        $rental = Kogu_Rental_Manager::get( $rental_id );
+        global $wpdb;
+        $table = Kogu_Database::rentals_table();
+        $ptbl  = Kogu_Database::products_table();
+        $rental = $wpdb->get_row( $wpdb->prepare(
+            "SELECT r.*, p.name AS product_name FROM $table r
+             LEFT JOIN $ptbl p ON p.id = r.product_id
+             WHERE r.id = %d",
+            $rental_id
+        ) );
         if ( ! $rental ) return;
 
         $nonce = wp_create_nonce( 'kogu_admin_action' );
+        $weeks = (int) $rental->rental_weeks ?: 1;
         ?>
         <div style="margin-top:32px;background:#fff;border:1px solid #ddd;padding:24px;border-radius:8px;max-width:700px;">
           <h2>レンタル #<?php echo (int) $rental->id; ?> 詳細</h2>
 
           <table class="form-table">
             <tr><th>ステータス</th><td><?php echo esc_html( $rental->status ); ?></td></tr>
+            <tr><th>商品</th><td><?php echo esc_html( $rental->product_name ?? '—' ); ?></td></tr>
             <tr><th>お名前</th><td><?php echo esc_html( $rental->user_id ? get_userdata( $rental->user_id )->display_name : $rental->guest_name ); ?></td></tr>
             <tr><th>メール</th><td><?php echo esc_html( $rental->guest_email ); ?></td></tr>
             <tr><th>電話</th><td><?php echo esc_html( $rental->guest_phone ); ?></td></tr>
             <tr><th>住所</th><td><?php echo esc_html( $rental->guest_postal_code . ' ' . $rental->guest_address ); ?></td></tr>
-            <tr><th>期間</th><td><?php echo esc_html( $rental->rental_start_date ); ?> 〜 <?php echo esc_html( $rental->rental_end_date ); ?>（<?php echo (int) $rental->rental_days; ?>日）</td></tr>
+            <tr><th>期間</th><td><?php echo esc_html( $rental->rental_start_date ); ?> 〜 <?php echo esc_html( $rental->rental_end_date ); ?>（<?php echo $weeks; ?>週間）</td></tr>
             <tr><th>レンタル料金</th><td>¥<?php echo number_format( $rental->rental_fee ); ?></td></tr>
             <tr><th>デポジット</th><td>¥<?php echo number_format( $rental->deposit_amount ); ?></td></tr>
             <tr><th>延滞料金</th><td>¥<?php echo number_format( $rental->late_fee_total ); ?>（<?php echo (int) $rental->late_fee_days; ?>日）</td></tr>
             <tr><th>返送追跡番号</th><td><?php echo esc_html( $rental->tracking_return ?: '—' ); ?></td></tr>
           </table>
 
-          <!-- 発送処理 -->
           <?php if ( in_array( $rental->status, [ 'confirmed', 'pending' ], true ) ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
             <input type="hidden" name="action"    value="kogu_admin_action">
@@ -144,7 +163,6 @@ class Kogu_Admin {
           </form>
           <?php endif; ?>
 
-          <!-- 返却確認・精算 -->
           <?php if ( $rental->status === 'return_evidence_submitted' ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
             <input type="hidden" name="action"    value="kogu_admin_action">
@@ -170,9 +188,12 @@ class Kogu_Admin {
     // ── 延滞一覧 ──────────────────────────────────────────────────────────────
     public static function page_overdue() {
         global $wpdb;
-        $table   = Kogu_Database::rentals_table();
+        $table = Kogu_Database::rentals_table();
+        $ptbl  = Kogu_Database::products_table();
         $rentals = $wpdb->get_results(
-            "SELECT * FROM $table WHERE status = 'overdue' ORDER BY rental_end_date ASC"
+            "SELECT r.*, p.name AS product_name FROM $table r
+             LEFT JOIN $ptbl p ON p.id = r.product_id
+             WHERE r.status = 'overdue' ORDER BY r.rental_end_date ASC"
         );
         ?>
         <div class="wrap">
@@ -180,7 +201,7 @@ class Kogu_Admin {
           <table class="wp-list-table widefat fixed striped">
             <thead>
               <tr>
-                <th>#</th><th>お客様</th><th>返却期限</th>
+                <th>#</th><th>お客様</th><th>商品</th><th>返却期限</th>
                 <th>延滞日数</th><th>延滞料金</th><th>デポジット</th><th>操作</th>
               </tr>
             </thead>
@@ -191,6 +212,7 @@ class Kogu_Admin {
                 <tr style="background:#ffeaea;">
                   <td><?php echo (int) $r->id; ?></td>
                   <td><?php echo esc_html( $name ); ?><br><small><?php echo esc_html( $r->guest_email ); ?></small></td>
+                  <td><?php echo esc_html( $r->product_name ?? '—' ); ?></td>
                   <td style="color:#c0392b;font-weight:700;"><?php echo esc_html( $r->rental_end_date ); ?></td>
                   <td><?php echo (int) $r->late_fee_days; ?>日</td>
                   <td style="color:#c0392b;">¥<?php echo number_format( $r->late_fee_total ); ?></td>
@@ -199,7 +221,7 @@ class Kogu_Admin {
                 </tr>
               <?php endforeach; ?>
               <?php if ( empty( $rentals ) ) : ?>
-                <tr><td colspan="7" style="text-align:center;padding:24px;">延滞中のレンタルはありません。</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:24px;">延滞中のレンタルはありません。</td></tr>
               <?php endif; ?>
             </tbody>
           </table>
@@ -210,12 +232,19 @@ class Kogu_Admin {
     // ── 在庫管理 ──────────────────────────────────────────────────────────────
     public static function page_inventory() {
         global $wpdb;
-        $table = Kogu_Database::inventory_table();
+        $inv_table = Kogu_Database::inventory_table();
+        $products  = Kogu_Database::get_active_products();
+
+        $selected_pid = isset( $_GET['product_id'] ) ? (int) $_GET['product_id'] : ( $products[0]->id ?? 0 );
 
         // 台数追加
         if ( isset( $_POST['kogu_add_unit'] ) && check_admin_referer( 'kogu_inventory_action' ) ) {
-            $max = (int) $wpdb->get_var( "SELECT MAX(unit_number) FROM $table" );
-            $wpdb->insert( $table, [
+            $max = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT MAX(unit_number) FROM $inv_table WHERE product_id = %d",
+                $selected_pid
+            ) );
+            $wpdb->insert( $inv_table, [
+                'product_id'  => $selected_pid,
                 'unit_number' => $max + 1,
                 'status'      => 'available',
                 'condition'   => 'excellent',
@@ -225,7 +254,7 @@ class Kogu_Admin {
         // シリアル番号・状態の保存
         if ( isset( $_POST['kogu_save_units'] ) && check_admin_referer( 'kogu_inventory_action' ) ) {
             foreach ( $_POST['serial'] as $id => $serial ) {
-                $wpdb->update( $table, [
+                $wpdb->update( $inv_table, [
                     'serial_number' => sanitize_text_field( $serial ),
                     'condition'     => sanitize_text_field( $_POST['condition'][ $id ] ?? 'excellent' ),
                     'status'        => sanitize_text_field( $_POST['unit_status'][ $id ] ?? 'available' ),
@@ -235,14 +264,37 @@ class Kogu_Admin {
             echo '<div class="notice notice-success"><p>保存しました。</p></div>';
         }
 
-        $units = Kogu_Inventory::get_all_units();
+        $units = Kogu_Inventory::get_all_units( $selected_pid );
         $nonce = wp_create_nonce( 'kogu_inventory_action' );
+
+        $selected_product = null;
+        foreach ( $products as $p ) {
+            if ( (int) $p->id === $selected_pid ) {
+                $selected_product = $p;
+                break;
+            }
+        }
         ?>
         <div class="wrap">
-          <h1>在庫管理（インパクトドライバー）</h1>
+          <h1>在庫管理</h1>
+
+          <!-- 商品タブ -->
+          <div style="display:flex;gap:8px;margin-bottom:20px;">
+            <?php foreach ( $products as $p ) : ?>
+              <a href="?page=kogu-inventory&product_id=<?php echo (int) $p->id; ?>"
+                 class="button <?php echo (int) $p->id === $selected_pid ? 'button-primary' : ''; ?>">
+                <?php echo esc_html( $p->name ); ?>
+              </a>
+            <?php endforeach; ?>
+          </div>
+
+          <?php if ( $selected_product ) : ?>
+          <h2><?php echo esc_html( $selected_product->name ); ?></h2>
+          <?php endif; ?>
 
           <form method="post" style="margin-bottom:24px;">
             <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
+            <input type="hidden" name="product_id" value="<?php echo $selected_pid; ?>">
             <table class="wp-list-table widefat fixed striped">
               <thead>
                 <tr>
@@ -300,7 +352,8 @@ class Kogu_Admin {
 
           <h3>現在の空き状況</h3>
           <?php
-          $available = Kogu_Inventory::available_count( date('Y-m-d'), date('Y-m-d') );
+          $today     = date( 'Y-m-d' );
+          $available = Kogu_Inventory::available_count( $today, $today, $selected_pid );
           $total     = count( $units );
           $rented    = $total - $available;
           ?>
@@ -313,17 +366,152 @@ class Kogu_Admin {
         <?php
     }
 
+    // ── 商品管理 ──────────────────────────────────────────────────────────────
+    public static function page_products() {
+        global $wpdb;
+        $table = Kogu_Database::products_table();
+
+        if ( isset( $_GET['updated'] ) ) {
+            echo '<div class="notice notice-success"><p>保存しました。</p></div>';
+        }
+
+        $edit_id = isset( $_GET['edit'] ) ? (int) $_GET['edit'] : 0;
+        $edit    = $edit_id ? Kogu_Database::get_product( $edit_id ) : null;
+
+        $nonce   = wp_create_nonce( 'kogu_product_action' );
+        $products = Kogu_Database::get_active_products();
+        ?>
+        <div class="wrap">
+          <h1>商品管理
+            <?php if ( ! $edit_id ) : ?>
+              <a href="?page=kogu-products&edit=0" class="page-title-action">＋ 新規商品を追加</a>
+            <?php endif; ?>
+          </h1>
+
+          <?php if ( isset( $_GET['edit'] ) ) : ?>
+          <!-- 追加・編集フォーム -->
+          <div style="max-width:600px;background:#fff;border:1px solid #ddd;padding:24px;border-radius:8px;margin-bottom:32px;">
+            <h2><?php echo $edit ? esc_html( $edit->name ) . ' を編集' : '新規商品を追加'; ?></h2>
+            <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>">
+              <input type="hidden" name="action"     value="kogu_save_product">
+              <input type="hidden" name="product_id" value="<?php echo $edit_id; ?>">
+              <input type="hidden" name="_wpnonce"   value="<?php echo esc_attr( $nonce ); ?>">
+              <table class="form-table">
+                <tr>
+                  <th><label for="pname">商品名 <em>*</em></label></th>
+                  <td><input type="text" id="pname" name="name" required class="regular-text"
+                             value="<?php echo esc_attr( $edit->name ?? '' ); ?>" /></td>
+                </tr>
+                <tr>
+                  <th><label for="pdesc">説明</label></th>
+                  <td><textarea id="pdesc" name="description" rows="3" class="large-text"><?php echo esc_textarea( $edit->description ?? '' ); ?></textarea></td>
+                </tr>
+                <tr>
+                  <th><label for="pprice">1週間のレンタル料金（円）<em>*</em></label></th>
+                  <td>
+                    <input type="number" id="pprice" name="price_per_week" required min="1" class="regular-text"
+                           value="<?php echo (int) ( $edit->price_per_week ?? 4900 ); ?>" />
+                    <p class="description">
+                      2週目以降は自動的に 30%OFF（¥<?php
+                        $ppw = (int) ( $edit->price_per_week ?? 4900 );
+                        echo number_format( (int) round( $ppw * 0.7 ) );
+                      ?>/週）が適用されます。
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <th><label for="pdeposit">デポジット（円）<em>*</em></label></th>
+                  <td><input type="number" id="pdeposit" name="deposit_amount" required min="0" class="regular-text"
+                             value="<?php echo (int) ( $edit->deposit_amount ?? 10000 ); ?>" /></td>
+                </tr>
+                <tr>
+                  <th><label for="pstatus">ステータス</label></th>
+                  <td>
+                    <select id="pstatus" name="status">
+                      <option value="active"   <?php selected( $edit->status ?? 'active', 'active' ); ?>>公開中</option>
+                      <option value="inactive" <?php selected( $edit->status ?? 'active', 'inactive' ); ?>>非公開</option>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+              <?php submit_button( $edit ? '変更を保存' : '商品を追加' ); ?>
+              <a href="?page=kogu-products" class="button" style="margin-left:8px;">キャンセル</a>
+            </form>
+          </div>
+          <?php endif; ?>
+
+          <!-- 商品一覧 -->
+          <h2>商品一覧</h2>
+          <table class="wp-list-table widefat fixed striped">
+            <thead>
+              <tr>
+                <th style="width:50px">ID</th>
+                <th>商品名</th>
+                <th>1週間料金</th>
+                <th>2週目以降</th>
+                <th>デポジット</th>
+                <th>ステータス</th>
+                <th>在庫台数</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              $all_products = $wpdb->get_results( "SELECT * FROM $table ORDER BY id ASC" );
+              foreach ( $all_products as $p ) :
+                $inv_count = (int) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT COUNT(*) FROM " . Kogu_Database::inventory_table() .
+                    " WHERE product_id = %d AND status != 'retired'",
+                    $p->id
+                ) );
+                $discounted = (int) round( $p->price_per_week * 0.7 );
+              ?>
+                <tr>
+                  <td><?php echo (int) $p->id; ?></td>
+                  <td><strong><?php echo esc_html( $p->name ); ?></strong><br><small><?php echo esc_html( mb_strimwidth( $p->description, 0, 50, '…' ) ); ?></small></td>
+                  <td>¥<?php echo number_format( $p->price_per_week ); ?></td>
+                  <td>¥<?php echo number_format( $discounted ); ?>/週 <small style="color:#888;">(30%OFF)</small></td>
+                  <td>¥<?php echo number_format( $p->deposit_amount ); ?></td>
+                  <td><?php echo $p->status === 'active' ? '<span style="color:#27ae60;">公開中</span>' : '<span style="color:#999;">非公開</span>'; ?></td>
+                  <td><?php echo $inv_count; ?>台</td>
+                  <td>
+                    <a href="?page=kogu-products&edit=<?php echo (int) $p->id; ?>" class="button button-small">編集</a>
+                    <a href="?page=kogu-inventory&product_id=<?php echo (int) $p->id; ?>" class="button button-small">在庫管理</a>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+              <?php if ( empty( $all_products ) ) : ?>
+                <tr><td colspan="8" style="text-align:center;padding:24px;">商品が登録されていません。</td></tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+
+          <h3 style="margin-top:24px;">料金計算の例</h3>
+          <?php foreach ( $all_products as $p ) :
+            if ( $p->status !== 'active' ) continue;
+            $ppw = (int) $p->price_per_week;
+            $disc = (int) round( $ppw * 0.7 );
+          ?>
+          <p><strong><?php echo esc_html( $p->name ); ?></strong>：
+            1週 ¥<?php echo number_format( $ppw ); ?> /
+            2週 ¥<?php echo number_format( $ppw + $disc ); ?> /
+            3週 ¥<?php echo number_format( $ppw + $disc * 2 ); ?> /
+            4週 ¥<?php echo number_format( $ppw + $disc * 3 ); ?>
+          </p>
+          <?php endforeach; ?>
+        </div>
+        <?php
+    }
+
     // ── 設定画面 ──────────────────────────────────────────────────────────────
     public static function register_settings() {
         $fields = [
-            'kogu_stripe_public_key'    => 'Stripe 公開鍵（pk_live_...）',
-            'kogu_stripe_secret_key'    => 'Stripe 秘密鍵（sk_live_...）',
-            'kogu_stripe_webhook_secret'=> 'Stripe Webhook シークレット（whsec_...）',
-            'kogu_sendgrid_api_key'     => 'SendGrid APIキー',
-            'kogu_from_email'           => '送信元メールアドレス',
-            'kogu_from_name'            => '送信元名',
-            'kogu_price_per_day'        => '1日あたりレンタル料金（円）',
-            'kogu_deposit_amount'       => 'デポジット額（円）',
+            'kogu_stripe_public_key'     => 'Stripe 公開鍵（pk_live_...）',
+            'kogu_stripe_secret_key'     => 'Stripe 秘密鍵（sk_live_...）',
+            'kogu_stripe_webhook_secret' => 'Stripe Webhook シークレット（whsec_...）',
+            'kogu_sendgrid_api_key'      => 'SendGrid APIキー',
+            'kogu_from_email'            => '送信元メールアドレス',
+            'kogu_from_name'             => '送信元名',
         ];
         foreach ( $fields as $key => $label ) {
             register_setting( 'kogu_settings', $key );
@@ -345,8 +533,6 @@ class Kogu_Admin {
                   'kogu_sendgrid_api_key'      => 'SendGrid APIキー',
                   'kogu_from_email'            => '送信元メールアドレス',
                   'kogu_from_name'             => '送信元名',
-                  'kogu_price_per_day'         => '1日あたりレンタル料金（円）',
-                  'kogu_deposit_amount'        => 'デポジット額（円）',
               ];
               foreach ( $fields as $key => $label ) :
                   $is_secret = strpos( $key, 'key' ) !== false || strpos( $key, 'secret' ) !== false;
@@ -365,6 +551,7 @@ class Kogu_Admin {
                   </tr>
               <?php endforeach; ?>
             </table>
+            <p class="description">料金・デポジットは「<a href="?page=kogu-products">商品管理</a>」で商品ごとに設定してください。</p>
             <?php submit_button( '設定を保存' ); ?>
           </form>
           <hr>
@@ -393,6 +580,33 @@ class Kogu_Admin {
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id . '&updated=1' ) );
+        exit;
+    }
+
+    // ── 商品保存ハンドラ ──────────────────────────────────────────────────────
+    public static function handle_save_product() {
+        check_admin_referer( 'kogu_product_action' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( '権限がありません。' );
+
+        $product_id    = (int) ( $_POST['product_id'] ?? 0 );
+        $name          = sanitize_text_field( $_POST['name'] ?? '' );
+        $description   = sanitize_textarea_field( $_POST['description'] ?? '' );
+        $price_per_week = max( 1, (int) ( $_POST['price_per_week'] ?? 4900 ) );
+        $deposit_amount = max( 0, (int) ( $_POST['deposit_amount'] ?? 10000 ) );
+        $status        = in_array( $_POST['status'] ?? '', [ 'active', 'inactive' ] )
+            ? $_POST['status'] : 'active';
+
+        global $wpdb;
+        $data = compact( 'name', 'description', 'price_per_week', 'deposit_amount', 'status' );
+
+        if ( $product_id ) {
+            $wpdb->update( Kogu_Database::products_table(), $data, [ 'id' => $product_id ] );
+        } else {
+            $wpdb->insert( Kogu_Database::products_table(), $data );
+            $product_id = $wpdb->insert_id;
+        }
+
+        wp_redirect( admin_url( 'admin.php?page=kogu-products&updated=1' ) );
         exit;
     }
 }

@@ -11,8 +11,8 @@ class Kogu_Public {
         add_shortcode( 'kogu_mypage',      [ __CLASS__, 'shortcode_mypage' ] );
 
         // ── AJAX（非ログインユーザー含む） ──────────────────────────────────
-        add_action( 'wp_ajax_kogu_availability',        [ __CLASS__, 'ajax_availability' ] );
-        add_action( 'wp_ajax_nopriv_kogu_availability', [ __CLASS__, 'ajax_availability' ] );
+        add_action( 'wp_ajax_kogu_availability',         [ __CLASS__, 'ajax_availability' ] );
+        add_action( 'wp_ajax_nopriv_kogu_availability',  [ __CLASS__, 'ajax_availability' ] );
 
         add_action( 'wp_ajax_kogu_create_intent',        [ __CLASS__, 'ajax_create_intent' ] );
         add_action( 'wp_ajax_nopriv_kogu_create_intent', [ __CLASS__, 'ajax_create_intent' ] );
@@ -32,19 +32,32 @@ class Kogu_Public {
 
     public static function enqueue_assets() {
         $v = KOGU_VERSION;
-        wp_enqueue_style( 'kogu-rental', KOGU_PLUGIN_URL . 'assets/css/kogu-rental.css', [], $v );
-        wp_enqueue_script( 'kogu-rental', KOGU_PLUGIN_URL . 'assets/js/kogu-rental.js', [ 'jquery' ], $v, true );
+        wp_enqueue_style(  'kogu-rental', KOGU_PLUGIN_URL . 'assets/css/kogu-rental.css', [], $v );
+        wp_enqueue_script( 'kogu-rental', KOGU_PLUGIN_URL . 'assets/js/kogu-rental.js',  [ 'jquery' ], $v, true );
 
         // Stripe.js
         wp_enqueue_script( 'stripe-js', 'https://js.stripe.com/v3/', [], null, true );
 
+        // 商品データを JS へ渡す
+        $products_raw = Kogu_Database::get_active_products();
+        $products_js  = [];
+        foreach ( $products_raw as $p ) {
+            $products_js[] = [
+                'id'             => (int) $p->id,
+                'name'           => $p->name,
+                'description'    => $p->description,
+                'price_per_week' => (int) $p->price_per_week,
+                'deposit_amount' => (int) $p->deposit_amount,
+            ];
+        }
+
         wp_localize_script( 'kogu-rental', 'KoguData', [
-            'ajax_url'          => admin_url( 'admin-ajax.php' ),
-            'nonce'             => wp_create_nonce( 'kogu_nonce' ),
-            'stripe_public_key' => get_option( 'kogu_stripe_public_key', '' ),
-            'deposit_amount'    => (int) get_option( 'kogu_deposit_amount', 10000 ),
-            'price_per_day'     => (int) get_option( 'kogu_price_per_day', 1000 ),
-            'late_fee_per_day'  => 500,
+            'ajax_url'           => admin_url( 'admin-ajax.php' ),
+            'nonce'              => wp_create_nonce( 'kogu_nonce' ),
+            'stripe_public_key'  => get_option( 'kogu_stripe_public_key', '' ),
+            'products'           => $products_js,
+            'week_discount_rate' => 0.70,
+            'late_fee_per_day'   => 500,
         ] );
     }
 
@@ -62,7 +75,7 @@ class Kogu_Public {
         return ob_get_clean();
     }
 
-    // ── AJAX: 在庫カレンダーデータ ────────────────────────────────────────────
+    // ── AJAX: 在庫マップ（全商品90日分） ─────────────────────────────────────
     public static function ajax_availability() {
         $map = Kogu_Inventory::availability_map( 90 );
         wp_send_json_success( $map );
@@ -72,28 +85,38 @@ class Kogu_Public {
     public static function ajax_create_intent() {
         check_ajax_referer( 'kogu_nonce', 'nonce' );
 
-        $start = sanitize_text_field( $_POST['start_date'] ?? '' );
-        $end   = sanitize_text_field( $_POST['end_date']   ?? '' );
-        $email = sanitize_email( $_POST['email']           ?? '' );
-        $name  = sanitize_text_field( $_POST['name']       ?? '' );
+        $product_id = (int) ( $_POST['product_id'] ?? 0 );
+        $start      = sanitize_text_field( $_POST['start_date'] ?? '' );
+        $weeks      = max( 1, (int) ( $_POST['weeks'] ?? 1 ) );
+        $email      = sanitize_email( $_POST['email'] ?? '' );
+        $name       = sanitize_text_field( $_POST['name'] ?? '' );
 
-        if ( ! $start || ! $end || ! $email ) {
+        if ( ! $product_id || ! $start || ! $email ) {
             wp_send_json_error( '必須項目が不足しています。' );
         }
 
-        if ( Kogu_Inventory::available_count( $start, $end ) < 1 ) {
+        $product = Kogu_Database::get_product( $product_id );
+        if ( ! $product ) {
+            wp_send_json_error( '商品が見つかりません。' );
+        }
+
+        $end = Kogu_Rental_Manager::calc_end_date( $start, $weeks );
+
+        if ( Kogu_Inventory::available_count( $start, $end, $product_id ) < 1 ) {
             wp_send_json_error( '選択した期間は在庫がありません。' );
         }
 
-        $rental_fee     = Kogu_Rental_Manager::calc_rental_fee( $start, $end );
-        $deposit        = (int) get_option( 'kogu_deposit_amount', 10000 );
-        $total          = $rental_fee + $deposit;
+        $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
+        $deposit    = (int) $product->deposit_amount;
+        $total      = $rental_fee + $deposit;
 
         $customer_id = Kogu_Stripe_Handler::get_or_create_customer( $email, $name );
         $result      = Kogu_Stripe_Handler::create_payment_intent( $total, $customer_id, [
-            'rental_start' => $start,
-            'rental_end'   => $end,
-            'email'        => $email,
+            'product_id'    => (string) $product_id,
+            'rental_start'  => $start,
+            'rental_end'    => $end,
+            'rental_weeks'  => (string) $weeks,
+            'email'         => $email,
         ] );
 
         wp_send_json_success( array_merge( $result, [
@@ -108,26 +131,32 @@ class Kogu_Public {
     public static function ajax_confirm_rental() {
         check_ajax_referer( 'kogu_nonce', 'nonce' );
 
+        $product_id  = (int) ( $_POST['product_id']        ?? 0 );
         $pi_id       = sanitize_text_field( $_POST['payment_intent_id'] ?? '' );
         $customer_id = sanitize_text_field( $_POST['customer_id']       ?? '' );
         $start       = sanitize_text_field( $_POST['start_date']        ?? '' );
-        $end         = sanitize_text_field( $_POST['end_date']          ?? '' );
+        $weeks       = max( 1, (int) ( $_POST['weeks'] ?? 1 ) );
         $name        = sanitize_text_field( $_POST['name']              ?? '' );
         $email       = sanitize_email( $_POST['email']                  ?? '' );
         $phone       = sanitize_text_field( $_POST['phone']             ?? '' );
         $postal      = sanitize_text_field( $_POST['postal_code']       ?? '' );
         $address     = sanitize_textarea_field( $_POST['address']       ?? '' );
 
-        if ( ! $pi_id || ! $start || ! $end ) {
+        if ( ! $pi_id || ! $start || ! $product_id ) {
             wp_send_json_error( 'パラメータ不足。' );
         }
 
-        $pm_id = Kogu_Stripe_Handler::get_payment_method_from_intent( $pi_id );
+        $product = Kogu_Database::get_product( $product_id );
+        if ( ! $product ) {
+            wp_send_json_error( '商品が見つかりません。' );
+        }
 
-        $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $start, $end );
-        $deposit    = (int) get_option( 'kogu_deposit_amount', 10000 );
+        $pm_id      = Kogu_Stripe_Handler::get_payment_method_from_intent( $pi_id );
+        $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
+        $deposit    = (int) $product->deposit_amount;
 
         $rental_id = Kogu_Rental_Manager::create( [
+            'product_id'               => $product_id,
             'user_id'                  => get_current_user_id() ?: null,
             'guest_name'               => $name,
             'guest_email'              => $email,
@@ -135,7 +164,7 @@ class Kogu_Public {
             'guest_postal_code'        => $postal,
             'guest_address'            => $address,
             'rental_start_date'        => $start,
-            'rental_end_date'          => $end,
+            'rental_weeks'             => $weeks,
             'rental_fee'               => $rental_fee,
             'deposit_amount'           => $deposit,
             'stripe_payment_intent_id' => $pi_id,
@@ -154,7 +183,7 @@ class Kogu_Public {
     public static function ajax_submit_return() {
         check_ajax_referer( 'kogu_nonce', 'nonce' );
 
-        $rental_id = (int) ( $_POST['rental_id']        ?? 0 );
+        $rental_id = (int) ( $_POST['rental_id'] ?? 0 );
         $tracking  = sanitize_text_field( $_POST['tracking'] ?? '' );
         $email     = sanitize_email( $_POST['email']         ?? '' );
 
@@ -167,12 +196,10 @@ class Kogu_Public {
             wp_send_json_error( 'レンタルが見つかりません。' );
         }
 
-        // ゲストの場合はメールアドレスで本人確認
         if ( ! $rental->user_id && $rental->guest_email !== $email ) {
             wp_send_json_error( 'メールアドレスが一致しません。' );
         }
 
-        // ログインユーザーの場合はuser_idで確認
         if ( $rental->user_id && $rental->user_id != get_current_user_id() ) {
             wp_send_json_error( '権限がありません。' );
         }
@@ -205,7 +232,6 @@ class Kogu_Public {
             return new WP_REST_Response( 'Webhook signature verification failed.', 400 );
         }
 
-        // payment_intent.succeeded: 決済成功時
         if ( $event->type === 'payment_intent.succeeded' ) {
             // 必要に応じてステータス更新処理を追加
         }

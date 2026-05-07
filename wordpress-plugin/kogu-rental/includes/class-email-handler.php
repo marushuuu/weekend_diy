@@ -25,6 +25,12 @@ class Kogu_Email_Handler {
         return $rental->guest_name;
     }
 
+    private static function get_product_name( $rental ): string {
+        if ( empty( $rental->product_id ) ) return '工具';
+        $product = Kogu_Database::get_product( (int) $rental->product_id );
+        return $product ? $product->name : '工具';
+    }
+
     // ── 共通送信処理（SendGrid API） ─────────────────────────────────────────
     private static function send( $to_email, $to_name, $subject, $html_body ) {
         $api_key    = get_option( 'kogu_sendgrid_api_key', '' );
@@ -92,22 +98,25 @@ class Kogu_Email_Handler {
         $rental = Kogu_Rental_Manager::get( $rental_id );
         if ( ! $rental ) return;
 
-        $email   = self::get_rental_email( $rental );
-        $name    = self::get_rental_name( $rental );
-        $fee     = number_format( $rental->rental_fee );
-        $deposit = number_format( $rental->deposit_amount );
-        $total   = number_format( $rental->total_charged );
+        $email        = self::get_rental_email( $rental );
+        $name         = self::get_rental_name( $rental );
+        $product_name = self::get_product_name( $rental );
+        $fee          = number_format( $rental->rental_fee );
+        $deposit      = number_format( $rental->deposit_amount );
+        $total        = number_format( $rental->total_charged );
+        $weeks        = (int) $rental->rental_weeks;
 
         $content = "
             <h2 style='color:#e85a2b;'>ご予約を承りました</h2>
             <p>{$name} 様</p>
-            <p>インパクトドライバーのレンタルをご予約いただきありがとうございます。</p>
+            <p>{$product_name}のレンタルをご予約いただきありがとうございます。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル番号</td><td style='padding:8px 12px;'>#{$rental_id}</td></tr>
-              <tr><td style='padding:8px 12px;font-weight:bold;'>貸出開始日</td><td style='padding:8px 12px;'>{$rental->rental_start_date}</td></tr>
-              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong>（この日までに発送してください）</td></tr>
-              <tr><td style='padding:8px 12px;font-weight:bold;'>レンタル料金</td><td style='padding:8px 12px;'>¥{$fee}</td></tr>
-              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥{$deposit}（返却確認後に返金）</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>商品</td><td style='padding:8px 12px;'>{$product_name}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル期間</td><td style='padding:8px 12px;'>{$rental->rental_start_date} 〜 {$rental->rental_end_date}（{$weeks}週間）</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong>（この日までに発送してください）</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル料金</td><td style='padding:8px 12px;'>¥{$fee}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥{$deposit}（返却確認後に返金）</td></tr>
               <tr style='border-top:2px solid #1f1d1a;'><td style='padding:8px 12px;font-weight:bold;'>合計請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>¥{$total}</td></tr>
             </table>
             <p>商品は準備が整い次第、ゆうパックにてお届けします。追跡番号が確定しましたら別途ご連絡いたします。</p>
@@ -120,13 +129,14 @@ class Kogu_Email_Handler {
         $rental = Kogu_Rental_Manager::get( $rental_id );
         if ( ! $rental ) return;
 
-        $email = self::get_rental_email( $rental );
-        $name  = self::get_rental_name( $rental );
+        $email        = self::get_rental_email( $rental );
+        $name         = self::get_rental_name( $rental );
+        $product_name = self::get_product_name( $rental );
 
         $content = "
             <h2 style='color:#e85a2b;'>商品を発送しました</h2>
             <p>{$name} 様</p>
-            <p>インパクトドライバーを発送しましたのでお知らせします。</p>
+            <p>{$product_name}を発送しましたのでお知らせします。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>追跡番号（ゆうパック）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>{$tracking_number}</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong></td></tr>
@@ -146,13 +156,14 @@ class Kogu_Email_Handler {
         $rental = Kogu_Rental_Manager::get( $rental_id );
         if ( ! $rental ) return;
 
-        $email = self::get_rental_email( $rental );
-        $name  = self::get_rental_name( $rental );
+        $email        = self::get_rental_email( $rental );
+        $name         = self::get_rental_name( $rental );
+        $product_name = self::get_product_name( $rental );
 
         $content = "
             <h2 style='color:#e85a2b;'>⚠️ 返却期限は明日です</h2>
             <p>{$name} 様</p>
-            <p>レンタル中のインパクトドライバーの返却期限が<strong>明日（{$rental->rental_end_date}）</strong>に迫っています。</p>
+            <p>レンタル中の{$product_name}の返却期限が<strong>明日（{$rental->rental_end_date}）</strong>に迫っています。</p>
             <p><strong>返却期限日までに発送</strong>してください。<br>
             期限を過ぎると1日あたり¥500の延滞料金がデポジットから差し引かれます。</p>
             <h3>返却手順</h3>
@@ -176,10 +187,11 @@ class Kogu_Email_Handler {
         $late_total  = number_format( $rental->late_fee_total );
         $deposit     = number_format( $rental->deposit_amount );
 
+        $product_name = self::get_product_name( $rental );
         $content = "
             <h2 style='color:#c0392b;'>⛔ 返却期限を過ぎています</h2>
             <p>{$name} 様</p>
-            <p>レンタル中のインパクトドライバーの返却期限（{$rental->rental_end_date}）を過ぎています。</p>
+            <p>レンタル中の{$product_name}の返却期限（{$rental->rental_end_date}）を過ぎています。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
               <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>延滞日数</td><td style='padding:8px 12px;color:#c0392b;font-weight:bold;'>{$late_days}日</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>延滞料金（累計）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$late_total}</td></tr>
@@ -270,10 +282,11 @@ class Kogu_Email_Handler {
         $r_fmt   = number_format( $refund );
         $l_fmt   = number_format( $late_fee );
         $d_fmt   = number_format( $damage_fee );
+        $product_name = self::get_product_name( $rental );
         $content = "
             <h2 style='color:#27ae60;'>返却が完了しました</h2>
             <p>{$name} 様</p>
-            <p>インパクトドライバーの返却を確認しました。ありがとうございました。</p>
+            <p>{$product_name}の返却を確認しました。ありがとうございました。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥{$deposit}</td></tr>
               <tr><td style='padding:8px 12px;'>延滞料金</td><td style='padding:8px 12px;'>- ¥{$l_fmt}</td></tr>
