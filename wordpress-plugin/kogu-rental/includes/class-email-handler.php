@@ -272,6 +272,36 @@ class Kogu_Email_Handler {
         self::send( $admin_email, get_bloginfo( 'name' ), "【要対応】返却証跡提出 #{$rental_id}", self::wrap( $content ) );
     }
 
+    // ── 返却確認済み・返金スケジュール通知 ───────────────────────────────────
+    public static function send_return_confirmed( $rental_id, $damage_fee, $refund_date ) {
+        $rental = Kogu_Rental_Manager::get( $rental_id );
+        if ( ! $rental ) return;
+
+        $email        = self::get_rental_email( $rental );
+        $name         = self::get_rental_name( $rental );
+        $product_name = self::get_product_name( $rental );
+
+        $late_fee   = (int) $rental->late_fee_total;
+        $deposit    = (int) $rental->deposit_amount;
+        $deduction  = $late_fee + $damage_fee;
+        $refund_amt = max( 0, $deposit - $deduction );
+
+        $content = "
+            <h2 style='color:#27ae60;'>返却を確認しました</h2>
+            <p>{$name} 様</p>
+            <p>{$product_name}の返却を確認しました。以下のスケジュールでデポジットを返金いたします。</p>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥" . number_format( $deposit ) . "</td></tr>
+              <tr><td style='padding:8px 12px;'>延滞料金</td><td style='padding:8px 12px;'>- ¥" . number_format( $late_fee ) . "</td></tr>
+              <tr><td style='padding:8px 12px;'>損害費用</td><td style='padding:8px 12px;'>- ¥" . number_format( $damage_fee ) . "</td></tr>
+              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>返金予定額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#27ae60;'>¥" . number_format( $refund_amt ) . "</td></tr>
+            </table>
+            <p><strong>{$refund_date}</strong> に自動でお支払いカードへ返金いたします（反映まで3〜7営業日）。</p>
+            <p>ご利用ありがとうございました。またのご利用をお待ちしております。</p>";
+
+        self::send( $email, $name, '【工具レンタル】返却確認・返金スケジュールのお知らせ #' . $rental_id, self::wrap( $content ) );
+    }
+
     // ── 返却完了・精算通知 ────────────────────────────────────────────────────
     public static function send_return_complete( $rental_id, $refund, $late_fee, $damage_fee ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );

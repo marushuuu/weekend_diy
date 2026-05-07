@@ -151,6 +151,48 @@ class Kogu_Admin {
             <tr><th>返送追跡番号</th><td><?php echo esc_html( $rental->tracking_return ?: '—' ); ?></td></tr>
           </table>
 
+          <!-- 自動返金スケジュール -->
+          <?php if ( $rental->refund_scheduled_date ) :
+            $refund_on_hold = (int) $rental->refund_hold;
+            $refund_date    = esc_html( $rental->refund_scheduled_date );
+            $box_color      = $refund_on_hold ? '#fff8e1' : '#e8f5e9';
+            $box_border     = $refund_on_hold ? '#f9a825' : '#27ae60';
+          ?>
+          <div style="margin-top:20px;padding:16px 20px;background:<?php echo $box_color; ?>;border-left:4px solid <?php echo $box_border; ?>;border-radius:6px;">
+            <?php if ( $refund_on_hold ) : ?>
+              <strong style="color:#f9a825;">⏸ 自動返金を停止中</strong>
+              <p style="margin:6px 0 12px;font-size:13px;color:#666;">
+                返金予定日（<?php echo $refund_date; ?>）を過ぎていますが、手動停止されています。
+              </p>
+              <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="display:inline;">
+                <input type="hidden" name="action"    value="kogu_admin_action">
+                <input type="hidden" name="op"        value="release_refund">
+                <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
+                <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
+                <button type="submit" class="button button-primary">▶ 自動返金を再開する</button>
+              </form>
+            <?php else : ?>
+              <strong style="color:#27ae60;">⏰ 自動返金スケジュール済み</strong>
+              <p style="margin:6px 0 12px;font-size:13px;color:#666;">
+                <strong><?php echo $refund_date; ?></strong> に自動でデポジット返金が実行されます。
+                <?php if ( $rental->status === 'return_evidence_submitted' ) : ?>
+                  <br>（管理者未確認のため損害費用は ¥0 として処理されます）
+                <?php endif; ?>
+              </p>
+              <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="display:inline;">
+                <input type="hidden" name="action"    value="kogu_admin_action">
+                <input type="hidden" name="op"        value="hold_refund">
+                <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
+                <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
+                <button type="submit" class="button" onclick="return confirm('自動返金を停止しますか？');">
+                  ⏸ 自動返金を停止する
+                </button>
+              </form>
+            <?php endif; ?>
+          </div>
+          <?php endif; ?>
+
+          <!-- 発送処理 -->
           <?php if ( in_array( $rental->status, [ 'confirmed', 'pending' ], true ) ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
             <input type="hidden" name="action"    value="kogu_admin_action">
@@ -163,13 +205,14 @@ class Kogu_Admin {
           </form>
           <?php endif; ?>
 
+          <!-- 返却確認・精算（管理者が損害費用を入力して3日後返金にする） -->
           <?php if ( $rental->status === 'return_evidence_submitted' ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
             <input type="hidden" name="action"    value="kogu_admin_action">
             <input type="hidden" name="op"        value="confirm_return">
             <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
             <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
-            <h3>返却確認・精算</h3>
+            <h3>返却確認（損害費用の入力）</h3>
             <label style="display:block;margin-bottom:8px;">
               損害費用（¥）：
               <input type="number" name="damage_fee" value="0" min="0" style="width:120px;padding:6px;margin-left:8px;" />
@@ -177,8 +220,9 @@ class Kogu_Admin {
             <p style="font-size:12px;color:#666;">
               延滞料金: ¥<?php echo number_format( $rental->late_fee_total ); ?>
               | デポジット: ¥<?php echo number_format( $rental->deposit_amount ); ?>
+              <br>確認後 <strong>3日後</strong> に自動で返金されます。
             </p>
-            <button type="submit" class="button button-primary">返却を確定し精算する</button>
+            <button type="submit" class="button button-primary">返却を確認する（3日後に自動返金）</button>
           </form>
           <?php endif; ?>
         </div>
@@ -577,6 +621,14 @@ class Kogu_Admin {
         if ( $op === 'confirm_return' ) {
             $damage_fee = (int) ( $_POST['damage_fee'] ?? 0 );
             Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee );
+        }
+
+        if ( $op === 'hold_refund' ) {
+            Kogu_Rental_Manager::hold_refund( $rental_id );
+        }
+
+        if ( $op === 'release_refund' ) {
+            Kogu_Rental_Manager::release_refund_hold( $rental_id );
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id . '&updated=1' ) );

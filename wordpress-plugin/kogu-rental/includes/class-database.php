@@ -80,6 +80,8 @@ class Kogu_Database {
             stripe_payment_intent_id VARCHAR(100) DEFAULT '',
             stripe_customer_id       VARCHAR(100) DEFAULT '',
             stripe_payment_method_id VARCHAR(100) DEFAULT '',
+            refund_scheduled_date    DATE DEFAULT NULL        COMMENT '自動返金予定日（NULLは未スケジュール）',
+            refund_hold              TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1=自動返金を手動停止中',
             reminder_sent            TINYINT(1) NOT NULL DEFAULT 0,
             overdue_notified         TINYINT(1) NOT NULL DEFAULT 0,
             wc_order_id              BIGINT UNSIGNED DEFAULT NULL,

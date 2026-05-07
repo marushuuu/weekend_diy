@@ -20,6 +20,7 @@ class Kogu_Cron {
         self::send_return_reminders();
         self::detect_overdue();
         self::accrue_late_fees();
+        self::process_scheduled_refunds();
     }
 
     // ── 返却期限1日前リマインダー ─────────────────────────────────────────────
@@ -80,6 +81,27 @@ class Kogu_Cron {
                     [ 'id' => $rental->id ]
                 );
             }
+        }
+    }
+
+    // ── 自動返金スケジュール実行 ──────────────────────────────────────────────
+    private static function process_scheduled_refunds() {
+        global $wpdb;
+
+        $today = date( 'Y-m-d' );
+        $table = Kogu_Database::rentals_table();
+
+        $rentals = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id FROM $table
+             WHERE refund_scheduled_date IS NOT NULL
+               AND refund_scheduled_date <= %s
+               AND refund_hold = 0
+               AND status IN ('returned','return_evidence_submitted')",
+            $today
+        ) );
+
+        foreach ( $rentals as $r ) {
+            Kogu_Rental_Manager::process_scheduled_refund( (int) $r->id );
         }
     }
 
