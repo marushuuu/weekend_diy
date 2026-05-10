@@ -389,8 +389,7 @@ class Kogu_Admin {
             </table>
             <div style="margin-top:12px;display:flex;gap:12px;">
               <button type="submit" name="kogu_save_units" class="button button-primary">変更を保存</button>
-              <button type="submit" name="kogu_add_unit" class="button"
-                      onclick="return confirm('台数を1台追加しますか？');">＋ 1台追加</button>
+              <button type="submit" name="kogu_add_unit" class="button">＋ 1台追加</button>
             </div>
           </form>
 
