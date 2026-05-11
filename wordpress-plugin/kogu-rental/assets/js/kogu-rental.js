@@ -142,14 +142,12 @@
     var avail = isAvailable(start, weeks, state.availability);
 
     state.rental_fee = calcFee(weeks, ppw);
-    state.deposit    = state.product.deposit_amount;
+    state.deposit    = 0;
 
     $('#disp-start').text(start);
     $('#disp-end').text(addDays(start, weeks * 7 - 1));
     $('#disp-weeks').text(weeks + '週間（' + (weeks * 7) + '日間）');
     $('#disp-rental-fee').text(fmt(state.rental_fee));
-    $('#disp-deposit').text(fmt(state.deposit));
-    $('#disp-total').text(fmt(state.rental_fee + state.deposit));
 
     if (weeks >= 2) {
       $('#kogu-price-breakdown')

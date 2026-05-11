@@ -7,17 +7,6 @@ class Kogu_Rental_Manager {
     const WEEK_DISCOUNT_RATE = 0.70; // 2週目以降 30%OFF
 
     // ── 新規レンタル作成 ─────────────────────────────────────────────────────
-    /**
-     * @param array $args {
-     *   product_id, rental_weeks, rental_start_date,
-     *   user_id, guest_name, guest_email, guest_phone,
-     *   guest_postal_code, guest_address,
-     *   rental_fee, deposit_amount,
-     *   stripe_payment_intent_id, stripe_customer_id, stripe_payment_method_id,
-     *   wc_order_id
-     * }
-     * @return int|false  rental ID
-     */
     public static function create( array $args ) {
         global $wpdb;
 
@@ -28,6 +17,8 @@ class Kogu_Rental_Manager {
 
         $unit_id = Kogu_Inventory::get_available_unit_id( $start, $end, $product_id );
         if ( ! $unit_id ) return false;
+
+        $rental_fee = (int) $args['rental_fee'];
 
         $inserted = $wpdb->insert(
             Kogu_Database::rentals_table(),
@@ -45,9 +36,9 @@ class Kogu_Rental_Manager {
                 'status'                   => 'confirmed',
                 'rental_weeks'             => $weeks,
                 'rental_days'              => $weeks * 7,
-                'rental_fee'               => $args['rental_fee'],
-                'deposit_amount'           => $args['deposit_amount'],
-                'total_charged'            => $args['rental_fee'] + $args['deposit_amount'],
+                'rental_fee'               => $rental_fee,
+                'deposit_amount'           => 0,
+                'total_charged'            => $rental_fee,
                 'stripe_payment_intent_id' => $args['stripe_payment_intent_id'] ?? '',
                 'stripe_customer_id'       => $args['stripe_customer_id']       ?? '',
                 'stripe_payment_method_id' => $args['stripe_payment_method_id'] ?? '',
@@ -100,18 +91,14 @@ class Kogu_Rental_Manager {
             'status'          => $is_on_time ? 'verified_on_time' : 'verified_late',
         ] );
 
-        // 管理者未確認でも5日後に自動返金
-        $auto_refund_date = date( 'Y-m-d', strtotime( '+5 days' ) );
-
-        self::update_status( $rental_id, 'return_evidence_submitted', [
-            'tracking_return'      => $tracking_number,
-            'actual_return_date'   => $submitted_date,
-            'refund_scheduled_date' => $auto_refund_date,
-        ] );
-
         if ( ! $is_on_time ) {
             self::generate_late_fees( $rental_id );
         }
+
+        self::update_status( $rental_id, 'return_evidence_submitted', [
+            'tracking_return'    => $tracking_number,
+            'actual_return_date' => $submitted_date,
+        ] );
 
         Kogu_Email_Handler::send_return_received_notification( $rental_id );
         Kogu_Email_Handler::send_admin_return_submitted( $rental_id );
@@ -119,7 +106,7 @@ class Kogu_Rental_Manager {
         return true;
     }
 
-    // ── 管理者が返却を確認 → 損害費用を記録して3日後に自動返金 ──────────────
+    // ── 管理者が返却を確認 → 延滞・損害を登録カードに直接請求 ──────────────
     public static function confirm_return( $rental_id, $damage_fee = 0 ) {
         global $wpdb;
 
@@ -132,76 +119,29 @@ class Kogu_Rental_Manager {
             $rental_id
         ) );
 
-        // 管理者確認済み → 3日後に自動返金（未確認の5日より早める）
-        $refund_date = date( 'Y-m-d', strtotime( '+3 days' ) );
+        $total_charge = $late_fee_total + (int) $damage_fee;
 
-        self::update_status( $rental_id, 'returned', [
-            'damage_fee'           => $damage_fee,
-            'late_fee_total'       => $late_fee_total,
-            'refund_scheduled_date' => $refund_date,
-        ] );
-
-        // 在庫を即時に解放
-        Kogu_Inventory::set_unit_status( $rental->inventory_unit_id, 'available' );
-
-        Kogu_Email_Handler::send_return_confirmed( $rental_id, $damage_fee, $refund_date );
-
-        return true;
-    }
-
-    // ── スケジュールされた返金を実行（Cronから呼ばれる） ─────────────────────
-    public static function process_scheduled_refund( $rental_id ) {
-        global $wpdb;
-
-        $rental = self::get( $rental_id );
-        if ( ! $rental ) return false;
-
-        $late_fee   = (int) $rental->late_fee_total;
-        $damage_fee = (int) $rental->damage_fee;
-        $deposit    = (int) $rental->deposit_amount;
-        $deduction  = $late_fee + $damage_fee;
-        $refund     = max( 0, $deposit - $deduction );
-        $extra      = max( 0, $deduction - $deposit );
-
-        if ( $refund > 0 ) {
-            Kogu_Stripe_Handler::refund_deposit( $rental->stripe_payment_intent_id, $refund );
-        }
-
-        if ( $extra > 0 && $rental->stripe_payment_method_id ) {
+        // 延滞・損害がある場合は登録カードに直接請求
+        if ( $total_charge > 0 && $rental->stripe_customer_id && $rental->stripe_payment_method_id ) {
             Kogu_Stripe_Handler::charge_additional(
                 $rental->stripe_customer_id,
                 $rental->stripe_payment_method_id,
-                $extra,
-                "レンタル#{$rental_id} 追加料金（延滞・損害）"
+                $total_charge,
+                "レンタル#{$rental_id} 延滞料金・損害費用"
             );
         }
 
-        // 管理者未確認のまま自動返金した場合は在庫を解放
-        if ( $rental->status === 'return_evidence_submitted' ) {
-            Kogu_Inventory::set_unit_status( $rental->inventory_unit_id, 'available' );
-        }
+        // 在庫を即時解放
+        Kogu_Inventory::set_unit_status( $rental->inventory_unit_id, 'available' );
 
-        $wpdb->update( Kogu_Database::rentals_table(), [
-            'status'               => 'returned',
-            'deposit_refunded'     => $refund,
-            'refund_scheduled_date' => null,
-        ], [ 'id' => $rental_id ] );
+        self::update_status( $rental_id, 'returned', [
+            'damage_fee'     => $damage_fee,
+            'late_fee_total' => $late_fee_total,
+        ] );
 
-        Kogu_Email_Handler::send_return_complete( $rental_id, $refund, $late_fee, $damage_fee );
+        Kogu_Email_Handler::send_return_complete( $rental_id, $total_charge, $late_fee_total, $damage_fee );
 
         return true;
-    }
-
-    // ── 自動返金を手動停止 ────────────────────────────────────────────────────
-    public static function hold_refund( $rental_id ) {
-        global $wpdb;
-        $wpdb->update( Kogu_Database::rentals_table(), [ 'refund_hold' => 1 ], [ 'id' => $rental_id ] );
-    }
-
-    // ── 自動返金の停止を解除 ──────────────────────────────────────────────────
-    public static function release_refund_hold( $rental_id ) {
-        global $wpdb;
-        $wpdb->update( Kogu_Database::rentals_table(), [ 'refund_hold' => 0 ], [ 'id' => $rental_id ] );
     }
 
     // ── 延滞料金レコードを生成 ────────────────────────────────────────────────
@@ -250,8 +190,6 @@ class Kogu_Rental_Manager {
      * 週単位の料金計算。
      * 1週目: price_per_week
      * 2週目以降: round(price_per_week * 0.70) / 週 (30%OFF)
-     *
-     * 例) price_per_week=4900, weeks=2 → 4900 + 3430 = 8330円
      */
     public static function calc_rental_fee( int $weeks, int $price_per_week ): int {
         if ( $weeks <= 0 ) return 0;

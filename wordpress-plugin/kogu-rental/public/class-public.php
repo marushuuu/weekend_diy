@@ -107,8 +107,8 @@ class Kogu_Public {
         }
 
         $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
-        $deposit    = (int) $product->deposit_amount;
-        $total      = $rental_fee + $deposit;
+        $deposit    = 0;
+        $total      = $rental_fee;
 
         $customer_id = Kogu_Stripe_Handler::get_or_create_customer( $email, $name );
         $result      = Kogu_Stripe_Handler::create_payment_intent( $total, $customer_id, [
@@ -153,7 +153,6 @@ class Kogu_Public {
 
         $pm_id      = Kogu_Stripe_Handler::get_payment_method_from_intent( $pi_id );
         $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
-        $deposit    = (int) $product->deposit_amount;
 
         $rental_id = Kogu_Rental_Manager::create( [
             'product_id'               => $product_id,
@@ -166,7 +165,6 @@ class Kogu_Public {
             'rental_start_date'        => $start,
             'rental_weeks'             => $weeks,
             'rental_fee'               => $rental_fee,
-            'deposit_amount'           => $deposit,
             'stripe_payment_intent_id' => $pi_id,
             'stripe_customer_id'       => $customer_id,
             'stripe_payment_method_id' => $pm_id,

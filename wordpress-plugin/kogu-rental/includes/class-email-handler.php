@@ -115,10 +115,9 @@ class Kogu_Email_Handler {
               <tr><td style='padding:8px 12px;font-weight:bold;'>商品</td><td style='padding:8px 12px;'>{$product_name}</td></tr>
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル期間</td><td style='padding:8px 12px;'>{$rental->rental_start_date} 〜 {$rental->rental_end_date}（{$weeks}週間）</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong>（この日までに発送してください）</td></tr>
-              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル料金</td><td style='padding:8px 12px;'>¥{$fee}</td></tr>
-              <tr><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥{$deposit}（返却確認後に返金）</td></tr>
-              <tr style='border-top:2px solid #1f1d1a;'><td style='padding:8px 12px;font-weight:bold;'>合計請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>¥{$total}</td></tr>
+              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>¥{$fee}</td></tr>
             </table>
+            <p>延滞・損傷がなければ追加費用は一切かかりません。</p>
             <p>商品は準備が整い次第、ゆうパックにてお届けします。追跡番号が確定しましたら別途ご連絡いたします。</p>
             <p>ご不明な点はお問い合わせください。</p>";
         self::send( $email, $name, '【工具レンタル】ご予約確認 #' . $rental_id, self::wrap( $content ) );
@@ -146,7 +145,7 @@ class Kogu_Email_Handler {
             <ol>
               <li><strong>{$rental->rental_end_date}まで</strong>に最寄りの郵便局またはコンビニから着払いで発送してください。</li>
               <li>発送後、マイページから追跡番号を入力して返却証跡を提出してください。</li>
-              <li>返却期限を過ぎた場合、1日あたり¥500の延滞料金がデポジットから差し引かれます。</li>
+              <li>返却期限を過ぎた場合、1日あたり¥500の延滞料金が登録カードに請求されます。</li>
             </ol>";
         self::send( $email, $name, '【工具レンタル】商品発送のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
@@ -197,7 +196,7 @@ class Kogu_Email_Handler {
               <tr><td style='padding:8px 12px;font-weight:bold;'>延滞料金（累計）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$late_total}</td></tr>
               <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥{$deposit}</td></tr>
             </table>
-            <p>延滞料金はデポジットから差し引かれます。デポジットを超える場合は、登録カードに追加請求いたします。</p>
+            <p>延滞料金は登録カードに直接請求いたします。至急ご返送ください。</p>
             <p><strong>至急、返送手続きをお願いいたします。</strong></p>
             <p><a href='" . home_url( '/my-page' ) . "' style='background:#c0392b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>今すぐ返却手続きをする</a></p>";
         self::send( $email, $name, '【工具レンタル】⛔ 返却期限超過のお知らせ #' . $rental_id, self::wrap( $content ) );
@@ -213,7 +212,7 @@ class Kogu_Email_Handler {
             <h2 style='color:#27ae60;'>返却証跡を受け付けました</h2>
             <p>{$name} 様</p>
             <p>返却のお手続きありがとうございます。追跡番号を確認しました。</p>
-            <p>商品到着後に状態を確認し、デポジットの返金処理を行います（通常3〜5営業日）。</p>
+            <p>商品到着後に状態を確認します。延滞・損傷があった場合のみ、登録カードへの請求をご連絡いたします。</p>
             <p>追跡番号: <strong>{$rental->tracking_return}</strong></p>";
         self::send( $email, $name, '【工具レンタル】返却受付完了 #' . $rental_id, self::wrap( $content ) );
     }
@@ -303,28 +302,36 @@ class Kogu_Email_Handler {
     }
 
     // ── 返却完了・精算通知 ────────────────────────────────────────────────────
-    public static function send_return_complete( $rental_id, $refund, $late_fee, $damage_fee ) {
+    public static function send_return_complete( $rental_id, $total_charged, $late_fee, $damage_fee ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );
         if ( ! $rental ) return;
         $email   = self::get_rental_email( $rental );
         $name    = self::get_rental_name( $rental );
-        $deposit = number_format( $rental->deposit_amount );
-        $r_fmt   = number_format( $refund );
+        $c_fmt   = number_format( $total_charged );
         $l_fmt   = number_format( $late_fee );
         $d_fmt   = number_format( $damage_fee );
         $product_name = self::get_product_name( $rental );
+
+        if ( $total_charged > 0 ) {
+            $charge_block = "
+              <tr style='background:#ffeaea;'><td style='padding:8px 12px;'>延滞料金</td><td style='padding:8px 12px;'>¥{$l_fmt}</td></tr>
+              <tr style='background:#ffeaea;'><td style='padding:8px 12px;'>損害費用</td><td style='padding:8px 12px;'>¥{$d_fmt}</td></tr>
+              <tr style='border-top:2px solid #c0392b;background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>登録カードへの請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$c_fmt}</td></tr>";
+            $charge_note = "<p style='color:#c0392b;'>上記金額を登録カードに請求いたしました（反映まで3〜7営業日）。</p>";
+        } else {
+            $charge_block = "<tr style='background:#e8f5e9;'><td colspan='2' style='padding:12px;font-weight:bold;color:#27ae60;'>追加費用なし — 返却完了です！</td></tr>";
+            $charge_note  = '';
+        }
+
         $content = "
             <h2 style='color:#27ae60;'>返却が完了しました</h2>
             <p>{$name} 様</p>
             <p>{$product_name}の返却を確認しました。ありがとうございました。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
-              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>デポジット</td><td style='padding:8px 12px;'>¥{$deposit}</td></tr>
-              <tr><td style='padding:8px 12px;'>延滞料金</td><td style='padding:8px 12px;'>- ¥{$l_fmt}</td></tr>
-              <tr><td style='padding:8px 12px;'>損害費用</td><td style='padding:8px 12px;'>- ¥{$d_fmt}</td></tr>
-              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>返金額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#27ae60;'>¥{$r_fmt}</td></tr>
+              {$charge_block}
             </table>
-            <p>返金はStripeを通じてお支払いカードに反映されます（3〜7営業日）。</p>
+            {$charge_note}
             <p>またのご利用をお待ちしております。</p>";
-        self::send( $email, $name, '【工具レンタル】返却完了・精算のお知らせ #' . $rental_id, self::wrap( $content ) );
+        self::send( $email, $name, '【工具レンタル】返却完了のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 }

@@ -62,14 +62,8 @@
         </div>
         <div id="kogu-price-breakdown" class="kogu-price-breakdown" style="display:none;"></div>
         <div class="kogu-divider"></div>
-        <div class="kogu-date-row">
-          <span>レンタル料金</span><strong id="disp-rental-fee">—</strong>
-        </div>
-        <div class="kogu-date-row">
-          <span>デポジット（返却後返金）</span><strong id="disp-deposit">—</strong>
-        </div>
         <div class="kogu-date-row kogu-total">
-          <span>合計請求額</span><strong id="disp-total">—</strong>
+          <span>レンタル料金</span><strong id="disp-rental-fee">—</strong>
         </div>
       </div>
 
@@ -132,9 +126,9 @@
     <h2 class="kogu-step-title">STEP 3 &nbsp;お支払い</h2>
 
     <div class="kogu-payment-summary">
-      <p>レンタル料金 + デポジット（返却後返金）を合計してご請求します。</p>
+      <p>レンタル料金のみご請求します。延滞・損傷があった場合のみ、登録カードに別途請求いたします。</p>
       <div class="kogu-date-row kogu-total">
-        <span>合計請求額</span><strong id="disp-total-payment">—</strong>
+        <span>請求額</span><strong id="disp-total-payment">—</strong>
       </div>
     </div>
 
