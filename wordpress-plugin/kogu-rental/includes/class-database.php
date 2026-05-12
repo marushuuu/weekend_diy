@@ -34,7 +34,7 @@ class Kogu_Database {
             product_id    BIGINT UNSIGNED NOT NULL DEFAULT 1,
             unit_number   TINYINT UNSIGNED NOT NULL COMMENT '商品内の通し番号',
             serial_number VARCHAR(100) DEFAULT '',
-            condition     ENUM('excellent','good','fair','damaged') NOT NULL DEFAULT 'excellent',
+            `condition`   ENUM('excellent','good','fair','damaged') NOT NULL DEFAULT 'excellent',
             status        ENUM('available','rented','maintenance','retired') NOT NULL DEFAULT 'available',
             notes         TEXT DEFAULT '',
             created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
