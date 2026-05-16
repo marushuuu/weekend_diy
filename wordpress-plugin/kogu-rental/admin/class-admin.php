@@ -7,7 +7,17 @@ class Kogu_Admin {
         add_action( 'admin_menu',                        [ __CLASS__, 'register_menu' ] );
         add_action( 'admin_post_kogu_admin_action',      [ __CLASS__, 'handle_admin_action' ] );
         add_action( 'admin_post_kogu_save_product',      [ __CLASS__, 'handle_save_product' ] );
+        add_action( 'admin_post_kogu_run_install',       [ __CLASS__, 'handle_run_install' ] );
         add_action( 'admin_init',                        [ __CLASS__, 'register_settings' ] );
+    }
+
+    // ── DB初期化（テーブル作成） ──────────────────────────────────────────────
+    public static function handle_run_install() {
+        check_admin_referer( 'kogu_run_install' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( '権限がありません。' );
+        Kogu_Database::install();
+        wp_redirect( admin_url( 'admin.php?page=kogu-settings&installed=1' ) );
+        exit;
     }
 
     // ── メニュー登録 ──────────────────────────────────────────────────────────
@@ -569,6 +579,18 @@ class Kogu_Admin {
           <hr>
           <h2>Webhook URL（Stripeダッシュボードに登録）</h2>
           <code><?php echo esc_html( home_url( '/wp-json/kogu/v1/stripe-webhook' ) ); ?></code>
+
+          <hr>
+          <h2>データベース初期化</h2>
+          <?php if ( isset( $_GET['installed'] ) ) : ?>
+            <div class="notice notice-success"><p>✅ テーブルの作成・更新が完了しました。</p></div>
+          <?php endif; ?>
+          <p>在庫テーブルなどが存在しない場合はこちらで作成できます。</p>
+          <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="kogu_run_install" />
+            <?php wp_nonce_field( 'kogu_run_install' ); ?>
+            <?php submit_button( 'DBテーブルを作成・更新する', 'secondary' ); ?>
+          </form>
         </div>
         <?php
     }
