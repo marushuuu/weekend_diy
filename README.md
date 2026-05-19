@@ -23,3 +23,58 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 - `README.md` — this file
 - `chats/` — conversation transcripts (read these!)
 - `project/` — the `工具レンタルサイト構築` project files (HTML prototypes, assets, components)
+
+---
+
+## 本番サーバー構成（Xserver）
+
+### アカウント情報
+- **サーバー**: Xserver（sv17063）
+- **アカウント**: `xs277376`
+- **サイトURL**: https://weekend-diy.com
+
+### ディレクトリ構成
+
+```
+/home/xs277376/
+├── weekend_diy_deploy/          ← Git リポジトリ（このリポジトリのクローン）
+│   └── wordpress-plugin/
+│       └── kogu-rental/         ← ソースコード（ここを編集・git push）
+│
+└── weekend-diy.com/
+    └── public_html/
+        └── wp-content/
+            └── plugins/
+                └── kogu-rental/ ← WordPress が実際に読む場所（直接は編集しない）
+```
+
+**重要**: `weekend_diy_deploy/` と WordPress プラグインディレクトリは**別物**。
+git push しただけでは本番に反映されない。必ず下記のデプロイ手順を実行すること。
+
+### デプロイ手順
+
+コードを変更して git push した後、Xserver SSH で以下を実行：
+
+```bash
+cd /home/xs277376/weekend_diy_deploy && \
+git pull origin claude/task-6fSYE && \
+cp -r wordpress-plugin/kogu-rental/* \
+      /home/xs277376/weekend-diy.com/public_html/wp-content/plugins/kogu-rental/
+```
+
+#### バージョン確認（デプロイ成功の確認）
+```bash
+grep "KOGU_VERSION" /home/xs277376/weekend-diy.com/public_html/wp-content/plugins/kogu-rental/kogu-rental.php
+```
+
+#### デプロイ後
+- ブラウザで **Ctrl+Shift+R**（強制リロード）
+- キャッシュプラグインがある場合は WordPress 管理画面からキャッシュクリア
+
+### WordPress 管理画面
+- URL: https://weekend-diy.com/wp-admin/
+- プラグイン: 工具レンタル（kogu-rental）
+
+### 開発ブランチ
+- 作業ブランチ: `claude/task-6fSYE`
+- リモート: `https://github.com/marushuuu/weekend_diy.git`
