@@ -142,26 +142,14 @@
   <div class="kogu-step" id="step-info" style="display:none;">
     <h2 class="kogu-step-title">STEP 2 &nbsp;お客様情報</h2>
 
-    <?php if ( is_user_logged_in() ) : ?>
-      <div class="kogu-notice">ログイン中のアカウント情報を使用します。</div>
-    <?php else : ?>
-      <div class="kogu-auth-links">
-        <a href="<?php echo wp_login_url( get_permalink() ); ?>">ログインして申込む</a>
-        <span> / </span>
-        <a href="<?php echo wp_registration_url(); ?>">会員登録（任意）</a>
-      </div>
-    <?php endif; ?>
-
     <form id="kogu-info-form" class="kogu-form">
       <div class="kogu-form-row">
         <label>お名前 <em>*</em></label>
-        <input type="text" name="name" required placeholder="山田 太郎"
-               value="<?php echo esc_attr( wp_get_current_user()->display_name ); ?>" />
+        <input type="text" name="name" required placeholder="山田 太郎" />
       </div>
       <div class="kogu-form-row">
         <label>メールアドレス <em>*</em></label>
-        <input type="email" name="email" required placeholder="example@email.com"
-               value="<?php echo esc_attr( wp_get_current_user()->user_email ); ?>" />
+        <input type="email" name="email" required placeholder="example@email.com" />
       </div>
       <div class="kogu-form-row">
         <label>電話番号 <em>*</em></label>
