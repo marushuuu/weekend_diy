@@ -65,8 +65,14 @@
   background: #fde8d8; color: var(--kogu-accent); font-size: 11px; font-weight: 700;
 }
 
+/* ── Step1 2カラムレイアウト ────────────────────────────────────────────── */
+.kogu-step1-layout { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.kogu-step1-layout .kogu-products { flex: 0 0 auto; margin-bottom: 0; }
+.kogu-step1-right { flex: 1; min-width: 240px; max-width: 320px; display: flex; flex-direction: column; gap: 14px; }
+.kogu-step1-right .kogu-btn { width: 100%; text-align: center; }
+
 /* ── Period wrap ─────────────────────────────────────────────────────────── */
-.kogu-period-wrap { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.kogu-period-wrap { display: flex; flex-direction: column; gap: 14px; }
 .kogu-in-stock-banner { display: flex; align-items: center; gap: 10px; }
 
 /* ── Badges ──────────────────────────────────────────────────────────────── */

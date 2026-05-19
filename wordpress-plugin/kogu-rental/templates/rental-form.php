@@ -6,8 +6,9 @@
   <div class="kogu-step" id="step-dates">
     <h2 class="kogu-step-title">STEP 1 &nbsp;商品と期間を選択</h2>
 
-    <!-- 商品カード -->
-    <div id="kogu-products" class="kogu-products">
+    <div class="kogu-step1-layout">
+      <!-- 商品カード -->
+      <div id="kogu-products" class="kogu-products">
       <?php
         $img_base = KOGU_PLUGIN_URL . 'assets/images/';
         foreach ( Kogu_Database::get_active_products() as $p ) :
@@ -37,8 +38,9 @@
           </div>
         </div>
       <?php endforeach; ?>
-    </div>
+    </div><!-- /kogu-products -->
 
+    <div class="kogu-step1-right">
     <!-- 期間選択 -->
     <div id="kogu-period-wrap" class="kogu-period-wrap">
 
@@ -128,6 +130,8 @@
     </div><!-- /kogu-addons-wrap -->
 
     <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
+    </div><!-- /kogu-step1-right -->
+    </div><!-- /kogu-step1-layout -->
   </div>
 
   <!-- ── STEP 2: お客様情報 ─────────────────────────────────────────────── -->
