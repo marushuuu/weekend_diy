@@ -127,24 +127,42 @@
     stripe: null, stripe_elements: null, customer_info: {},
   };
 
+  // 在庫データを一度だけ取得してキャッシュ
+  var availabilityLoaded = false;
+
+  function ensureAvailability(callback) {
+    if (availabilityLoaded) {
+      callback();
+      return;
+    }
+    $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
+      if (res.success) {
+        state.availability = res.data;
+        availabilityLoaded = true;
+      }
+      callback();
+    });
+  }
+
   function initRentalForm() {
     // 商品カードクリック（複数選択トグル）
     $(document).on('click', '.kogu-product-card', function () {
-      var pid = parseInt($(this).data('product-id'), 10);
-      var idx = state.product_ids.indexOf(pid);
+      var $card = $(this);
+      var pid   = parseInt($card.data('product-id'), 10);
+      var idx   = state.product_ids.indexOf(pid);
 
       if (idx >= 0) {
         // 選択解除
         state.product_ids.splice(idx, 1);
         state.products.splice(idx, 1);
-        $(this).removeClass('selected');
+        $card.removeClass('selected');
       } else {
         // 選択追加
         state.product_ids.push(pid);
         $.each(KoguData.products, function (_, p) {
           if (p.id === pid) { state.products.push(p); return false; }
         });
-        $(this).addClass('selected');
+        $card.addClass('selected');
       }
 
       var hasSelected = state.product_ids.length > 0;
@@ -156,20 +174,12 @@
         var names = state.products.map(function (p) { return p.name; }).join('・');
         $('#kogu-stock-product-name').text(names);
         $('#kogu-stock-banner').show();
-        $('#kogu-stock-badge').text('確認中...').attr('class', 'kogu-badge kogu-badge-checking');
+        $('#btn-to-info').show();
 
-        $('#kogu-date-summary').hide();
-        $('#kogu-unavailable-msg').hide();
-        $('#kogu-addons-wrap').hide();
-        $('#btn-to-info').show().prop('disabled', true);
-
-        $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
-          if (res.success) {
-            state.availability = res.data;
-            updateSummary();
-            if (!$('#start-date').val() || !parseInt($('#rental-weeks').val(), 10)) {
-              $('#kogu-stock-badge').text('日付と週数を選んでください').attr('class', 'kogu-badge');
-            }
+        ensureAvailability(function () {
+          updateSummary();
+          if (!$('#start-date').val() || !parseInt($('#rental-weeks').val(), 10)) {
+            $('#kogu-stock-badge').text('日付と週数を選んでください').attr('class', 'kogu-badge');
           }
         });
       } else {
