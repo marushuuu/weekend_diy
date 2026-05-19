@@ -51,6 +51,12 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 **重要**: `weekend_diy_deploy/` と WordPress プラグインディレクトリは**別物**。
 git push しただけでは本番に反映されない。必ず下記のデプロイ手順を実行すること。
 
+### SSH接続コマンド
+
+```bash
+ssh -i ~/.ssh/xserver_key xs277376@sv17063.xserver.jp -p 10022
+```
+
 ### デプロイ手順
 
 コードを変更して git push した後、Xserver SSH で以下を実行：
