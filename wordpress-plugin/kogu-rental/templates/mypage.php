@@ -109,7 +109,7 @@ $status_labels = [
 
           <?php if ( $r->status === 'returned' ) : ?>
           <div class="kogu-return-complete">
-            <p>✅ 返却完了。デポジット返金額: <strong>¥<?php echo number_format( $r->deposit_refunded ); ?></strong></p>
+            <p>✅ 返却完了。</p>
           </div>
           <?php endif; ?>
         </div>
