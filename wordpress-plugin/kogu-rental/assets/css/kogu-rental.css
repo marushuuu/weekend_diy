@@ -10,7 +10,7 @@
   --kogu-radius:  8px;
 }
 
-.kogu-wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; font-family: inherit; }
+.kogu-wrap { max-width: 860px; margin: 0 auto; padding: 0 16px 48px; font-family: inherit; }
 
 /* ── Step titles ─────────────────────────────────────────────────────────── */
 .kogu-step-title {
@@ -75,10 +75,15 @@
 }
 
 /* ── Step1 左右レイアウト ────────────────────────────────────────────────── */
-.kogu-step1-layout { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
-#kogu-products.kogu-products { flex: 1; min-width: 220px; margin-bottom: 0; }
+.kogu-step1-layout {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 24px;
+  align-items: start;
+}
+#kogu-products.kogu-products { margin-bottom: 0; }
 .kogu-step1-right {
-  width: 300px; flex-shrink: 0;
+  width: auto;
   display: flex; flex-direction: column; gap: 14px;
   position: sticky; top: 80px;
 }
@@ -268,6 +273,8 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
+  .kogu-step1-layout { grid-template-columns: 1fr; }
+  .kogu-step1-right { position: static; }
   .kogu-products { flex-direction: column; }
   .kogu-product-card { max-width: 100%; }
   .kogu-tracking-row { flex-direction: column; }

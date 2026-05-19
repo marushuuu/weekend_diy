@@ -50,12 +50,10 @@
   function initTopMode() {
     var topAvail = {};
 
-    // ページ読み込み時に全商品の在庫マップを取得
     $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
       if (res.success) { topAvail = res.data; }
     });
 
-    // 各ブロックの日付・週数変更
     $(document).on('change', '.kogu-top-start-date, .kogu-top-rental-weeks', function () {
       var $block = $(this).closest('.kogu-top-block');
       updateTopBlock($block, topAvail);
@@ -75,9 +73,7 @@
     var $goBtn   = $block.find('.kogu-top-go-btn');
 
     if (!product || !start || !weeks) {
-      $summary.hide();
-      $goBtn.hide();
-      $unavail.hide();
+      $summary.hide(); $goBtn.hide(); $unavail.hide();
       return;
     }
 
@@ -123,58 +119,72 @@
 
   // ── Full Mode: Rental Form (STEP 1〜4) ─────────────────────────────────────
   var state = {
-    product_id: null, product: null, start_date: '', weeks: 0,
-    availability: {}, rental_fee: 0, addon_total: 0, addons: {},
-    deposit: 0, customer_id: '', payment_intent_id: '',
+    product_ids: [], products: [],
+    start_date: '', weeks: 0,
+    availability: {}, addons: {},
+    rental_fee: 0, addon_total: 0, deposit: 0,
+    customer_id: '', payment_intent_id: '',
     stripe: null, stripe_elements: null, customer_info: {},
   };
 
   function initRentalForm() {
-    // 商品カードクリック
+    // 商品カードクリック（複数選択トグル）
     $(document).on('click', '.kogu-product-card', function () {
       var pid = parseInt($(this).data('product-id'), 10);
-      if (state.product_id === pid) return;
+      var idx = state.product_ids.indexOf(pid);
 
-      state.product_id   = pid;
-      state.product      = null;
-      state.availability = {};
-      state.addons       = {};
-      state.addon_total  = 0;
+      if (idx >= 0) {
+        // 選択解除
+        state.product_ids.splice(idx, 1);
+        state.products.splice(idx, 1);
+        $(this).removeClass('selected');
+      } else {
+        // 選択追加
+        state.product_ids.push(pid);
+        $.each(KoguData.products, function (_, p) {
+          if (p.id === pid) { state.products.push(p); return false; }
+        });
+        $(this).addClass('selected');
+      }
 
-      $.each(KoguData.products, function (_, p) {
-        if (p.id === pid) { state.product = p; return false; }
-      });
+      var hasSelected = state.product_ids.length > 0;
 
-      $('.kogu-product-card').removeClass('selected');
-      $(this).addClass('selected');
+      if (hasSelected) {
+        $('#kogu-select-hint').hide();
+        $('#start-date, #rental-weeks').prop('disabled', false);
 
-      // ヒントを非表示、入力欄を有効化
-      $('#kogu-select-hint').hide();
-      $('#start-date, #rental-weeks').prop('disabled', false);
+        var names = state.products.map(function (p) { return p.name; }).join('・');
+        $('#kogu-stock-product-name').text(names);
+        $('#kogu-stock-banner').show();
+        $('#kogu-stock-badge').text('確認中...').attr('class', 'kogu-badge kogu-badge-checking');
 
-      $('#kogu-stock-banner').show();
-      $('#kogu-stock-badge').text('確認中...').attr('class', 'kogu-badge kogu-badge-checking');
-      $('#kogu-stock-product-name').text(state.product ? state.product.name : '');
-      $('#kogu-date-summary').hide();
-      $('#kogu-unavailable-msg').hide();
-      $('#kogu-addons-wrap').hide();
-      $('#btn-to-info').show().prop('disabled', true);
+        $('#kogu-date-summary').hide();
+        $('#kogu-unavailable-msg').hide();
+        $('#kogu-addons-wrap').hide();
+        $('#btn-to-info').show().prop('disabled', true);
 
-      $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
-        if (res.success) {
-          state.availability = res.data[pid] || {};
-          updateSummary();
-          if (!$('#start-date').val() || !parseInt($('#rental-weeks').val(), 10)) {
-            $('#kogu-stock-badge').text('日付と週数を選んでください').attr('class', 'kogu-badge');
+        $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
+          if (res.success) {
+            state.availability = res.data;
+            updateSummary();
+            if (!$('#start-date').val() || !parseInt($('#rental-weeks').val(), 10)) {
+              $('#kogu-stock-badge').text('日付と週数を選んでください').attr('class', 'kogu-badge');
+            }
           }
-        }
-      });
+        });
+      } else {
+        $('#kogu-select-hint').show();
+        $('#start-date, #rental-weeks').prop('disabled', true);
+        $('#kogu-stock-banner').hide();
+        $('#kogu-date-summary').hide();
+        $('#kogu-unavailable-msg').hide();
+        $('#kogu-addons-wrap').hide();
+        $('#btn-to-info').hide();
+      }
     });
 
     // 初期状態：商品未選択なら入力欄を無効化
-    if (!state.product_id) {
-      $('#start-date, #rental-weeks').prop('disabled', true);
-    }
+    $('#start-date, #rental-weeks').prop('disabled', true);
 
     $('#start-date, #rental-weeks').on('change', updateSummary);
 
@@ -251,7 +261,7 @@
     var start = $('#start-date').val();
     var weeks = parseInt($('#rental-weeks').val(), 10) || 0;
 
-    if (!state.product || !start || !weeks) {
+    if (!state.product_ids.length || !start || !weeks) {
       $('#kogu-date-summary').hide();
       $('#btn-to-info').prop('disabled', true);
       return;
@@ -260,19 +270,30 @@
     state.start_date = start;
     state.weeks      = weeks;
 
-    var ppw   = state.product.price_per_week;
-    var disc  = Math.round(ppw * KoguData.week_discount_rate);
-    var avail = isAvailable(start, weeks, state.availability);
-
-    state.rental_fee = calcFee(weeks, ppw);
-    state.deposit    = 0;
+    // 全選択商品の合計料金と在庫チェック
+    state.rental_fee = 0;
+    var allAvailable = true;
+    $.each(state.products, function (_, product) {
+      state.rental_fee += calcFee(weeks, product.price_per_week);
+      if (!isAvailable(start, weeks, state.availability[product.id] || {})) {
+        allAvailable = false;
+      }
+    });
+    state.deposit = 0;
 
     $('#disp-start').text(start);
     $('#disp-end').text(addDays(start, weeks * 7 - 1));
     $('#disp-weeks').text(weeks + '週間（' + (weeks * 7) + '日間）');
-    $('#disp-rental-fee').text(fmt(state.rental_fee));
 
-    if (weeks >= 2) {
+    // 料金内訳：複数商品なら商品ごとに表示、1商品なら週割引内訳
+    if (state.products.length > 1) {
+      var breakdown = state.products.map(function (p) {
+        return p.name + '&nbsp;' + fmt(calcFee(weeks, p.price_per_week));
+      }).join('、');
+      $('#kogu-price-breakdown').html('内訳：' + breakdown).show();
+    } else if (weeks >= 2) {
+      var ppw  = state.products[0].price_per_week;
+      var disc = Math.round(ppw * KoguData.week_discount_rate);
       $('#kogu-price-breakdown')
         .html('内訳：1週目 ' + fmt(ppw) + ' ＋ 2週目以降 ' + fmt(disc) + '/週×' + (weeks - 1) + '週')
         .show();
@@ -280,14 +301,18 @@
       $('#kogu-price-breakdown').hide();
     }
 
+    $('#disp-rental-fee').text(fmt(state.rental_fee));
     updateShippingDisplay();
     $('#kogu-date-summary').show();
 
-    if (avail) {
-      $('#kogu-stock-badge').text('在庫あり').attr('class', 'kogu-badge kogu-badge-ok');
+    if (allAvailable) {
+      var statusText = state.product_ids.length > 1 ? '全商品 在庫あり' : '在庫あり';
+      $('#kogu-stock-badge').text(statusText).attr('class', 'kogu-badge kogu-badge-ok');
       $('#kogu-unavailable-msg').hide();
-      // 在庫あり確定後にオプション購入を案内
-      if (state.product && state.product.allows_addons && KoguData.addon_products.length > 0) {
+      // 在庫確定後にオプション購入を案内（1つでもaddons許可商品があれば）
+      var anyAllowsAddons = false;
+      $.each(state.products, function (_, p) { if (p.allows_addons) { anyAllowsAddons = true; return false; } });
+      if (anyAllowsAddons && KoguData.addon_products.length > 0) {
         $('.kogu-qty-input').val(0);
         $('#kogu-addon-total-row').hide();
         $('#kogu-addons-wrap').show();
@@ -310,9 +335,10 @@
   function createPaymentIntent() {
     $.post(KoguData.ajax_url, {
       action: 'kogu_create_intent', nonce: KoguData.nonce,
-      product_id: state.product_id, start_date: state.start_date,
-      weeks: state.weeks, name: state.customer_info.name,
-      email: state.customer_info.email, addons: buildAddonsPayload(),
+      product_ids: JSON.stringify(state.product_ids),
+      start_date: state.start_date, weeks: state.weeks,
+      name: state.customer_info.name, email: state.customer_info.email,
+      addons: buildAddonsPayload(),
     }, function (res) {
       if (!res.success) { showError(res.data); showStep('step-info'); return; }
       state.customer_id       = res.data.customer_id;
@@ -349,16 +375,21 @@
   function confirmRental(piId) {
     $.post(KoguData.ajax_url, {
       action: 'kogu_confirm_rental', nonce: KoguData.nonce,
-      product_id: state.product_id, payment_intent_id: piId,
-      customer_id: state.customer_id, start_date: state.start_date,
-      weeks: state.weeks, name: state.customer_info.name,
-      email: state.customer_info.email, phone: state.customer_info.phone,
-      postal_code: state.customer_info.postal_code, address: state.customer_info.address,
-      addons: buildAddonsPayload(),
+      product_ids: JSON.stringify(state.product_ids),
+      payment_intent_id: piId, customer_id: state.customer_id,
+      start_date: state.start_date, weeks: state.weeks,
+      name: state.customer_info.name, email: state.customer_info.email,
+      phone: state.customer_info.phone, postal_code: state.customer_info.postal_code,
+      address: state.customer_info.address, addons: buildAddonsPayload(),
     }, function (res) {
       setPayBtnLoading(false);
-      if (res.success) { $('#disp-rental-id').text('#' + res.data.rental_id); showStep('step-complete'); }
-      else { showError(res.data); }
+      if (res.success) {
+        var rentalId = res.data.rental_id || (res.data.rental_ids && res.data.rental_ids[0]);
+        $('#disp-rental-id').text('#' + rentalId);
+        showStep('step-complete');
+      } else {
+        showError(res.data);
+      }
     });
   }
 

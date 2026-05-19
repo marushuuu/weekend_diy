@@ -123,7 +123,7 @@ function kogu_product_img( $name, $base ) {
 
         <!-- 商品未選択時のヒント -->
         <div id="kogu-select-hint" class="kogu-select-hint">
-          ← 借りたい工具を選んでください
+          借りたい工具を選んでください<br><small>複数選択もできます</small>
         </div>
 
         <!-- 期間選択（商品選択後に有効化） -->
