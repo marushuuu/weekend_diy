@@ -88,6 +88,10 @@
         if (res.success) {
           state.availability = res.data[pid] || {};
           updateSummary();
+          // 日付未選択の場合、「確認中...」のままにならないよう案内表示に切り替え
+          if (!$('#start-date').val() || !parseInt($('#rental-weeks').val(), 10)) {
+            $('#kogu-stock-badge').text('日付を選んでください').attr('class', 'kogu-badge');
+          }
         }
       });
     });
