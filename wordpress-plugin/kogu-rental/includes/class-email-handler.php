@@ -87,6 +87,12 @@ class Kogu_Email_Handler {
         $deposit      = number_format( $rental->deposit_amount );
         $total        = number_format( $rental->total_charged );
         $weeks        = (int) $rental->rental_weeks;
+        // total_charged = rental_fee + addon_total + shipping_fee なので差分で送料を逆算
+        $shipping_fee = max( 0, (int) $rental->total_charged - (int) $rental->rental_fee ) >= 2500
+                        ? 2500 : ( (int) $rental->rental_fee < 3500 ? 2500 : 0 );
+        $shipping_row = $shipping_fee > 0
+            ? "<tr><td style='padding:8px 12px;font-weight:bold;'>送料</td><td style='padding:8px 12px;color:#c0392b;'>¥" . number_format( $shipping_fee ) . "</td></tr>"
+            : "<tr><td style='padding:8px 12px;font-weight:bold;'>送料</td><td style='padding:8px 12px;color:#27ae60;'>無料</td></tr>";
 
         $content = "
             <h2 style='color:#e85a2b;'>ご予約を承りました</h2>
@@ -97,7 +103,9 @@ class Kogu_Email_Handler {
               <tr><td style='padding:8px 12px;font-weight:bold;'>商品</td><td style='padding:8px 12px;'>{$product_name}</td></tr>
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル期間</td><td style='padding:8px 12px;'>{$rental->rental_start_date} 〜 {$rental->rental_end_date}（{$weeks}週間）</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong>（この日までに発送してください）</td></tr>
-              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>¥{$fee}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>レンタル料金</td><td style='padding:8px 12px;'>¥{$fee}</td></tr>
+              {$shipping_row}
+              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>お支払い合計</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>¥{$total}</td></tr>
             </table>
             <h3 style='margin-top:24px;font-size:15px;'>追加費用について</h3>
             <p>以下に該当する場合のみ、ご登録のカードに別途請求いたします。</p>

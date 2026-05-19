@@ -71,9 +71,11 @@ class Kogu_Public {
             'stripe_public_key'  => get_option( 'kogu_stripe_public_key', '' ),
             'products'           => $products_js,
             'addon_products'     => $addons_js,
-            'week_discount_rate' => 0.70,
-            'late_fee_per_day'   => 500,
-            'rental_page_url'    => home_url( '/rental/' ),
+            'week_discount_rate'       => 0.70,
+            'late_fee_per_day'         => 500,
+            'rental_page_url'          => home_url( '/rental/' ),
+            'shipping_fee'             => 2500,
+            'free_shipping_threshold'  => 3500,
         ] );
     }
 
@@ -136,7 +138,9 @@ class Kogu_Public {
                 $addon_total += (int) $ap->price * (int) $a['qty'];
             }
         }
-        $total = $rental_fee + $addon_total;
+        $subtotal     = $rental_fee + $addon_total;
+        $shipping_fee = $subtotal < 3500 ? 2500 : 0;
+        $total        = $subtotal + $shipping_fee;
 
         $customer_id = Kogu_Stripe_Handler::get_or_create_customer( $email, $name );
         $result      = Kogu_Stripe_Handler::create_payment_intent( $total, $customer_id, [
@@ -150,6 +154,7 @@ class Kogu_Public {
         wp_send_json_success( array_merge( $result, [
             'rental_fee'    => $rental_fee,
             'addon_total'   => $addon_total,
+            'shipping_fee'  => $shipping_fee,
             'deposit'       => $deposit,
             'total'         => $total,
             'customer_id'   => $customer_id,
@@ -180,8 +185,19 @@ class Kogu_Public {
             wp_send_json_error( '商品が見つかりません。' );
         }
 
-        $pm_id      = Kogu_Stripe_Handler::get_payment_method_from_intent( $pi_id );
-        $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
+        $pm_id       = Kogu_Stripe_Handler::get_payment_method_from_intent( $pi_id );
+        $rental_fee  = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
+        $addon_total = 0;
+        $addons_conf = json_decode( stripslashes( $_POST['addons'] ?? '[]' ), true ) ?: [];
+        foreach ( $addons_conf as $a ) {
+            $ap = Kogu_Database::get_addon_product( (int) ( $a['id'] ?? 0 ) );
+            if ( $ap && (int) ( $a['qty'] ?? 0 ) > 0 ) {
+                $addon_total += (int) $ap->price * (int) $a['qty'];
+            }
+        }
+        $subtotal     = $rental_fee + $addon_total;
+        $shipping_fee = $subtotal < 3500 ? 2500 : 0;
+        $total        = $subtotal + $shipping_fee;
 
         $rental_id = Kogu_Rental_Manager::create( [
             'product_id'               => $product_id,
@@ -194,6 +210,7 @@ class Kogu_Public {
             'rental_start_date'        => $start,
             'rental_weeks'             => $weeks,
             'rental_fee'               => $rental_fee,
+            'total_charged'            => $total,
             'stripe_payment_intent_id' => $pi_id,
             'stripe_customer_id'       => $customer_id,
             'stripe_payment_method_id' => $pm_id,

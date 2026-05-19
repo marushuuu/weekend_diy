@@ -38,7 +38,7 @@ class Kogu_Rental_Manager {
                 'rental_days'              => $weeks * 7,
                 'rental_fee'               => $rental_fee,
                 'deposit_amount'           => 0,
-                'total_charged'            => $rental_fee,
+                'total_charged'            => $args['total_charged'] ?? $rental_fee,
                 'stripe_payment_intent_id' => $args['stripe_payment_intent_id'] ?? '',
                 'stripe_customer_id'       => $args['stripe_customer_id']       ?? '',
                 'stripe_payment_method_id' => $args['stripe_payment_method_id'] ?? '',

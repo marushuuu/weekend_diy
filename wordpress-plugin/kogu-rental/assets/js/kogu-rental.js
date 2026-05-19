@@ -200,6 +200,22 @@
     } else {
       $('#kogu-addon-total-row').hide();
     }
+    updateShippingDisplay();
+  }
+
+  function updateShippingDisplay() {
+    if (!state.rental_fee) return;
+    var subtotal = state.rental_fee + state.addon_total;
+    var threshold = KoguData.free_shipping_threshold;
+    var fee = KoguData.shipping_fee;
+    if (subtotal < threshold) {
+      $('#disp-shipping').text(fmt(fee));
+      $('#kogu-shipping-row').show();
+      $('#kogu-free-shipping-row').hide();
+    } else {
+      $('#kogu-shipping-row').hide();
+      $('#kogu-free-shipping-row').show();
+    }
   }
 
   // ── 料金サマリー更新 ──────────────────────────────────────────────────────
@@ -236,6 +252,7 @@
       $('#kogu-price-breakdown').hide();
     }
 
+    updateShippingDisplay();
     $('#kogu-date-summary').show();
 
     if (avail) {

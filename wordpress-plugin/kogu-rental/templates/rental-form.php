@@ -82,6 +82,12 @@
         <div class="kogu-date-row kogu-total">
           <span>レンタル料金</span><strong id="disp-rental-fee">—</strong>
         </div>
+        <div class="kogu-date-row" id="kogu-shipping-row" style="display:none;">
+          <span>送料</span><strong id="disp-shipping" style="color:#c0392b;">—</strong>
+        </div>
+        <div class="kogu-date-row" id="kogu-free-shipping-row" style="display:none;">
+          <span>送料</span><strong style="color:#27ae60;">無料</strong>
+        </div>
       </div>
 
       <div id="kogu-unavailable-msg" class="kogu-error" style="display:none;">
