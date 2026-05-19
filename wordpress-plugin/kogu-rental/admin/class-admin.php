@@ -158,6 +158,9 @@ class Kogu_Admin {
             <tr><th>レンタル料金</th><td>¥<?php echo number_format( $rental->rental_fee ); ?></td></tr>
             <tr><th>デポジット</th><td>¥<?php echo number_format( $rental->deposit_amount ); ?></td></tr>
             <tr><th>延滞料金</th><td>¥<?php echo number_format( $rental->late_fee_total ); ?>（<?php echo (int) $rental->late_fee_days; ?>日）</td></tr>
+            <?php if ( $rental->damage_fee > 0 ) : ?>
+            <tr><th>損害費用</th><td style="color:#c0392b;">¥<?php echo number_format( $rental->damage_fee ); ?></td></tr>
+            <?php endif; ?>
             <tr><th>返送追跡番号</th><td><?php echo esc_html( $rental->tracking_return ?: '—' ); ?></td></tr>
           </table>
 
