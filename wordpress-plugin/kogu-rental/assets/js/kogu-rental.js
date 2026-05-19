@@ -57,6 +57,12 @@
       initRentalForm();
       if (!isTopMode) {
         applyUrlParams();
+      } else {
+        // 商品が1つだけのときは自動選択（カードクリック不要）
+        var $cards = $('.kogu-product-card');
+        if ($cards.length === 1) {
+          $cards.first().trigger('click');
+        }
       }
     }
     if ($('.kogu-mypage').length) {

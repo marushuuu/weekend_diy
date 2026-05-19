@@ -216,6 +216,10 @@ class Kogu_Admin {
               <input type="number" name="damage_fee" id="kogu-damage-fee-input"
                      value="0" min="0" style="width:120px;padding:6px;margin-left:8px;" />
             </label>
+            <label style="display:block;margin-bottom:12px;">
+              損害内容・理由：<br>
+              <textarea name="damage_reason" rows="3" style="width:100%;max-width:480px;padding:6px;margin-top:4px;" placeholder="例：本体に打痕あり、バッテリーが充電不可になっていた など（損害費用が0円の場合は空欄でOK）"></textarea>
+            </label>
             <p style="font-size:12px;color:#666;">
               合計請求額: ¥<strong id="total-charge-preview"><?php echo number_format( $rental->late_fee_total ); ?></strong>
               （延滞・損害がある場合、登録カードに直接請求されます。0円の場合は請求なし）
@@ -766,7 +770,8 @@ class Kogu_Admin {
         if ( $op === 'confirm_return' ) {
             $damage_fee        = (int) ( $_POST['damage_fee'] ?? 0 );
             $late_fee_override = isset( $_POST['late_fee_override'] ) ? (int) $_POST['late_fee_override'] : null;
-            Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee, $late_fee_override );
+            $damage_reason     = sanitize_textarea_field( $_POST['damage_reason'] ?? '' );
+            Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee, $late_fee_override, $damage_reason );
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id . '&updated=1' ) );

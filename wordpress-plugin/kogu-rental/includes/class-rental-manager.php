@@ -107,7 +107,7 @@ class Kogu_Rental_Manager {
     }
 
     // ── 管理者が返却を確認 → 延滞・損害を登録カードに直接請求 ──────────────
-    public static function confirm_return( $rental_id, $damage_fee = 0, $late_fee_override = null ) {
+    public static function confirm_return( $rental_id, $damage_fee = 0, $late_fee_override = null, $damage_reason = '' ) {
         global $wpdb;
 
         $rental = self::get( $rental_id );
@@ -141,10 +141,11 @@ class Kogu_Rental_Manager {
 
         self::update_status( $rental_id, 'returned', [
             'damage_fee'     => $damage_fee,
+            'damage_reason'  => sanitize_text_field( $damage_reason ),
             'late_fee_total' => $late_fee_total,
         ] );
 
-        Kogu_Email_Handler::send_return_complete( $rental_id, $total_charge, $late_fee_total, $damage_fee );
+        Kogu_Email_Handler::send_return_complete( $rental_id, $total_charge, $late_fee_total, $damage_fee, $damage_reason );
 
         return true;
     }

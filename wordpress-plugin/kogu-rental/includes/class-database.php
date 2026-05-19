@@ -100,6 +100,7 @@ class Kogu_Database {
             late_fee_days            SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             late_fee_total           INT UNSIGNED NOT NULL DEFAULT 0,
             damage_fee               INT UNSIGNED NOT NULL DEFAULT 0,
+            damage_reason            VARCHAR(500) DEFAULT '',
             total_charged            INT UNSIGNED NOT NULL DEFAULT 0,
             deposit_refunded         INT UNSIGNED NOT NULL DEFAULT 0,
             tracking_outbound        VARCHAR(30) DEFAULT '' COMMENT 'ゆうパック追跡番号(往路)',

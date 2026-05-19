@@ -99,7 +99,13 @@ class Kogu_Email_Handler {
               <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong>（この日までに発送してください）</td></tr>
               <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>¥{$fee}</td></tr>
             </table>
-            <p>延滞・損傷がなければ追加費用は一切かかりません。</p>
+            <h3 style='margin-top:24px;font-size:15px;'>追加費用について</h3>
+            <p>以下に該当する場合のみ、ご登録のカードに別途請求いたします。</p>
+            <table style='width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:13px;'>
+              <tr style='background:#f6f1e6;'><td style='padding:6px 12px;font-weight:bold;width:40%;'>延滞料金</td><td style='padding:6px 12px;'>返却期限日を過ぎた場合、1日あたり <strong>¥500</strong></td></tr>
+              <tr><td style='padding:6px 12px;font-weight:bold;'>損害費用</td><td style='padding:6px 12px;'>商品の破損・紛失・著しい汚損があった場合、損害の程度に応じた実費</td></tr>
+            </table>
+            <p style='font-size:12px;color:#888;'>※ 延滞・損傷がなければ追加費用は一切かかりません。</p>
             <p>商品は準備が整い次第、ゆうパックにてお届けします。追跡番号が確定しましたら別途ご連絡いたします。</p>
             <p>ご不明な点はお問い合わせください。</p>";
         self::send( $email, $name, '【工具レンタル】ご予約確認 #' . $rental_id, self::wrap( $content ) );
@@ -250,7 +256,7 @@ class Kogu_Email_Handler {
     }
 
     // ── 返却完了・精算通知 ────────────────────────────────────────────────────
-    public static function send_return_complete( $rental_id, $total_charged, $late_fee, $damage_fee ) {
+    public static function send_return_complete( $rental_id, $total_charged, $late_fee, $damage_fee, $damage_reason = '' ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );
         if ( ! $rental ) return;
         $email   = self::get_rental_email( $rental );
@@ -261,9 +267,17 @@ class Kogu_Email_Handler {
         $product_name = self::get_product_name( $rental );
 
         if ( $total_charged > 0 ) {
-            $charge_block = "
-              <tr style='background:#ffeaea;'><td style='padding:8px 12px;'>延滞料金</td><td style='padding:8px 12px;'>¥{$l_fmt}</td></tr>
+            $damage_row = '';
+            if ( $damage_fee > 0 ) {
+                $reason_text = $damage_reason ? esc_html( $damage_reason ) : '商品の損傷';
+                $damage_row = "
               <tr style='background:#ffeaea;'><td style='padding:8px 12px;'>損害費用</td><td style='padding:8px 12px;'>¥{$d_fmt}</td></tr>
+              <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-size:12px;color:#666;'>損害内容</td><td style='padding:8px 12px;font-size:12px;color:#666;'>{$reason_text}</td></tr>";
+            }
+            $late_row = $late_fee > 0 ? "<tr style='background:#ffeaea;'><td style='padding:8px 12px;'>延滞料金</td><td style='padding:8px 12px;'>¥{$l_fmt}</td></tr>" : '';
+            $charge_block = "
+              {$late_row}
+              {$damage_row}
               <tr style='border-top:2px solid #c0392b;background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>登録カードへの請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$c_fmt}</td></tr>";
             $charge_note = "<p style='color:#c0392b;'>上記金額を登録カードに請求いたしました（反映まで3〜7営業日）。</p>";
         } else {
