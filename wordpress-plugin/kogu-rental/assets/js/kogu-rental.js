@@ -108,7 +108,7 @@
         email:       $(this).find('[name=email]').val().trim(),
         phone:       $(this).find('[name=phone]').val().trim(),
         postal_code: $(this).find('[name=postal_code]').val().trim(),
-        address:     $(this).find('[name=address]').val().trim(),
+        address:     [$(this).find('[name=address1]').val().trim(), $(this).find('[name=address2]').val().trim()].filter(Boolean).join(' '),
       };
       showStep('step-payment');
       createPaymentIntent();
@@ -295,7 +295,7 @@
   }
 
   // ── 郵便番号 → 住所自動入力 ────────────────────────────────────────────────
-  $(document).on('input', 'input[name="postal_code"]', function () {
+  $(document).on('input change', 'input[name="postal_code"]', function () {
     var raw = $(this).val().replace(/[^0-9]/g, '');
     if (raw.length !== 7) return;
     fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + raw)
@@ -303,7 +303,7 @@
       .then(function (data) {
         if (data.results && data.results[0]) {
           var r = data.results[0];
-          $('textarea[name="address"]').val(r.address1 + r.address2 + r.address3);
+          $('input[name="address1"]').val(r.address1 + r.address2 + r.address3);
         }
       })
       .catch(function () {});

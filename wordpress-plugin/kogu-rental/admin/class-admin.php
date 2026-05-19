@@ -194,33 +194,44 @@ class Kogu_Admin {
           </form>
           <?php endif; ?>
 
-          <!-- 返却確認・精算（管理者が損害費用を入力して3日後返金にする） -->
+          <!-- 返却確認・精算（管理者が延滞・損害費用を入力してカードに請求） -->
           <?php if ( $rental->status === 'return_evidence_submitted' ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
             <input type="hidden" name="action"    value="kogu_admin_action">
             <input type="hidden" name="op"        value="confirm_return">
             <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
             <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
-            <h3>返却確認（損害費用の入力）</h3>
+            <h3>返却確認（精算）</h3>
             <label style="display:block;margin-bottom:8px;">
+              延滞料金（¥）：
+              <input type="number" name="late_fee_override" id="kogu-late-fee-input"
+                     value="<?php echo (int) $rental->late_fee_total; ?>" min="0"
+                     style="width:120px;padding:6px;margin-left:8px;" />
+              <small style="color:#666;">（自動計算: ¥<?php echo number_format( $rental->late_fee_total ); ?>、0にすると免除）</small>
+            </label>
+            <label style="display:block;margin-bottom:12px;">
               損害費用（¥）：
-              <input type="number" name="damage_fee" value="0" min="0" style="width:120px;padding:6px;margin-left:8px;" />
+              <input type="number" name="damage_fee" id="kogu-damage-fee-input"
+                     value="0" min="0" style="width:120px;padding:6px;margin-left:8px;" />
             </label>
             <p style="font-size:12px;color:#666;">
-              延滞料金: ¥<?php echo number_format( $rental->late_fee_total ); ?>
-              | 損害費用: ¥<span id="damage-fee-preview">0</span>
-              <br>合計請求額: ¥<strong id="total-charge-preview"><?php echo number_format( $rental->late_fee_total ); ?></strong>
-              （延滞・損害がある場合、登録カードに直接請求されます）
+              合計請求額: ¥<strong id="total-charge-preview"><?php echo number_format( $rental->late_fee_total ); ?></strong>
+              （延滞・損害がある場合、登録カードに直接請求されます。0円の場合は請求なし）
             </p>
             <script>
-            document.querySelector('[name=damage_fee]').addEventListener('input', function() {
-              var late = <?php echo (int) $rental->late_fee_total; ?>;
-              var dmg = parseInt(this.value) || 0;
-              document.getElementById('damage-fee-preview').textContent = dmg.toLocaleString('ja-JP');
-              document.getElementById('total-charge-preview').textContent = (late + dmg).toLocaleString('ja-JP');
-            });
+            (function() {
+              var lateInput = document.getElementById('kogu-late-fee-input');
+              var dmgInput  = document.getElementById('kogu-damage-fee-input');
+              function updateTotal() {
+                var late = parseInt(lateInput.value) || 0;
+                var dmg  = parseInt(dmgInput.value)  || 0;
+                document.getElementById('total-charge-preview').textContent = (late + dmg).toLocaleString('ja-JP');
+              }
+              lateInput.addEventListener('input', updateTotal);
+              dmgInput.addEventListener('input', updateTotal);
+            })();
             </script>
-            <button type="submit" class="button button-primary">返却を確認する（延滞・損害をカードに請求）</button>
+            <button type="submit" class="button button-primary">返却を確認する（カードに請求）</button>
           </form>
           <?php endif; ?>
         </div>
@@ -633,8 +644,9 @@ class Kogu_Admin {
         }
 
         if ( $op === 'confirm_return' ) {
-            $damage_fee = (int) ( $_POST['damage_fee'] ?? 0 );
-            Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee );
+            $damage_fee        = (int) ( $_POST['damage_fee'] ?? 0 );
+            $late_fee_override = isset( $_POST['late_fee_override'] ) ? (int) $_POST['late_fee_override'] : null;
+            Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee, $late_fee_override );
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id . '&updated=1' ) );
