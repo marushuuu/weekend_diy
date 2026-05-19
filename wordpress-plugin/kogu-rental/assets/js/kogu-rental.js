@@ -145,25 +145,20 @@
   }
 
   function initRentalForm() {
-    // 商品カードクリック（複数選択トグル）
+    // 商品カードクリック — DOM の selected クラスを正として複数選択を管理
     $(document).on('click', '.kogu-product-card', function () {
-      var $card = $(this);
-      var pid   = parseInt($card.data('product-id'), 10);
-      var idx   = state.product_ids.indexOf(pid);
+      $(this).toggleClass('selected');
 
-      if (idx >= 0) {
-        // 選択解除
-        state.product_ids.splice(idx, 1);
-        state.products.splice(idx, 1);
-        $card.removeClass('selected');
-      } else {
-        // 選択追加
+      // 選択中のカードから state を再構築
+      state.product_ids = [];
+      state.products    = [];
+      $('.kogu-product-card.selected').each(function () {
+        var pid = parseInt($(this).data('product-id'), 10);
         state.product_ids.push(pid);
         $.each(KoguData.products, function (_, p) {
           if (p.id === pid) { state.products.push(p); return false; }
         });
-        $card.addClass('selected');
-      }
+      });
 
       var hasSelected = state.product_ids.length > 0;
 
