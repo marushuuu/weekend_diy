@@ -31,35 +31,17 @@ class Kogu_Email_Handler {
         return $product ? $product->name : '工具';
     }
 
-    // ── 共通送信処理（SendGrid API） ─────────────────────────────────────────
+    // ── 共通送信処理（wp_mail 経由 / WP Mail SMTP + Resend）────────────────────
     private static function send( $to_email, $to_name, $subject, $html_body ) {
-        $api_key    = get_option( 'kogu_sendgrid_api_key', '' );
-        $from_email = get_option( 'kogu_from_email', get_option( 'admin_email' ) );
+        $from_email = get_option( 'kogu_from_email', 'info@weekend-diy.com' );
         $from_name  = get_option( 'kogu_from_name', get_bloginfo( 'name' ) );
 
-        if ( ! $api_key ) {
-            // SendGrid未設定時はWordPressのwp_mail()で代替
-            wp_mail( $to_email, $subject, wp_strip_all_tags( $html_body ) );
-            return;
-        }
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            "From: {$from_name} <{$from_email}>",
+        ];
 
-        $body = wp_json_encode( [
-            'personalizations' => [ [
-                'to' => [ [ 'email' => $to_email, 'name' => $to_name ] ],
-            ] ],
-            'from'    => [ 'email' => $from_email, 'name' => $from_name ],
-            'subject' => $subject,
-            'content' => [ [ 'type' => 'text/html', 'value' => $html_body ] ],
-        ] );
-
-        wp_remote_post( 'https://api.sendgrid.com/v3/mail/send', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $api_key,
-                'Content-Type'  => 'application/json',
-            ],
-            'body'    => $body,
-            'timeout' => 15,
-        ] );
+        wp_mail( $to_email, $subject, $html_body, $headers );
     }
 
     private static function wrap( $content ) {
