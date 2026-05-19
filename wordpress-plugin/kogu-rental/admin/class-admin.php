@@ -175,6 +175,22 @@ class Kogu_Admin {
           </form>
           <?php endif; ?>
 
+          <!-- 管理者による返却手続き（顧客が追跡番号を提出しない場合） -->
+          <?php if ( in_array( $rental->status, [ 'shipped_to_customer', 'active', 'overdue' ], true ) ) : ?>
+          <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
+            <input type="hidden" name="action"    value="kogu_admin_action">
+            <input type="hidden" name="op"        value="submit_return">
+            <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
+            <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
+            <h3>返却手続き（管理者入力）</h3>
+            <p style="font-size:13px;color:#666;margin-bottom:8px;">顧客が追跡番号を提出しない場合、管理者がここから入力できます。</p>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" name="tracking_return" placeholder="ゆうパック追跡番号" required style="width:280px;padding:6px 10px;" />
+              <button type="submit" class="button button-primary">返却手続きを登録する</button>
+            </div>
+          </form>
+          <?php endif; ?>
+
           <!-- 返却確認・精算（管理者が損害費用を入力して3日後返金にする） -->
           <?php if ( $rental->status === 'return_evidence_submitted' ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
@@ -606,6 +622,11 @@ class Kogu_Admin {
         if ( $op === 'ship' ) {
             $tracking = sanitize_text_field( $_POST['tracking_outbound'] ?? '' );
             Kogu_Rental_Manager::mark_shipped_to_customer( $rental_id, $tracking );
+        }
+
+        if ( $op === 'submit_return' ) {
+            $tracking = sanitize_text_field( $_POST['tracking_return'] ?? '' );
+            Kogu_Rental_Manager::submit_return_evidence( $rental_id, $tracking );
         }
 
         if ( $op === 'confirm_return' ) {
