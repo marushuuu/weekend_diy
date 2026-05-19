@@ -122,7 +122,7 @@
       </div>
       <div class="kogu-form-row">
         <label>郵便番号 <em>*</em></label>
-        <input type="text" name="postal_code" required placeholder="1040053" maxlength="8" />
+        <input type="text" name="postal_code" required placeholder="1500001" maxlength="8" />
         <small style="color:var(--kogu-muted);font-size:11px;margin-top:3px;">7桁入力で住所を自動入力します</small>
       </div>
       <div class="kogu-form-row">
