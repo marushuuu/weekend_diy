@@ -92,7 +92,8 @@ function kogu_product_img( $name, $base ) {
     <?php if ( $show_step_titles ) : ?><h2 class="kogu-step-title">STEP 1 &nbsp;商品と期間を選択</h2><?php endif; ?>
 
     <div class="kogu-step1-layout">
-      <!-- 商品カード -->
+
+      <!-- 左: 商品カード一覧 -->
       <div id="kogu-products" class="kogu-products">
       <?php foreach ( Kogu_Database::get_active_products() as $p ) :
         $img = kogu_product_img( (string) $p->name, $img_base );
@@ -117,8 +118,15 @@ function kogu_product_img( $name, $base ) {
       <?php endforeach; ?>
       </div><!-- /kogu-products -->
 
+      <!-- 右: 日付・週数・サマリー・オプション・ボタン -->
       <div class="kogu-step1-right">
-        <!-- 期間選択 -->
+
+        <!-- 商品未選択時のヒント -->
+        <div id="kogu-select-hint" class="kogu-select-hint">
+          ← 借りたい工具を選んでください
+        </div>
+
+        <!-- 期間選択（商品選択後に有効化） -->
         <div id="kogu-period-wrap" class="kogu-period-wrap">
 
           <div class="kogu-in-stock-banner" id="kogu-stock-banner" style="display:none;">
@@ -173,7 +181,7 @@ function kogu_product_img( $name, $base ) {
 
         </div><!-- /kogu-period-wrap -->
 
-        <!-- 購入オプション（電動工具選択時のみ表示） -->
+        <!-- 購入オプション（日付・週数入力後に表示） -->
         <div id="kogu-addons-wrap" style="display:none;" class="kogu-addons-wrap">
           <h3 class="kogu-addons-title">オプション購入（任意）</h3>
           <p class="kogu-addons-desc">レンタル工具に合わせてご購入いただけます。消耗品はそのままお使いください。</p>
@@ -214,6 +222,7 @@ function kogu_product_img( $name, $base ) {
 
         <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
       </div><!-- /kogu-step1-right -->
+
     </div><!-- /kogu-step1-layout -->
   </div>
 

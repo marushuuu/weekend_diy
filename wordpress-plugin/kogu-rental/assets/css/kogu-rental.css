@@ -74,10 +74,25 @@
   background: #fde8d8; color: var(--kogu-accent); font-size: 11px; font-weight: 700;
 }
 
-/* ── Step1 縦並びレイアウト（カードと同幅） ─────────────────────────────── */
-.kogu-step1-layout { display: flex; flex-direction: column; }
-.kogu-step1-right { max-width: 320px; display: flex; flex-direction: column; gap: 14px; }
+/* ── Step1 左右レイアウト ────────────────────────────────────────────────── */
+.kogu-step1-layout { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+#kogu-products.kogu-products { flex: 1; min-width: 220px; margin-bottom: 0; }
+.kogu-step1-right {
+  width: 300px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 14px;
+  position: sticky; top: 80px;
+}
 .kogu-step1-right .kogu-btn { width: 100%; text-align: center; }
+
+/* 商品未選択ヒント */
+.kogu-select-hint {
+  background: var(--kogu-paper); border: 1.5px dashed var(--kogu-paper2);
+  border-radius: var(--kogu-radius); padding: 16px;
+  font-size: 14px; color: var(--kogu-muted); text-align: center;
+}
+
+/* 入力欄が disabled のとき薄く表示 */
+#start-date:disabled, #rental-weeks:disabled { opacity: .45; pointer-events: none; }
 
 /* ── Top mode: 商品ごとのブロックグリッド ────────────────────────────────── */
 .kogu-top-grid {

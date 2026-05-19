@@ -148,31 +148,33 @@
       $('.kogu-product-card').removeClass('selected');
       $(this).addClass('selected');
 
+      // ヒントを非表示、入力欄を有効化
+      $('#kogu-select-hint').hide();
+      $('#start-date, #rental-weeks').prop('disabled', false);
+
       $('#kogu-stock-banner').show();
       $('#kogu-stock-badge').text('確認中...').attr('class', 'kogu-badge kogu-badge-checking');
       $('#kogu-stock-product-name').text(state.product ? state.product.name : '');
       $('#kogu-date-summary').hide();
       $('#kogu-unavailable-msg').hide();
+      $('#kogu-addons-wrap').hide();
       $('#btn-to-info').show().prop('disabled', true);
-
-      if (state.product && state.product.allows_addons && KoguData.addon_products.length > 0) {
-        $('.kogu-qty-input').val(0);
-        $('#kogu-addon-total-row').hide();
-        $('#kogu-addons-wrap').show();
-      } else {
-        $('#kogu-addons-wrap').hide();
-      }
 
       $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
         if (res.success) {
           state.availability = res.data[pid] || {};
           updateSummary();
           if (!$('#start-date').val() || !parseInt($('#rental-weeks').val(), 10)) {
-            $('#kogu-stock-badge').text('日付を選んでください').attr('class', 'kogu-badge');
+            $('#kogu-stock-badge').text('日付と週数を選んでください').attr('class', 'kogu-badge');
           }
         }
       });
     });
+
+    // 初期状態：商品未選択なら入力欄を無効化
+    if (!state.product_id) {
+      $('#start-date, #rental-weeks').prop('disabled', true);
+    }
 
     $('#start-date, #rental-weeks').on('change', updateSummary);
 
@@ -284,10 +286,17 @@
     if (avail) {
       $('#kogu-stock-badge').text('在庫あり').attr('class', 'kogu-badge kogu-badge-ok');
       $('#kogu-unavailable-msg').hide();
+      // 在庫あり確定後にオプション購入を案内
+      if (state.product && state.product.allows_addons && KoguData.addon_products.length > 0) {
+        $('.kogu-qty-input').val(0);
+        $('#kogu-addon-total-row').hide();
+        $('#kogu-addons-wrap').show();
+      }
       $('#btn-to-info').prop('disabled', false);
     } else {
       $('#kogu-stock-badge').text('在庫なし').attr('class', 'kogu-badge kogu-badge-empty');
       $('#kogu-unavailable-msg').show();
+      $('#kogu-addons-wrap').hide();
       $('#btn-to-info').prop('disabled', true);
     }
   }
