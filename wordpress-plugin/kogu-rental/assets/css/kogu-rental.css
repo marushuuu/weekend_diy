@@ -79,6 +79,29 @@
 .kogu-step1-right { max-width: 320px; display: flex; flex-direction: column; gap: 14px; }
 .kogu-step1-right .kogu-btn { width: 100%; text-align: center; }
 
+/* ── Top mode: 商品ごとのブロックグリッド ────────────────────────────────── */
+.kogu-top-grid {
+  display: flex; flex-wrap: wrap; gap: 20px;
+}
+.kogu-top-block {
+  flex: 1; min-width: 260px; max-width: 340px;
+  display: flex; flex-direction: column;
+}
+.kogu-product-card-static {
+  cursor: default;
+}
+.kogu-product-card-static:hover {
+  border-color: var(--kogu-paper2); box-shadow: none;
+}
+.kogu-product-period {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 0 0;
+}
+.kogu-product-period .kogu-top-go-btn {
+  width: 100%; text-align: center; margin-top: 4px;
+}
+.kogu-top-summary { margin: 4px 0 0; }
+
 /* ── Period wrap ─────────────────────────────────────────────────────────── */
 .kogu-period-wrap { display: flex; flex-direction: column; gap: 14px; }
 .kogu-in-stock-banner { display: flex; align-items: center; gap: 10px; }

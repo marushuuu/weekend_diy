@@ -1,25 +1,101 @@
-<?php defined( 'ABSPATH' ) || exit; ?>
+<?php defined( 'ABSPATH' ) || exit;
+$img_base = KOGU_PLUGIN_URL . 'assets/images/';
+$date_min = date( 'Y-m-d', strtotime( '+2 days' ) );
+$date_max = date( 'Y-m-d', strtotime( '+88 days' ) );
+function kogu_product_img( $name, $base ) {
+    if ( mb_strpos( $name, 'インパクト' ) !== false ) return $base . 'product_impact.jpg';
+    if ( mb_strpos( $name, 'ビット' ) !== false || mb_strpos( $name, 'セット' ) !== false ) return $base . 'product_bitset.jpg';
+    return '';
+}
+?>
 
 <div id="kogu-rental-app" class="kogu-wrap">
 
-  <!-- ── STEP 1: 商品選択 + 期間選択 ────────────────────────────────────── -->
+<?php if ( $is_top_mode ) : ?>
+  <!-- ══ TOP MODE: 商品ごとに日付・週数入力 ══════════════════════════════════ -->
+  <div class="kogu-top-grid">
+  <?php foreach ( Kogu_Database::get_active_products() as $p ) :
+    $img = kogu_product_img( (string) $p->name, $img_base );
+  ?>
+    <div class="kogu-top-block" data-product-id="<?php echo (int) $p->id; ?>">
+
+      <!-- 商品カード -->
+      <div class="kogu-product-card kogu-product-card-static">
+        <?php if ( $img ) : ?>
+          <div class="kogu-product-img">
+            <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
+          </div>
+        <?php endif; ?>
+        <div class="kogu-product-name"><?php echo esc_html( $p->name ); ?></div>
+        <div class="kogu-product-desc"><?php echo esc_html( $p->description ); ?></div>
+        <div class="kogu-product-price">
+          <span class="kogu-price-label">1週間</span>
+          <span class="kogu-price-amount">¥<?php echo number_format( $p->price_per_week ); ?></span>
+        </div>
+        <div class="kogu-product-price-discount">
+          2週目以降 ¥<?php echo number_format( (int) round( $p->price_per_week * 0.7 ) ); ?>/週
+          <span class="kogu-badge-discount">30%OFF</span>
+        </div>
+      </div>
+
+      <!-- 日付・週数入力 -->
+      <div class="kogu-product-period">
+        <div class="kogu-form-row">
+          <label>貸出開始日 <em>*</em></label>
+          <input type="date" class="kogu-top-start-date"
+                 min="<?php echo esc_attr( $date_min ); ?>"
+                 max="<?php echo esc_attr( $date_max ); ?>" />
+        </div>
+        <div class="kogu-form-row">
+          <label>レンタル週数 <em>*</em></label>
+          <select class="kogu-top-rental-weeks">
+            <option value="">-- 週数を選択 --</option>
+            <?php for ( $w = 1; $w <= 8; $w++ ) : ?>
+              <option value="<?php echo $w; ?>"><?php echo $w; ?>週間（<?php echo $w * 7; ?>日間）</option>
+            <?php endfor; ?>
+          </select>
+        </div>
+
+        <!-- 料金サマリー -->
+        <div class="kogu-date-summary kogu-top-summary" style="display:none;">
+          <div class="kogu-date-row">
+            <span>貸出開始</span><strong class="kogu-top-disp-start">—</strong>
+          </div>
+          <div class="kogu-date-row">
+            <span>返却期限</span><strong class="kogu-top-disp-end" style="color:#e85a2b;">—</strong>
+          </div>
+          <div class="kogu-divider"></div>
+          <div class="kogu-date-row kogu-total">
+            <span>レンタル料金</span><strong class="kogu-top-disp-fee">—</strong>
+          </div>
+          <div class="kogu-date-row">
+            <span>送料</span><strong class="kogu-top-disp-shipping">—</strong>
+          </div>
+        </div>
+
+        <div class="kogu-error kogu-top-unavail" style="display:none;">
+          選択した期間は在庫がありません。別の日程をお選びください。
+        </div>
+
+        <a class="kogu-btn kogu-btn-primary kogu-top-go-btn" style="display:none;" href="#">レンタルに進む →</a>
+      </div>
+
+    </div><!-- /kogu-top-block -->
+  <?php endforeach; ?>
+  </div><!-- /kogu-top-grid -->
+
+<?php else : ?>
+  <!-- ══ FULL MODE: STEP 1〜4 ═══════════════════════════════════════════════ -->
+
+  <!-- ── STEP 1: 商品選択 + 期間選択 ──────────────────────────────────────── -->
   <div class="kogu-step" id="step-dates">
     <?php if ( $show_step_titles ) : ?><h2 class="kogu-step-title">STEP 1 &nbsp;商品と期間を選択</h2><?php endif; ?>
 
     <div class="kogu-step1-layout">
       <!-- 商品カード -->
       <div id="kogu-products" class="kogu-products">
-      <?php
-        $img_base = KOGU_PLUGIN_URL . 'assets/images/';
-        foreach ( Kogu_Database::get_active_products() as $p ) :
-          if ( mb_strpos( (string) $p->name, 'インパクト' ) !== false ) {
-            $img = $img_base . 'product_impact.jpg';
-          } elseif ( mb_strpos( (string) $p->name, 'ビット' ) !== false ||
-                     mb_strpos( (string) $p->name, 'セット' ) !== false ) {
-            $img = $img_base . 'product_bitset.jpg';
-          } else {
-            $img = '';
-          }
+      <?php foreach ( Kogu_Database::get_active_products() as $p ) :
+        $img = kogu_product_img( (string) $p->name, $img_base );
       ?>
         <div class="kogu-product-card" data-product-id="<?php echo (int) $p->id; ?>">
           <?php if ( $img ) : ?>
@@ -39,109 +115,105 @@
           </div>
         </div>
       <?php endforeach; ?>
-    </div><!-- /kogu-products -->
+      </div><!-- /kogu-products -->
 
-    <div class="kogu-step1-right">
-    <!-- 期間選択 -->
-    <div id="kogu-period-wrap" class="kogu-period-wrap">
+      <div class="kogu-step1-right">
+        <!-- 期間選択 -->
+        <div id="kogu-period-wrap" class="kogu-period-wrap">
 
-      <div class="kogu-in-stock-banner" id="kogu-stock-banner" style="display:none;">
-        <span id="kogu-stock-badge" class="kogu-badge kogu-badge-checking">確認中...</span>
-        <span id="kogu-stock-product-name" class="kogu-stock-label"></span>
-      </div>
+          <div class="kogu-in-stock-banner" id="kogu-stock-banner" style="display:none;">
+            <span id="kogu-stock-badge" class="kogu-badge kogu-badge-checking">確認中...</span>
+            <span id="kogu-stock-product-name" class="kogu-stock-label"></span>
+          </div>
 
-      <div class="kogu-form-row">
-        <label for="start-date">貸出開始日 <em>*</em></label>
-        <input type="date" id="start-date"
-               min="<?php echo esc_attr( date( 'Y-m-d', strtotime( '+2 days' ) ) ); ?>"
-               max="<?php echo esc_attr( date( 'Y-m-d', strtotime( '+88 days' ) ) ); ?>" />
-      </div>
+          <div class="kogu-form-row">
+            <label for="start-date">貸出開始日 <em>*</em></label>
+            <input type="date" id="start-date"
+                   min="<?php echo esc_attr( $date_min ); ?>"
+                   max="<?php echo esc_attr( $date_max ); ?>" />
+          </div>
 
-      <div class="kogu-form-row">
-        <label for="rental-weeks">レンタル週数 <em>*</em></label>
-        <select id="rental-weeks">
-          <option value="">-- 週数を選択 --</option>
-          <?php for ( $w = 1; $w <= 8; $w++ ) : ?>
-            <option value="<?php echo $w; ?>"><?php echo $w; ?>週間（<?php echo $w * 7; ?>日間）</option>
-          <?php endfor; ?>
-        </select>
-      </div>
+          <div class="kogu-form-row">
+            <label for="rental-weeks">レンタル週数 <em>*</em></label>
+            <select id="rental-weeks">
+              <option value="">-- 週数を選択 --</option>
+              <?php for ( $w = 1; $w <= 8; $w++ ) : ?>
+                <option value="<?php echo $w; ?>"><?php echo $w; ?>週間（<?php echo $w * 7; ?>日間）</option>
+              <?php endfor; ?>
+            </select>
+          </div>
 
-      <!-- 料金サマリー -->
-      <div class="kogu-date-summary" id="kogu-date-summary" style="display:none;">
-        <div class="kogu-date-row">
-          <span>貸出開始</span><strong id="disp-start">—</strong>
-        </div>
-        <div class="kogu-date-row">
-          <span>返却期限</span><strong id="disp-end" style="color:#e85a2b;">—</strong>
-        </div>
-        <div class="kogu-date-row">
-          <span>レンタル期間</span><strong id="disp-weeks">—</strong>
-        </div>
-        <div id="kogu-price-breakdown" class="kogu-price-breakdown" style="display:none;"></div>
-        <div class="kogu-divider"></div>
-        <div class="kogu-date-row kogu-total">
-          <span>レンタル料金</span><strong id="disp-rental-fee">—</strong>
-        </div>
-        <div class="kogu-date-row" id="kogu-shipping-row" style="display:none;">
-          <span>送料</span><strong id="disp-shipping" style="color:#c0392b;">—</strong>
-        </div>
-        <div class="kogu-date-row" id="kogu-free-shipping-row" style="display:none;">
-          <span>送料</span><strong style="color:#27ae60;">無料</strong>
-        </div>
-      </div>
-
-      <div id="kogu-unavailable-msg" class="kogu-error" style="display:none;">
-        選択した期間は在庫がありません。別の日程をお選びください。
-      </div>
-
-    </div><!-- /kogu-period-wrap -->
-
-    <!-- 購入オプション（電動工具選択時のみ表示） -->
-    <div id="kogu-addons-wrap" style="display:none;" class="kogu-addons-wrap">
-      <h3 class="kogu-addons-title">オプション購入（任意）</h3>
-      <p class="kogu-addons-desc">レンタル工具に合わせてご購入いただけます。消耗品はそのままお使いください。</p>
-      <?php $addon_products = Kogu_Database::get_active_addon_products(); ?>
-      <?php if ( ! empty( $addon_products ) ) : ?>
-        <div class="kogu-addon-list">
-          <?php foreach ( $addon_products as $a ) : ?>
-            <div class="kogu-addon-item">
-              <?php if ( $a->image ) : ?>
-                <div class="kogu-addon-img">
-                  <img src="<?php echo esc_url( $a->image ); ?>" alt="<?php echo esc_attr( $a->name ); ?>" loading="lazy" />
-                </div>
-              <?php endif; ?>
-              <div class="kogu-addon-info">
-                <span class="kogu-addon-name"><?php echo esc_html( $a->name ); ?></span>
-                <?php if ( $a->description ) : ?>
-                  <span class="kogu-addon-desc-text"><?php echo esc_html( $a->description ); ?></span>
-                <?php endif; ?>
-                <span class="kogu-addon-price">¥<?php echo number_format( $a->price ); ?> / <?php echo esc_html( $a->unit ); ?></span>
-              </div>
-              <div class="kogu-addon-qty">
-                <button type="button" class="kogu-qty-btn kogu-qty-minus" data-addon-id="<?php echo (int) $a->id; ?>">－</button>
-                <input type="number" class="kogu-qty-input"
-                       id="addon-qty-<?php echo (int) $a->id; ?>"
-                       data-addon-id="<?php echo (int) $a->id; ?>"
-                       data-addon-price="<?php echo (int) $a->price; ?>"
-                       value="0" min="0" max="99" readonly />
-                <button type="button" class="kogu-qty-btn kogu-qty-plus" data-addon-id="<?php echo (int) $a->id; ?>">＋</button>
-              </div>
+          <!-- 料金サマリー -->
+          <div class="kogu-date-summary" id="kogu-date-summary" style="display:none;">
+            <div class="kogu-date-row">
+              <span>貸出開始</span><strong id="disp-start">—</strong>
             </div>
-          <?php endforeach; ?>
-        </div>
-        <div class="kogu-addon-total-row" id="kogu-addon-total-row" style="display:none;">
-          <span>オプション合計</span><strong id="disp-addon-total">¥0</strong>
-        </div>
-      <?php endif; ?>
-    </div><!-- /kogu-addons-wrap -->
+            <div class="kogu-date-row">
+              <span>返却期限</span><strong id="disp-end" style="color:#e85a2b;">—</strong>
+            </div>
+            <div class="kogu-date-row">
+              <span>レンタル期間</span><strong id="disp-weeks">—</strong>
+            </div>
+            <div id="kogu-price-breakdown" class="kogu-price-breakdown" style="display:none;"></div>
+            <div class="kogu-divider"></div>
+            <div class="kogu-date-row kogu-total">
+              <span>レンタル料金</span><strong id="disp-rental-fee">—</strong>
+            </div>
+            <div class="kogu-date-row" id="kogu-shipping-row" style="display:none;">
+              <span>送料</span><strong id="disp-shipping" style="color:#c0392b;">—</strong>
+            </div>
+            <div class="kogu-date-row" id="kogu-free-shipping-row" style="display:none;">
+              <span>送料</span><strong style="color:#27ae60;">無料</strong>
+            </div>
+          </div>
 
-    <?php if ( $is_top_mode ) : ?>
-    <a class="kogu-btn kogu-btn-primary" id="btn-to-rental" style="display:none;" href="<?php echo esc_url( $rental_page_url ); ?>">レンタルに進む →</a>
-    <?php else : ?>
-    <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
-    <?php endif; ?>
-    </div><!-- /kogu-step1-right -->
+          <div id="kogu-unavailable-msg" class="kogu-error" style="display:none;">
+            選択した期間は在庫がありません。別の日程をお選びください。
+          </div>
+
+        </div><!-- /kogu-period-wrap -->
+
+        <!-- 購入オプション（電動工具選択時のみ表示） -->
+        <div id="kogu-addons-wrap" style="display:none;" class="kogu-addons-wrap">
+          <h3 class="kogu-addons-title">オプション購入（任意）</h3>
+          <p class="kogu-addons-desc">レンタル工具に合わせてご購入いただけます。消耗品はそのままお使いください。</p>
+          <?php $addon_products = Kogu_Database::get_active_addon_products(); ?>
+          <?php if ( ! empty( $addon_products ) ) : ?>
+            <div class="kogu-addon-list">
+              <?php foreach ( $addon_products as $a ) : ?>
+                <div class="kogu-addon-item">
+                  <?php if ( $a->image ) : ?>
+                    <div class="kogu-addon-img">
+                      <img src="<?php echo esc_url( $a->image ); ?>" alt="<?php echo esc_attr( $a->name ); ?>" loading="lazy" />
+                    </div>
+                  <?php endif; ?>
+                  <div class="kogu-addon-info">
+                    <span class="kogu-addon-name"><?php echo esc_html( $a->name ); ?></span>
+                    <?php if ( $a->description ) : ?>
+                      <span class="kogu-addon-desc-text"><?php echo esc_html( $a->description ); ?></span>
+                    <?php endif; ?>
+                    <span class="kogu-addon-price">¥<?php echo number_format( $a->price ); ?> / <?php echo esc_html( $a->unit ); ?></span>
+                  </div>
+                  <div class="kogu-addon-qty">
+                    <button type="button" class="kogu-qty-btn kogu-qty-minus" data-addon-id="<?php echo (int) $a->id; ?>">－</button>
+                    <input type="number" class="kogu-qty-input"
+                           id="addon-qty-<?php echo (int) $a->id; ?>"
+                           data-addon-id="<?php echo (int) $a->id; ?>"
+                           data-addon-price="<?php echo (int) $a->price; ?>"
+                           value="0" min="0" max="99" readonly />
+                    <button type="button" class="kogu-qty-btn kogu-qty-plus" data-addon-id="<?php echo (int) $a->id; ?>">＋</button>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+            <div class="kogu-addon-total-row" id="kogu-addon-total-row" style="display:none;">
+              <span>オプション合計</span><strong id="disp-addon-total">¥0</strong>
+            </div>
+          <?php endif; ?>
+        </div><!-- /kogu-addons-wrap -->
+
+        <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
+      </div><!-- /kogu-step1-right -->
     </div><!-- /kogu-step1-layout -->
   </div>
 
@@ -222,5 +294,7 @@
     <p>レンタル番号: <strong id="disp-rental-id">—</strong></p>
     <a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>" class="kogu-btn kogu-btn-primary">マイページへ</a>
   </div>
+
+<?php endif; ?>
 
 </div>
