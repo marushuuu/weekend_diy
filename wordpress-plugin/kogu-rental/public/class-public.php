@@ -332,7 +332,7 @@ class Kogu_Public {
 
     // ── noindex メタタグ出力 ──────────────────────────────────────────────────
     public static function output_noindex_meta() {
-        $slugs_option = get_option( 'kogu_noindex_slugs', 'tokushoho,my-page' );
+        $slugs_option = get_option( 'kogu_noindex_slugs', 'tokushoho,my-page,privacy,terms' );
         $slugs = array_filter( array_map( 'trim', explode( ',', $slugs_option ) ) );
 
         if ( ! empty( $slugs ) && is_page( $slugs ) ) {

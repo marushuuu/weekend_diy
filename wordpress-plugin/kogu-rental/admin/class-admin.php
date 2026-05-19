@@ -751,13 +751,12 @@ class Kogu_Admin {
                     <th><label for="kogu_noindex_slugs">検索インデックスさせないページ</label></th>
                     <td>
                       <input type="text" id="kogu_noindex_slugs" name="kogu_noindex_slugs"
-                             value="<?php echo esc_attr( get_option( 'kogu_noindex_slugs', 'tokushoho,my-page' ) ); ?>"
-                             class="large-text" placeholder="例: tokushoho,my-page,privacy" />
+                             value="<?php echo esc_attr( get_option( 'kogu_noindex_slugs', 'tokushoho,my-page,privacy,terms' ) ); ?>"
+                             class="large-text" placeholder="例: tokushoho,my-page,privacy,terms" />
                       <p class="description">
                         Googleにインデックスさせたくないページの<strong>スラッグ</strong>をカンマ区切りで入力してください。<br>
-                        運営者の氏名・住所が記載されるページ（特定商取引法など）を指定すると、
                         <code>&lt;meta name="robots" content="noindex, nofollow"&gt;</code> が自動で出力されます。<br>
-                        <strong>デフォルト:</strong> <code>tokushoho, my-page</code>
+                        <strong>デフォルト:</strong> <code>tokushoho, my-page, privacy, terms</code>
                       </p>
                     </td>
                   </tr>
