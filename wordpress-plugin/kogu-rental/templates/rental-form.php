@@ -8,8 +8,23 @@
 
     <!-- 商品カード -->
     <div id="kogu-products" class="kogu-products">
-      <?php foreach ( Kogu_Database::get_active_products() as $p ) : ?>
+      <?php
+        $img_base = KOGU_PLUGIN_URL . 'assets/images/';
+        foreach ( Kogu_Database::get_active_products() as $p ) :
+          if ( mb_strpos( (string) $p->name, 'インパクト' ) !== false ) {
+            $img = $img_base . 'product_impact.jpg';
+          } elseif ( mb_strpos( (string) $p->name, 'ビット' ) !== false ) {
+            $img = $img_base . 'product_bitset.jpg';
+          } else {
+            $img = '';
+          }
+      ?>
         <div class="kogu-product-card" data-product-id="<?php echo (int) $p->id; ?>">
+          <?php if ( $img ) : ?>
+            <div class="kogu-product-img">
+              <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
+            </div>
+          <?php endif; ?>
           <div class="kogu-product-name"><?php echo esc_html( $p->name ); ?></div>
           <div class="kogu-product-desc"><?php echo esc_html( $p->description ); ?></div>
           <div class="kogu-product-price">

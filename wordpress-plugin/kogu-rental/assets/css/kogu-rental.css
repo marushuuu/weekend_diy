@@ -25,9 +25,27 @@
 .kogu-product-card {
   flex: 1; min-width: 200px; max-width: 320px;
   border: 2px solid var(--kogu-paper2); border-radius: var(--kogu-radius);
-  padding: 16px; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+  overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s;
   background: #fff;
 }
+.kogu-product-img {
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: var(--kogu-paper2);
+}
+.kogu-product-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .3s;
+}
+.kogu-product-card:hover .kogu-product-img img { transform: scale(1.04); }
+.kogu-product-card .kogu-product-name,
+.kogu-product-card .kogu-product-desc,
+.kogu-product-card .kogu-product-price,
+.kogu-product-card .kogu-product-price-discount {
+  padding-inline: 14px;
+}
+.kogu-product-card .kogu-product-name { margin-top: 14px; }
+.kogu-product-card .kogu-product-price-discount { padding-bottom: 14px; }
 .kogu-product-card:hover { border-color: var(--kogu-accent); box-shadow: 0 2px 8px rgba(232,90,43,.15); }
 .kogu-product-card.selected {
   border-color: var(--kogu-accent); background: #fff9f6;
