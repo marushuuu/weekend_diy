@@ -57,11 +57,12 @@ class Kogu_Public {
         $addons_js  = [];
         foreach ( $addons_raw as $a ) {
             $addons_js[] = [
-                'id'          => (int) $a->id,
-                'name'        => $a->name,
-                'description' => $a->description,
-                'price'       => (int) $a->price,
-                'unit'        => $a->unit,
+                'id'            => (int) $a->id,
+                'name'          => $a->name,
+                'description'   => $a->description,
+                'price'         => (int) $a->price,
+                'unit'          => $a->unit,
+                'stock'         => $a->stock_quantity !== null ? (int) $a->stock_quantity : null,
             ];
         }
 
@@ -140,10 +141,13 @@ class Kogu_Public {
         $addon_total = 0;
         $addons_raw  = json_decode( stripslashes( $_POST['addons'] ?? '[]' ), true ) ?: [];
         foreach ( $addons_raw as $a ) {
-            $ap = Kogu_Database::get_addon_product( (int) ( $a['id'] ?? 0 ) );
-            if ( $ap && (int) ( $a['qty'] ?? 0 ) > 0 ) {
-                $addon_total += (int) $ap->price * (int) $a['qty'];
+            $ap  = Kogu_Database::get_addon_product( (int) ( $a['id'] ?? 0 ) );
+            $qty = (int) ( $a['qty'] ?? 0 );
+            if ( ! $ap || $qty < 1 ) continue;
+            if ( $ap->stock_quantity !== null && (int) $ap->stock_quantity < $qty ) {
+                wp_send_json_error( esc_html( $ap->name ) . ' の在庫が不足しています（残り' . (int) $ap->stock_quantity . '個）。' );
             }
+            $addon_total += (int) $ap->price * $qty;
         }
         $subtotal     = $rental_fee + $addon_total;
         $shipping_fee = $subtotal < 3500 ? 2500 : 0;
@@ -249,9 +253,15 @@ class Kogu_Public {
             $is_first     = false;
         }
 
-        // オプション購入を最初のレンタルに紐付け
+        // オプション購入を最初のレンタルに紐付け＆在庫減算
         if ( ! empty( $addons ) && ! empty( $rental_ids ) ) {
             Kogu_Database::save_rental_addons( $rental_ids[0], $addons );
+            foreach ( $addons as $a ) {
+                $qty = (int) ( $a['qty'] ?? 0 );
+                if ( $qty > 0 ) {
+                    Kogu_Database::deduct_addon_stock( (int) $a['id'], $qty );
+                }
+            }
         }
 
         wp_send_json_success( [ 'rental_id' => $rental_ids[0], 'rental_ids' => $rental_ids ] );

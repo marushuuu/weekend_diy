@@ -33,14 +33,15 @@ class Kogu_Database {
 
         // ── 購入オプション商品（消耗品など） ─────────────────────────────────
         dbDelta( "CREATE TABLE " . self::addon_products_table() . " (
-            id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            name        VARCHAR(200) NOT NULL DEFAULT '',
-            description TEXT DEFAULT '',
-            price       INT UNSIGNED NOT NULL DEFAULT 0,
-            unit        VARCHAR(50) NOT NULL DEFAULT '個',
-            image       VARCHAR(500) NOT NULL DEFAULT '',
-            status      ENUM('active','inactive') NOT NULL DEFAULT 'active',
-            created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            name           VARCHAR(200) NOT NULL DEFAULT '',
+            description    TEXT DEFAULT '',
+            price          INT UNSIGNED NOT NULL DEFAULT 0,
+            unit           VARCHAR(50) NOT NULL DEFAULT '個',
+            image          VARCHAR(500) NOT NULL DEFAULT '',
+            stock_quantity INT UNSIGNED DEFAULT NULL COMMENT 'NULL=在庫無制限',
+            status         ENUM('active','inactive') NOT NULL DEFAULT 'active',
+            created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) $charset;" );
 
@@ -212,6 +213,26 @@ class Kogu_Database {
             "SELECT * FROM " . self::addon_products_table() . " WHERE id = %d",
             $id
         ) ) ?: null;
+    }
+
+    public static function deduct_addon_stock( int $addon_id, int $qty ): void {
+        global $wpdb;
+        $wpdb->query( $wpdb->prepare(
+            "UPDATE " . self::addon_products_table() .
+            " SET stock_quantity = GREATEST(0, stock_quantity - %d)
+              WHERE id = %d AND stock_quantity IS NOT NULL",
+            $qty, $addon_id
+        ) );
+    }
+
+    public static function restore_addon_stock( int $addon_id, int $qty ): void {
+        global $wpdb;
+        $wpdb->query( $wpdb->prepare(
+            "UPDATE " . self::addon_products_table() .
+            " SET stock_quantity = stock_quantity + %d
+              WHERE id = %d AND stock_quantity IS NOT NULL",
+            $qty, $addon_id
+        ) );
     }
 
     public static function save_rental_addons( int $rental_id, array $addons ): void {

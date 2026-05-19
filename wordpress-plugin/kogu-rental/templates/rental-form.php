@@ -202,15 +202,24 @@ function kogu_product_img( $name, $base ) {
                     <?php endif; ?>
                     <span class="kogu-addon-price">¥<?php echo number_format( $a->price ); ?> / <?php echo esc_html( $a->unit ); ?></span>
                   </div>
+                  <?php $stock = $a->stock_quantity !== null ? (int) $a->stock_quantity : null; ?>
+                  <?php if ( $stock === 0 ) : ?>
+                  <div class="kogu-addon-soldout">品切れ</div>
+                  <?php else : ?>
                   <div class="kogu-addon-qty">
                     <button type="button" class="kogu-qty-btn kogu-qty-minus" data-addon-id="<?php echo (int) $a->id; ?>">－</button>
                     <input type="number" class="kogu-qty-input"
                            id="addon-qty-<?php echo (int) $a->id; ?>"
                            data-addon-id="<?php echo (int) $a->id; ?>"
                            data-addon-price="<?php echo (int) $a->price; ?>"
-                           value="0" min="0" max="99" readonly />
+                           data-addon-stock="<?php echo $stock !== null ? $stock : ''; ?>"
+                           value="0" min="0" max="<?php echo $stock !== null ? $stock : 99; ?>" readonly />
                     <button type="button" class="kogu-qty-btn kogu-qty-plus" data-addon-id="<?php echo (int) $a->id; ?>">＋</button>
+                    <?php if ( $stock !== null ) : ?>
+                      <small class="kogu-addon-stock-label">残り<?php echo $stock; ?>個</small>
+                    <?php endif; ?>
                   </div>
+                  <?php endif; ?>
                 </div>
               <?php endforeach; ?>
             </div>

@@ -195,10 +195,12 @@
     $('#start-date, #rental-weeks').on('change', updateSummary);
 
     $(document).on('click', '.kogu-qty-plus', function () {
-      var id = $(this).data('addon-id');
+      var id     = $(this).data('addon-id');
       var $input = $('#addon-qty-' + id);
-      $input.val((parseInt($input.val(), 10) || 0) + 1);
-      updateAddons();
+      var cur    = parseInt($input.val(), 10) || 0;
+      var stock  = parseInt($input.data('addon-stock'), 10);
+      var maxQty = isNaN(stock) ? 99 : stock;
+      if (cur < maxQty) { $input.val(cur + 1); updateAddons(); }
     });
     $(document).on('click', '.kogu-qty-minus', function () {
       var id = $(this).data('addon-id');

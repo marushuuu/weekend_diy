@@ -274,6 +274,15 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
   border-radius: 6px; padding: 4px; font-size: 15px; font-weight: 700;
   background: var(--kogu-paper);
 }
+.kogu-addon-soldout {
+  padding: 6px 12px; border-radius: 999px;
+  background: #fde8e8; color: var(--kogu-warn);
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.kogu-addon-stock-label {
+  font-size: 11px; color: var(--kogu-muted); margin-left: 4px; white-space: nowrap;
+}
+
 .kogu-addon-total-row {
   display: flex; justify-content: space-between; align-items: center;
   padding: 12px 0 0; margin-top: 12px; border-top: 1px dashed var(--kogu-paper2);

@@ -630,6 +630,18 @@ class Kogu_Admin {
                   </td>
                 </tr>
                 <tr>
+                  <th><label for="astock">在庫数</label></th>
+                  <td>
+                    <?php
+                    $stock_val = isset( $edit->stock_quantity ) ? $edit->stock_quantity : '';
+                    ?>
+                    <input type="number" id="astock" name="stock_quantity" min="0" class="small-text"
+                           value="<?php echo $stock_val !== '' && $stock_val !== null ? (int) $stock_val : ''; ?>"
+                           placeholder="空白=無制限" />
+                    <p class="description">空白にすると在庫無制限。数字を入力すると購入時に在庫を減算します。</p>
+                  </td>
+                </tr>
+                <tr>
                   <th><label for="astatus">ステータス</label></th>
                   <td>
                     <select id="astatus" name="status">
@@ -654,18 +666,26 @@ class Kogu_Admin {
                 <th>説明</th>
                 <th>単価</th>
                 <th>単位</th>
+                <th>在庫数</th>
                 <th>ステータス</th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody>
-              <?php foreach ( $all as $a ) : ?>
+              <?php foreach ( $all as $a ) :
+                $stock_disp = $a->stock_quantity === null
+                    ? '<span style="color:#888;">無制限</span>'
+                    : ( (int) $a->stock_quantity === 0
+                        ? '<span style="color:#c0392b;font-weight:700;">品切れ</span>'
+                        : '<span style="color:#27ae60;font-weight:700;">' . (int) $a->stock_quantity . '</span>' );
+              ?>
                 <tr>
                   <td><?php echo (int) $a->id; ?></td>
                   <td><strong><?php echo esc_html( $a->name ); ?></strong></td>
                   <td><?php echo esc_html( $a->description ); ?></td>
                   <td>¥<?php echo number_format( $a->price ); ?></td>
                   <td><?php echo esc_html( $a->unit ); ?></td>
+                  <td><?php echo $stock_disp; ?></td>
                   <td><?php echo $a->status === 'active' ? '<span style="color:#27ae60;">公開中</span>' : '<span style="color:#999;">非公開</span>'; ?></td>
                   <td><a href="?page=kogu-addons&edit=<?php echo (int) $a->id; ?>" class="button button-small">編集</a></td>
                 </tr>
@@ -783,14 +803,20 @@ class Kogu_Admin {
         check_admin_referer( 'kogu_addon_action' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( '権限がありません。' );
 
-        $addon_id = (int) ( $_POST['addon_id'] ?? 0 );
+        $addon_id     = (int) ( $_POST['addon_id'] ?? 0 );
+        $stock_input  = $_POST['stock_quantity'] ?? '';
+        $stock_quantity = ( $stock_input === '' || $stock_input === null )
+            ? null
+            : max( 0, (int) $stock_input );
+
         $data = [
-            'name'        => sanitize_text_field( $_POST['name'] ?? '' ),
-            'description' => sanitize_text_field( $_POST['description'] ?? '' ),
-            'price'       => max( 0, (int) ( $_POST['price'] ?? 0 ) ),
-            'unit'        => sanitize_text_field( $_POST['unit'] ?? '個' ),
-            'image'       => sanitize_text_field( $_POST['image'] ?? '' ),
-            'status'      => in_array( $_POST['status'] ?? '', [ 'active', 'inactive' ] ) ? $_POST['status'] : 'active',
+            'name'           => sanitize_text_field( $_POST['name'] ?? '' ),
+            'description'    => sanitize_text_field( $_POST['description'] ?? '' ),
+            'price'          => max( 0, (int) ( $_POST['price'] ?? 0 ) ),
+            'unit'           => sanitize_text_field( $_POST['unit'] ?? '個' ),
+            'image'          => sanitize_text_field( $_POST['image'] ?? '' ),
+            'stock_quantity' => $stock_quantity,
+            'status'         => in_array( $_POST['status'] ?? '', [ 'active', 'inactive' ] ) ? $_POST['status'] : 'active',
         ];
 
         global $wpdb;
