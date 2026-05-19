@@ -45,7 +45,7 @@
 		<div class="section-head">
 			<h2><span class="star">★</span>工具を借りる</h2>
 		</div>
-		<?php echo do_shortcode( '[kogu_rental_form]' ); ?>
+		<?php echo do_shortcode( '[kogu_rental_form show_step_titles="false"]' ); ?>
 	</div>
 </section>
 

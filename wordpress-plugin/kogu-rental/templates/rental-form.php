@@ -4,7 +4,7 @@
 
   <!-- ── STEP 1: 商品選択 + 期間選択 ────────────────────────────────────── -->
   <div class="kogu-step" id="step-dates">
-    <h2 class="kogu-step-title">STEP 1 &nbsp;商品と期間を選択</h2>
+    <?php if ( $show_step_titles ) : ?><h2 class="kogu-step-title">STEP 1 &nbsp;商品と期間を選択</h2><?php endif; ?>
 
     <div class="kogu-step1-layout">
       <!-- 商品カード -->

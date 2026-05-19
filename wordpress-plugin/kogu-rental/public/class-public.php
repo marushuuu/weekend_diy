@@ -77,7 +77,9 @@ class Kogu_Public {
     }
 
     // ── ショートコード: レンタル申込フォーム ─────────────────────────────────
-    public static function shortcode_rental_form() {
+    public static function shortcode_rental_form( $atts ) {
+        $atts = shortcode_atts( [ 'show_step_titles' => 'true' ], $atts );
+        $show_step_titles = $atts['show_step_titles'] !== 'false';
         ob_start();
         include KOGU_PLUGIN_DIR . 'templates/rental-form.php';
         return ob_get_clean();
