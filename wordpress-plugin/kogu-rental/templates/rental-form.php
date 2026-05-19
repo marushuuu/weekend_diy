@@ -40,7 +40,7 @@
     </div>
 
     <!-- 期間選択 -->
-    <div id="kogu-period-wrap" style="display:none;" class="kogu-period-wrap">
+    <div id="kogu-period-wrap" class="kogu-period-wrap">
 
       <div class="kogu-in-stock-banner">
         <span id="kogu-stock-badge" class="kogu-badge kogu-badge-checking">確認中...</span>
