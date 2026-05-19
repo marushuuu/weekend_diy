@@ -610,6 +610,22 @@ class Kogu_Admin {
                              placeholder="個・袋・箱" /></td>
                 </tr>
                 <tr>
+                  <th><label for="aimage">商品画像URL</label></th>
+                  <td>
+                    <input type="text" id="aimage" name="image" class="large-text"
+                           value="<?php echo esc_attr( $edit->image ?? '' ); ?>"
+                           placeholder="例: /wp-content/plugins/kogu-rental/assets/images/addon_screw.jpg" />
+                    <p class="description">
+                      画像ファイルをサーバーの <code>wp-content/plugins/kogu-rental/assets/images/</code> に置いてパスを入力してください。<br>
+                      またはWordPressメディアライブラリのURLをそのまま貼り付けてもOKです。
+                    </p>
+                    <?php if ( ! empty( $edit->image ) ) : ?>
+                      <img src="<?php echo esc_url( $edit->image ); ?>" alt="プレビュー"
+                           style="max-width:120px;margin-top:8px;border-radius:6px;border:1px solid #ddd;" />
+                    <?php endif; ?>
+                  </td>
+                </tr>
+                <tr>
                   <th><label for="astatus">ステータス</label></th>
                   <td>
                     <select id="astatus" name="status">
@@ -768,6 +784,7 @@ class Kogu_Admin {
             'description' => sanitize_text_field( $_POST['description'] ?? '' ),
             'price'       => max( 0, (int) ( $_POST['price'] ?? 0 ) ),
             'unit'        => sanitize_text_field( $_POST['unit'] ?? '個' ),
+            'image'       => sanitize_text_field( $_POST['image'] ?? '' ),
             'status'      => in_array( $_POST['status'] ?? '', [ 'active', 'inactive' ] ) ? $_POST['status'] : 'active',
         ];
 

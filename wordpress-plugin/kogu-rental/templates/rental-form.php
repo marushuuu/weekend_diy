@@ -97,6 +97,11 @@
         <div class="kogu-addon-list">
           <?php foreach ( $addon_products as $a ) : ?>
             <div class="kogu-addon-item">
+              <?php if ( $a->image ) : ?>
+                <div class="kogu-addon-img">
+                  <img src="<?php echo esc_url( $a->image ); ?>" alt="<?php echo esc_attr( $a->name ); ?>" loading="lazy" />
+                </div>
+              <?php endif; ?>
               <div class="kogu-addon-info">
                 <span class="kogu-addon-name"><?php echo esc_html( $a->name ); ?></span>
                 <?php if ( $a->description ) : ?>

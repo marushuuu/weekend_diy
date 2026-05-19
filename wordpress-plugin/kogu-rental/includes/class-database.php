@@ -38,6 +38,7 @@ class Kogu_Database {
             description TEXT DEFAULT '',
             price       INT UNSIGNED NOT NULL DEFAULT 0,
             unit        VARCHAR(50) NOT NULL DEFAULT '個',
+            image       VARCHAR(500) NOT NULL DEFAULT '',
             status      ENUM('active','inactive') NOT NULL DEFAULT 'active',
             created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
