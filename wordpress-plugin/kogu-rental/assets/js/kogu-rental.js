@@ -317,10 +317,7 @@
       var statusText = state.product_ids.length > 1 ? '全商品 在庫あり' : '在庫あり';
       $('#kogu-stock-badge').text(statusText).attr('class', 'kogu-badge kogu-badge-ok');
       $('#kogu-unavailable-msg').hide();
-      // 在庫確定後にオプション購入を案内（1つでもaddons許可商品があれば）
-      var anyAllowsAddons = false;
-      $.each(state.products, function (_, p) { if (p.allows_addons) { anyAllowsAddons = true; return false; } });
-      if (anyAllowsAddons && KoguData.addon_products.length > 0) {
+      if (KoguData.addon_products.length > 0) {
         $('.kogu-qty-input').val(0);
         $('#kogu-addon-total-row').hide();
         $('#kogu-addons-wrap').show();

@@ -483,6 +483,16 @@ class Kogu_Admin {
                              value="<?php echo (int) ( $edit->deposit_amount ?? 10000 ); ?>" /></td>
                 </tr>
                 <tr>
+                  <th>購入オプション表示</th>
+                  <td>
+                    <label>
+                      <input type="checkbox" name="allows_addons" value="1"
+                             <?php checked( (int) ( $edit->allows_addons ?? 1 ), 1 ); ?> />
+                      このレンタル商品に購入オプション（消耗品など）を表示する
+                    </label>
+                  </td>
+                </tr>
+                <tr>
                   <th><label for="pstatus">ステータス</label></th>
                   <td>
                     <select id="pstatus" name="status">
@@ -859,6 +869,7 @@ class Kogu_Admin {
 
         global $wpdb;
         $data = compact( 'name', 'description', 'price_per_week', 'deposit_amount', 'status' );
+        $data['allows_addons'] = isset( $_POST['allows_addons'] ) ? 1 : 0;
 
         if ( $product_id ) {
             $wpdb->update( Kogu_Database::products_table(), $data, [ 'id' => $product_id ] );
