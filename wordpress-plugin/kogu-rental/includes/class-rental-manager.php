@@ -23,6 +23,7 @@ class Kogu_Rental_Manager {
         $inserted = $wpdb->insert(
             Kogu_Database::rentals_table(),
             [
+                'reservation_number'       => $args['reservation_number']       ?? '',
                 'product_id'               => $product_id,
                 'user_id'                  => $args['user_id']                  ?? null,
                 'guest_name'               => $args['guest_name']               ?? '',

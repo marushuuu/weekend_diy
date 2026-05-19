@@ -393,6 +393,7 @@
       if (res.success) {
         var rentalId = res.data.rental_id || (res.data.rental_ids && res.data.rental_ids[0]);
         $('#disp-rental-id').text('#' + rentalId);
+        $('#disp-reservation-number').text(res.data.reservation_number || '—');
         showStep('step-complete');
       } else {
         showError(res.data);
@@ -404,18 +405,20 @@
   function initMyPage() {
     $(document).on('submit', '.kogu-return-form', function (e) {
       e.preventDefault();
-      var $form = $(this), rentalId = $form.data('rental-id');
-      var tracking = $form.find('[name=tracking]').val().trim().replace(/\s/g, '');
-      var email    = $form.find('[name=email]').val().trim();
-      var $msg     = $form.find('.kogu-return-msg');
-      if (!tracking) { $msg.text('追跡番号を入力してください。').show(); return; }
+      var $form             = $(this);
+      var rentalId          = $form.data('rental-id');
+      var reservationNumber = $form.data('reservation-number') || '';
+      var tracking          = $form.find('[name=tracking]').val().trim().replace(/\s/g, '');
+      var $msg              = $form.find('.kogu-return-msg');
+      if (!tracking) { $msg.text('追跡番号を入力してください。').css('color','red').show(); return; }
       if (!/^\d{12,13}$/.test(tracking)) {
         $msg.text('ゆうパックの追跡番号は12〜13桁の数字です。再確認してください。').css('color','red').show();
         return;
       }
       $.post(KoguData.ajax_url, {
         action: 'kogu_submit_return', nonce: KoguData.nonce,
-        rental_id: rentalId, tracking: tracking, email: email,
+        rental_id: rentalId, tracking: tracking,
+        reservation_number: reservationNumber,
       }, function (res) {
         if (res.success) {
           $msg.text('✅ 返却証跡を提出しました。').css('color','green').show();

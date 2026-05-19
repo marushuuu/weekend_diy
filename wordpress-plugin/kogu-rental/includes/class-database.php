@@ -73,6 +73,7 @@ class Kogu_Database {
         // ── レンタル注文 ──────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE " . self::rentals_table() . " (
             id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            reservation_number       VARCHAR(20) NOT NULL DEFAULT '' COMMENT '予約確認番号',
             product_id               BIGINT UNSIGNED DEFAULT NULL,
             user_id                  BIGINT UNSIGNED DEFAULT NULL COMMENT 'NULLはゲスト',
             guest_name               VARCHAR(100) DEFAULT '',
@@ -122,7 +123,8 @@ class Kogu_Database {
             KEY user_id (user_id),
             KEY status (status),
             KEY rental_end_date (rental_end_date),
-            KEY inventory_unit_id (inventory_unit_id)
+            KEY inventory_unit_id (inventory_unit_id),
+            KEY reservation_number (reservation_number)
         ) $charset;" );
 
         // ── 返却証跡 ─────────────────────────────────────────────────────────
@@ -248,6 +250,31 @@ class Kogu_Database {
                 'unit_price'       => (int) $addon_product->price,
             ] );
         }
+    }
+
+    // ── 予約番号 helpers ──────────────────────────────────────────────────────
+    public static function generate_reservation_number(): string {
+        global $wpdb;
+        $table = self::rentals_table();
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        do {
+            $code = 'KR-';
+            for ( $i = 0; $i < 6; $i++ ) {
+                $code .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
+            }
+        } while ( (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE reservation_number = %s", $code
+        ) ) > 0 );
+        return $code;
+    }
+
+    public static function get_rentals_by_reservation_number( string $rn ): array {
+        global $wpdb;
+        if ( ! $rn ) return [];
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM " . self::rentals_table() . " WHERE reservation_number = %s ORDER BY id ASC",
+            $rn
+        ) ) ?: [];
     }
 
     public static function get_rental_addons( int $rental_id ): array {

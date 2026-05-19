@@ -94,12 +94,23 @@ class Kogu_Email_Handler {
             ? "<tr><td style='padding:8px 12px;font-weight:bold;'>送料</td><td style='padding:8px 12px;color:#c0392b;'>¥" . number_format( $shipping_fee ) . "</td></tr>"
             : "<tr><td style='padding:8px 12px;font-weight:bold;'>送料</td><td style='padding:8px 12px;color:#27ae60;'>無料</td></tr>";
 
+        $reservation_number = $rental->reservation_number ?? '';
+        $mypage_url         = home_url( '/my-page/' );
+
         $content = "
             <h2 style='color:#e85a2b;'>ご予約を承りました</h2>
             <p>{$name} 様</p>
             <p>{$product_name}のレンタルをご予約いただきありがとうございます。</p>
+
+            <div style='background:#fff9f6;border:2px solid #e85a2b;border-radius:8px;padding:20px 24px;margin:20px 0;text-align:center;'>
+              <p style='margin:0 0 6px;font-size:13px;color:#888;'>あなたの予約番号</p>
+              <p style='margin:0;font-size:32px;font-weight:900;letter-spacing:3px;color:#e85a2b;'>{$reservation_number}</p>
+              <p style='margin:8px 0 0;font-size:12px;color:#888;'>マイページでこの番号を入力すると予約状況の確認・返却手続きができます</p>
+            </div>
+
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
-              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル番号</td><td style='padding:8px 12px;'>#{$rental_id}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>{$reservation_number}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>レンタル番号</td><td style='padding:8px 12px;'>#{$rental_id}</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>商品</td><td style='padding:8px 12px;'>{$product_name}</td></tr>
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>レンタル期間</td><td style='padding:8px 12px;'>{$rental->rental_start_date} 〜 {$rental->rental_end_date}（{$weeks}週間）</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong>（この日までに発送してください）</td></tr>
@@ -115,7 +126,10 @@ class Kogu_Email_Handler {
             </table>
             <p style='font-size:12px;color:#888;'>※ 延滞・損傷がなければ追加費用は一切かかりません。</p>
             <p>商品は準備が整い次第、ゆうパックにてお届けします。追跡番号が確定しましたら別途ご連絡いたします。</p>
-            <p>ご不明な点はお問い合わせください。</p>";
+            <p>ご不明な点はお問い合わせください。</p>
+            <p style='margin-top:20px;'>
+              <a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで予約を確認する</a>
+            </p>";
         self::send( $email, $name, '【工具レンタル】ご予約確認 #' . $rental_id, self::wrap( $content ) );
     }
 
@@ -128,21 +142,26 @@ class Kogu_Email_Handler {
         $name         = self::get_rental_name( $rental );
         $product_name = self::get_product_name( $rental );
 
+        $reservation_number = $rental->reservation_number ?? '';
+        $mypage_url         = home_url( '/my-page/' );
+
         $content = "
             <h2 style='color:#e85a2b;'>商品を発送しました</h2>
             <p>{$name} 様</p>
             <p>{$product_name}を発送しましたのでお知らせします。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
-              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>追跡番号（ゆうパック）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>{$tracking_number}</td></tr>
-              <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong></td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-weight:bold;'>{$reservation_number}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>追跡番号（ゆうパック）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;'>{$tracking_number}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong></td></tr>
             </table>
             <p><a href='https://www.post.japanpost.jp/cgi-yubin/navi/DispList.do?number={$tracking_number}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>ゆうパック追跡を確認する</a></p>
             <h3 style='margin-top:24px;'>返却方法</h3>
             <ol>
               <li><strong>{$rental->rental_end_date}まで</strong>に最寄りの郵便局またはコンビニから着払いで発送してください。</li>
-              <li>発送後、マイページから追跡番号を入力して返却証跡を提出してください。</li>
+              <li>発送後、マイページから予約番号 <strong>{$reservation_number}</strong> を入力して返却証跡を提出してください。</li>
               <li>返却期限を過ぎた場合、1日あたり¥500の延滞料金が登録カードに請求されます。</li>
-            </ol>";
+            </ol>
+            <p><a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで返却手続きをする</a></p>";
         self::send( $email, $name, '【工具レンタル】商品発送のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
@@ -155,6 +174,9 @@ class Kogu_Email_Handler {
         $name         = self::get_rental_name( $rental );
         $product_name = self::get_product_name( $rental );
 
+        $reservation_number = $rental->reservation_number ?? '';
+        $mypage_url         = home_url( '/my-page/' );
+
         $content = "
             <h2 style='color:#e85a2b;'>⚠️ 返却期限は明日です</h2>
             <p>{$name} 様</p>
@@ -165,9 +187,9 @@ class Kogu_Email_Handler {
             <ol>
               <li>商品を梱包してください（付属品を必ず同梱）。</li>
               <li>最寄りの郵便局またはコンビニから<strong>着払い</strong>で発送してください。</li>
-              <li>マイページから追跡番号を入力して完了です。</li>
+              <li>マイページで予約番号 <strong>{$reservation_number}</strong> を入力して返却証跡を提出してください。</li>
             </ol>
-            <p><a href='" . home_url( '/my-page' ) . "' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>マイページで返却手続きをする</a></p>";
+            <p><a href='{$mypage_url}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>マイページで返却手続きをする</a></p>";
         self::send( $email, $name, '【工具レンタル】⚠️ 返却期限前日のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
@@ -182,17 +204,21 @@ class Kogu_Email_Handler {
         $late_total  = number_format( $rental->late_fee_total );
 
         $product_name = self::get_product_name( $rental );
+        $reservation_number = $rental->reservation_number ?? '';
+        $mypage_url         = home_url( '/my-page/' );
+
         $content = "
             <h2 style='color:#c0392b;'>⛔ 返却期限を過ぎています</h2>
             <p>{$name} 様</p>
             <p>レンタル中の{$product_name}の返却期限（{$rental->rental_end_date}）を過ぎています。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-weight:bold;'>{$reservation_number}</td></tr>
               <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>延滞日数</td><td style='padding:8px 12px;color:#c0392b;font-weight:bold;'>{$late_days}日</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>延滞料金（累計）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$late_total}</td></tr>
             </table>
             <p>延滞料金は登録カードに直接請求いたします。至急ご返送ください。</p>
             <p><strong>至急、返送手続きをお願いいたします。</strong></p>
-            <p><a href='" . home_url( '/my-page' ) . "' style='background:#c0392b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>今すぐ返却手続きをする</a></p>";
+            <p><a href='{$mypage_url}' style='background:#c0392b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>今すぐ返却手続きをする（予約番号: {$reservation_number}）</a></p>";
         self::send( $email, $name, '【工具レンタル】⛔ 返却期限超過のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 

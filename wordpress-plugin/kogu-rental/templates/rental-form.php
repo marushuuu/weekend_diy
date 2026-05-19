@@ -324,8 +324,18 @@ function kogu_product_img( $name, $base ) {
     <div class="kogu-complete-icon">✅</div>
     <h2>ご予約が完了しました！</h2>
     <p>確認メールをお送りしました。商品の発送準備が整い次第、追跡番号をお知らせします。</p>
-    <p>レンタル番号: <strong id="disp-rental-id">—</strong></p>
-    <a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>" class="kogu-btn kogu-btn-primary">マイページへ</a>
+
+    <div class="kogu-reservation-box">
+      <p class="kogu-reservation-label">あなたの予約番号</p>
+      <strong class="kogu-reservation-number" id="disp-reservation-number">—</strong>
+      <p class="kogu-reservation-note">
+        この番号はメールにも記載されています。<br>
+        <a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>">マイページ</a>で予約番号を入力すると返却手続きができます。
+      </p>
+    </div>
+
+    <a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>" class="kogu-btn kogu-btn-primary" style="margin-top:20px;">マイページで予約を確認する</a>
+    <p style="font-size:12px;color:var(--kogu-muted);margin-top:12px;">レンタル番号: <span id="disp-rental-id">—</span></p>
   </div>
 
 <?php endif; ?>

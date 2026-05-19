@@ -203,6 +203,9 @@ class Kogu_Public {
         $pm_id  = Kogu_Stripe_Handler::get_payment_method_from_intent( $pi_id );
         $addons = json_decode( stripslashes( $_POST['addons'] ?? '[]' ), true ) ?: [];
 
+        // この決済全体に共通の予約番号を1つ生成
+        $reservation_number = Kogu_Database::generate_reservation_number();
+
         // 全商品の合計レンタル料金を計算
         $total_rental_fee = 0;
         foreach ( $product_ids as $pid ) {
@@ -232,6 +235,7 @@ class Kogu_Public {
             $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
 
             $rental_id = Kogu_Rental_Manager::create( [
+                'reservation_number'       => $reservation_number,
                 'product_id'               => $pid,
                 'user_id'                  => get_current_user_id() ?: null,
                 'guest_name'               => $name,
@@ -267,16 +271,20 @@ class Kogu_Public {
             }
         }
 
-        wp_send_json_success( [ 'rental_id' => $rental_ids[0], 'rental_ids' => $rental_ids ] );
+        wp_send_json_success( [
+            'rental_id'          => $rental_ids[0],
+            'rental_ids'         => $rental_ids,
+            'reservation_number' => $reservation_number,
+        ] );
     }
 
     // ── AJAX: 返却証跡（追跡番号）提出 ───────────────────────────────────────
     public static function ajax_submit_return() {
         check_ajax_referer( 'kogu_nonce', 'nonce' );
 
-        $rental_id = (int) ( $_POST['rental_id'] ?? 0 );
-        $tracking  = sanitize_text_field( $_POST['tracking'] ?? '' );
-        $email     = sanitize_email( $_POST['email']         ?? '' );
+        $rental_id          = (int) ( $_POST['rental_id']          ?? 0 );
+        $tracking           = sanitize_text_field( $_POST['tracking']           ?? '' );
+        $reservation_number = strtoupper( sanitize_text_field( $_POST['reservation_number'] ?? '' ) );
 
         if ( ! $rental_id || ! $tracking ) {
             wp_send_json_error( '必須項目が不足しています。' );
@@ -287,12 +295,9 @@ class Kogu_Public {
             wp_send_json_error( 'レンタルが見つかりません。' );
         }
 
-        if ( ! $rental->user_id && $rental->guest_email !== $email ) {
-            wp_send_json_error( 'メールアドレスが一致しません。' );
-        }
-
-        if ( $rental->user_id && $rental->user_id != get_current_user_id() ) {
-            wp_send_json_error( '権限がありません。' );
+        // 予約番号で本人確認
+        if ( $reservation_number && $rental->reservation_number !== $reservation_number ) {
+            wp_send_json_error( '予約番号が一致しません。' );
         }
 
         $result = Kogu_Rental_Manager::submit_return_evidence( $rental_id, $tracking );
