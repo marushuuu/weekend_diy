@@ -60,6 +60,15 @@
   border-color: var(--kogu-accent); background: #fff9f6;
   box-shadow: 0 2px 12px rgba(232,90,43,.2);
 }
+/* 選択中バッジ */
+.kogu-product-card.selected::after {
+  content: '✓ 選択中';
+  position: absolute; top: 8px; right: 8px;
+  background: var(--kogu-accent); color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+  opacity: 1 !important; pointer-events: none;
+}
 .kogu-product-name { font-size: 16px; font-weight: 700; color: var(--kogu-ink); margin-bottom: 6px; }
 .kogu-product-desc { font-size: 12px; color: var(--kogu-muted); margin-bottom: 10px; line-height: 1.5; }
 .kogu-product-price { display: flex; align-items: baseline; gap: 6px; }

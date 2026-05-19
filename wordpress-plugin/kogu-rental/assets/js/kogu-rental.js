@@ -30,9 +30,10 @@
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
-  var isTopMode = !!$('.kogu-top-block').length;
-
   $(document).ready(function () {
+    // DOM が確実に揃ってから判定
+    var isTopMode = !!$('.kogu-top-block').length;
+
     if ($('#kogu-rental-app').length) {
       if (isTopMode) {
         initTopMode();
@@ -145,8 +146,8 @@
   }
 
   function initRentalForm() {
-    // 商品カードクリック — DOM の selected クラスを正として複数選択を管理
-    $(document).on('click', '.kogu-product-card', function () {
+    // 商品カードクリック — #kogu-products 内のカードに直接バインド
+    $('#kogu-products').on('click', '.kogu-product-card', function () {
       $(this).toggleClass('selected');
 
       // 選択中のカードから state を再構築
