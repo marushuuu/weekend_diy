@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'KOGU_VERSION',    '1.6.2' );
+define( 'KOGU_VERSION',    '1.6.3' );
 define( 'KOGU_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KOGU_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 

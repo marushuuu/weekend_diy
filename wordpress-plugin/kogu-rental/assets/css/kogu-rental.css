@@ -244,29 +244,70 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
 
 /* ── Add-on purchase options ─────────────────────────────────────────────── */
 .kogu-addons-wrap {
-  background: var(--kogu-paper); border: 1px solid var(--kogu-paper2);
-  border-radius: var(--kogu-radius); padding: 18px 20px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px dashed var(--kogu-paper2);
 }
-.kogu-addons-title { font-size: 15px; font-weight: 700; margin: 0 0 6px; }
-.kogu-addons-desc  { font-size: 13px; color: var(--kogu-muted); margin: 0 0 14px; }
-.kogu-addon-list   { display: flex; flex-direction: column; gap: 12px; }
-.kogu-addon-item {
-  display: flex; justify-content: space-between; align-items: center;
-  background: #fff; border: 1px solid var(--kogu-paper2);
-  border-radius: 8px; padding: 12px 14px; gap: 12px;
+.kogu-addons-title { font-size: 17px; font-weight: 700; margin: 0 0 6px; color: var(--kogu-ink); }
+.kogu-addons-desc  { font-size: 13px; color: var(--kogu-muted); margin: 0 0 16px; }
+
+/* カードグリッド */
+.kogu-addon-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
 }
-.kogu-addon-img { flex-shrink: 0; width: 72px; height: 72px; border-radius: 6px; overflow: hidden; background: var(--kogu-paper); }
-.kogu-addon-img img { width: 100%; height: 100%; object-fit: cover; }
-.kogu-addon-info   { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.kogu-addon-name   { font-size: 14px; font-weight: 600; color: var(--kogu-ink); }
-.kogu-addon-desc-text { font-size: 12px; color: var(--kogu-muted); }
-.kogu-addon-price  { font-size: 13px; font-weight: 700; color: var(--kogu-accent); }
-.kogu-addon-qty    { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* 個別カード */
+.kogu-addon-card {
+  border: 2px solid var(--kogu-paper2); border-radius: var(--kogu-radius);
+  overflow: hidden; background: #fff;
+  display: flex; flex-direction: column;
+  transition: border-color .15s, box-shadow .15s;
+}
+.kogu-addon-card:not(.kogu-addon-card-soldout):hover {
+  border-color: var(--kogu-accent); box-shadow: 0 2px 8px rgba(232,90,43,.15);
+}
+.kogu-addon-card.selected {
+  border-color: var(--kogu-accent); background: #fff9f6;
+  box-shadow: 0 2px 12px rgba(232,90,43,.2);
+}
+.kogu-addon-card-soldout { opacity: .55; }
+
+/* カード画像 */
+.kogu-addon-card-img {
+  aspect-ratio: 4/3; overflow: hidden; background: var(--kogu-paper2);
+}
+.kogu-addon-card-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .3s;
+}
+.kogu-addon-card:not(.kogu-addon-card-soldout):hover .kogu-addon-card-img img { transform: scale(1.04); }
+.kogu-addon-card-img-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--kogu-muted);
+}
+
+/* カード本文 */
+.kogu-addon-card-body {
+  padding: 10px 12px; flex: 1; display: flex; flex-direction: column; gap: 4px;
+}
+.kogu-addon-name      { font-size: 14px; font-weight: 700; color: var(--kogu-ink); line-height: 1.4; }
+.kogu-addon-desc-text { font-size: 11px; color: var(--kogu-muted); line-height: 1.4; }
+.kogu-addon-price     { font-size: 16px; font-weight: 700; color: var(--kogu-accent); margin-top: 4px; }
+.kogu-addon-unit      { font-size: 12px; font-weight: 400; color: var(--kogu-muted); }
+
+/* カードフッター（数量コントロール） */
+.kogu-addon-card-footer {
+  padding: 8px 12px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border-top: 1px solid var(--kogu-paper2);
+}
+.kogu-addon-qty    { display: flex; align-items: center; gap: 8px; }
 .kogu-qty-btn {
-  width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--kogu-paper2);
+  width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--kogu-paper2);
   background: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: var(--kogu-ink); line-height: 1; transition: border-color .15s;
+  color: var(--kogu-ink); line-height: 1; transition: border-color .15s, color .15s;
 }
 .kogu-qty-btn:hover { border-color: var(--kogu-accent); color: var(--kogu-accent); }
 .kogu-qty-input {
@@ -275,19 +316,20 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
   background: var(--kogu-paper);
 }
 .kogu-addon-soldout {
-  padding: 6px 12px; border-radius: 999px;
+  padding: 6px 14px; border-radius: 999px;
   background: #fde8e8; color: var(--kogu-warn);
-  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  font-size: 12px; font-weight: 700;
 }
-.kogu-addon-stock-label {
-  font-size: 11px; color: var(--kogu-muted); margin-left: 4px; white-space: nowrap;
-}
+.kogu-addon-stock-label { font-size: 11px; color: var(--kogu-muted); }
 
 .kogu-addon-total-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 0 0; margin-top: 12px; border-top: 1px dashed var(--kogu-paper2);
-  font-size: 15px; font-weight: 700; color: var(--kogu-accent);
+  padding: 14px 0 0; margin-top: 16px; border-top: 1px dashed var(--kogu-paper2);
+  font-size: 16px; font-weight: 700; color: var(--kogu-accent);
 }
+
+/* 「次へ」ボタン（グリッド外・全幅） */
+.kogu-btn-next { display: block; width: 100%; text-align: center; margin-top: 20px; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
@@ -297,5 +339,6 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
   .kogu-product-card { max-width: 100%; }
   .kogu-tracking-row { flex-direction: column; }
   .kogu-btn { width: 100%; text-align: center; }
-  .kogu-addon-item { flex-direction: column; align-items: flex-start; }
+  .kogu-addon-cards { grid-template-columns: repeat(2, 1fr); }
+  .kogu-btn-next { width: 100%; }
 }

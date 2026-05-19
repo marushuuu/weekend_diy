@@ -118,7 +118,7 @@ function kogu_product_img( $name, $base ) {
       <?php endforeach; ?>
       </div><!-- /kogu-products -->
 
-      <!-- 右: 日付・週数・サマリー・オプション・ボタン -->
+      <!-- 右: 日付・週数・サマリー -->
       <div class="kogu-step1-right">
 
         <!-- 商品未選択時のヒント -->
@@ -181,58 +181,73 @@ function kogu_product_img( $name, $base ) {
 
         </div><!-- /kogu-period-wrap -->
 
-        <!-- 購入オプション（日付・週数入力後に表示） -->
-        <div id="kogu-addons-wrap" style="display:none;" class="kogu-addons-wrap">
-          <h3 class="kogu-addons-title">オプション購入（任意）</h3>
-          <p class="kogu-addons-desc">レンタル工具に合わせてご購入いただけます。消耗品はそのままお使いください。</p>
-          <?php $addon_products = Kogu_Database::get_active_addon_products(); ?>
-          <?php if ( ! empty( $addon_products ) ) : ?>
-            <div class="kogu-addon-list">
-              <?php foreach ( $addon_products as $a ) : ?>
-                <div class="kogu-addon-item">
-                  <?php if ( $a->image ) : ?>
-                    <div class="kogu-addon-img">
-                      <img src="<?php echo esc_url( $a->image ); ?>" alt="<?php echo esc_attr( $a->name ); ?>" loading="lazy" />
-                    </div>
-                  <?php endif; ?>
-                  <div class="kogu-addon-info">
-                    <span class="kogu-addon-name"><?php echo esc_html( $a->name ); ?></span>
-                    <?php if ( $a->description ) : ?>
-                      <span class="kogu-addon-desc-text"><?php echo esc_html( $a->description ); ?></span>
-                    <?php endif; ?>
-                    <span class="kogu-addon-price">¥<?php echo number_format( $a->price ); ?> / <?php echo esc_html( $a->unit ); ?></span>
-                  </div>
-                  <?php $stock = $a->stock_quantity !== null ? (int) $a->stock_quantity : null; ?>
-                  <?php if ( $stock === 0 ) : ?>
-                  <div class="kogu-addon-soldout">品切れ</div>
-                  <?php else : ?>
-                  <div class="kogu-addon-qty">
-                    <button type="button" class="kogu-qty-btn kogu-qty-minus" data-addon-id="<?php echo (int) $a->id; ?>">－</button>
-                    <input type="number" class="kogu-qty-input"
-                           id="addon-qty-<?php echo (int) $a->id; ?>"
-                           data-addon-id="<?php echo (int) $a->id; ?>"
-                           data-addon-price="<?php echo (int) $a->price; ?>"
-                           data-addon-stock="<?php echo $stock !== null ? $stock : ''; ?>"
-                           value="0" min="0" max="<?php echo $stock !== null ? $stock : 99; ?>" readonly />
-                    <button type="button" class="kogu-qty-btn kogu-qty-plus" data-addon-id="<?php echo (int) $a->id; ?>">＋</button>
-                    <?php if ( $stock !== null ) : ?>
-                      <small class="kogu-addon-stock-label">残り<?php echo $stock; ?>個</small>
-                    <?php endif; ?>
-                  </div>
-                  <?php endif; ?>
-                </div>
-              <?php endforeach; ?>
-            </div>
-            <div class="kogu-addon-total-row" id="kogu-addon-total-row" style="display:none;">
-              <span>オプション合計</span><strong id="disp-addon-total">¥0</strong>
-            </div>
-          <?php endif; ?>
-        </div><!-- /kogu-addons-wrap -->
-
-        <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
       </div><!-- /kogu-step1-right -->
 
     </div><!-- /kogu-step1-layout -->
+
+    <!-- 購入オプション（在庫確定後に全幅で表示） -->
+    <?php $addon_products = Kogu_Database::get_active_addon_products(); ?>
+    <?php if ( ! empty( $addon_products ) ) : ?>
+    <div id="kogu-addons-wrap" style="display:none;" class="kogu-addons-wrap">
+      <h3 class="kogu-addons-title">オプション購入（任意）</h3>
+      <p class="kogu-addons-desc">レンタル工具に合わせてご購入いただけます。消耗品はそのままお使いください。</p>
+      <div class="kogu-addon-cards">
+        <?php foreach ( $addon_products as $a ) :
+          $stock = $a->stock_quantity !== null ? (int) $a->stock_quantity : null;
+          $soldout = $stock === 0;
+        ?>
+        <div class="kogu-addon-card<?php echo $soldout ? ' kogu-addon-card-soldout' : ''; ?>"
+             data-addon-id="<?php echo (int) $a->id; ?>">
+
+          <?php if ( $a->image ) : ?>
+          <div class="kogu-addon-card-img">
+            <img src="<?php echo esc_url( $a->image ); ?>" alt="<?php echo esc_attr( $a->name ); ?>" loading="lazy" />
+          </div>
+          <?php else : ?>
+          <div class="kogu-addon-card-img kogu-addon-card-img-placeholder">
+            <span>No Image</span>
+          </div>
+          <?php endif; ?>
+
+          <div class="kogu-addon-card-body">
+            <div class="kogu-addon-name"><?php echo esc_html( $a->name ); ?></div>
+            <?php if ( $a->description ) : ?>
+              <div class="kogu-addon-desc-text"><?php echo esc_html( $a->description ); ?></div>
+            <?php endif; ?>
+            <div class="kogu-addon-price">¥<?php echo number_format( $a->price ); ?> <span class="kogu-addon-unit">/ <?php echo esc_html( $a->unit ); ?></span></div>
+          </div>
+
+          <div class="kogu-addon-card-footer">
+            <?php if ( $soldout ) : ?>
+              <span class="kogu-addon-soldout">品切れ</span>
+            <?php else : ?>
+              <div class="kogu-addon-qty">
+                <button type="button" class="kogu-qty-btn kogu-qty-minus" data-addon-id="<?php echo (int) $a->id; ?>">－</button>
+                <input type="number" class="kogu-qty-input"
+                       id="addon-qty-<?php echo (int) $a->id; ?>"
+                       data-addon-id="<?php echo (int) $a->id; ?>"
+                       data-addon-price="<?php echo (int) $a->price; ?>"
+                       data-addon-stock="<?php echo $stock !== null ? $stock : ''; ?>"
+                       value="0" min="0" max="<?php echo $stock !== null ? $stock : 99; ?>" readonly />
+                <button type="button" class="kogu-qty-btn kogu-qty-plus" data-addon-id="<?php echo (int) $a->id; ?>">＋</button>
+              </div>
+              <?php if ( $stock !== null ) : ?>
+                <small class="kogu-addon-stock-label">残り<?php echo $stock; ?>個</small>
+              <?php endif; ?>
+            <?php endif; ?>
+          </div>
+
+        </div><!-- /kogu-addon-card -->
+        <?php endforeach; ?>
+      </div><!-- /kogu-addon-cards -->
+
+      <div class="kogu-addon-total-row" id="kogu-addon-total-row" style="display:none;">
+        <span>オプション合計</span><strong id="disp-addon-total">¥0</strong>
+      </div>
+    </div><!-- /kogu-addons-wrap -->
+    <?php endif; ?>
+
+    <button class="kogu-btn kogu-btn-primary kogu-btn-next" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
   </div>
 
   <!-- ── STEP 2: お客様情報 ─────────────────────────────────────────────── -->

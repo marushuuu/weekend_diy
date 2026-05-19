@@ -237,8 +237,10 @@
     state.addons = {}; state.addon_total = 0;
     $('.kogu-qty-input').each(function () {
       var qty = parseInt($(this).val(), 10) || 0;
+      var id  = parseInt($(this).data('addon-id'), 10);
+      // カードの selected クラスを数量に連動
+      $('.kogu-addon-card[data-addon-id="' + id + '"]').toggleClass('selected', qty > 0);
       if (qty > 0) {
-        var id = parseInt($(this).data('addon-id'), 10);
         state.addons[id]   = qty;
         state.addon_total += (parseInt($(this).data('addon-price'), 10) || 0) * qty;
       }
