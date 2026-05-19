@@ -122,11 +122,15 @@ a.kogu-btn-primary:hover { opacity: .85; }
 #start-date:focus,
 #rental-weeks:focus { border-color: var(--kogu-accent); }
 
-/* period inputs */
-#start-date, #rental-weeks { display: block; width: 100%; box-sizing: border-box; }
+/* period inputs — 確実にフル幅・スタック表示 */
+#start-date, #rental-weeks {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: #fff;
+}
 label[for="start-date"], label[for="rental-weeks"] {
-  display: block; font-size: 13px; font-weight: 600; color: var(--kogu-ink);
-  margin-bottom: 5px;
+  display: block; font-size: 13px; font-weight: 600; color: var(--kogu-ink); margin-bottom: 5px;
 }
 label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-accent); font-style: normal; }
 

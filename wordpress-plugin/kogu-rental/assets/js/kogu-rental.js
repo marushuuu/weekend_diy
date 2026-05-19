@@ -80,6 +80,7 @@
       $('.kogu-product-card').removeClass('selected');
       $(this).addClass('selected');
 
+      $('#kogu-stock-banner').show();
       $('#kogu-stock-badge').text('確認中...').attr('class', 'kogu-badge kogu-badge-checking');
       $('#kogu-stock-product-name').text(state.product ? state.product.name : '');
       $('#kogu-date-summary').hide();

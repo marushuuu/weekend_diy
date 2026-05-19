@@ -42,9 +42,9 @@
     <!-- 期間選択 -->
     <div id="kogu-period-wrap" class="kogu-period-wrap">
 
-      <div class="kogu-in-stock-banner">
+      <div class="kogu-in-stock-banner" id="kogu-stock-banner" style="display:none;">
         <span id="kogu-stock-badge" class="kogu-badge kogu-badge-checking">確認中...</span>
-        <span id="kogu-stock-product-name" class="kogu-stock-label">商品を選択してください</span>
+        <span id="kogu-stock-product-name" class="kogu-stock-label"></span>
       </div>
 
       <div class="kogu-form-row">
