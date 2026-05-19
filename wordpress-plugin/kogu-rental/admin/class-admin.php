@@ -7,6 +7,7 @@ class Kogu_Admin {
         add_action( 'admin_menu',                        [ __CLASS__, 'register_menu' ] );
         add_action( 'admin_post_kogu_admin_action',      [ __CLASS__, 'handle_admin_action' ] );
         add_action( 'admin_post_kogu_save_product',      [ __CLASS__, 'handle_save_product' ] );
+        add_action( 'admin_post_kogu_save_addon',        [ __CLASS__, 'handle_save_addon' ] );
         add_action( 'admin_post_kogu_run_install',       [ __CLASS__, 'handle_run_install' ] );
         add_action( 'admin_init',                        [ __CLASS__, 'register_settings' ] );
     }
@@ -27,11 +28,12 @@ class Kogu_Admin {
             'kogu-rentals', [ __CLASS__, 'page_rentals' ],
             'dashicons-hammer', 26
         );
-        add_submenu_page( 'kogu-rentals', 'レンタル一覧', 'レンタル一覧', 'manage_options', 'kogu-rentals',    [ __CLASS__, 'page_rentals' ] );
-        add_submenu_page( 'kogu-rentals', '延滞一覧',     '⚠️ 延滞一覧', 'manage_options', 'kogu-overdue',    [ __CLASS__, 'page_overdue' ] );
-        add_submenu_page( 'kogu-rentals', '在庫管理',     '在庫管理',    'manage_options', 'kogu-inventory',  [ __CLASS__, 'page_inventory' ] );
-        add_submenu_page( 'kogu-rentals', '商品管理',     '商品管理',    'manage_options', 'kogu-products',   [ __CLASS__, 'page_products' ] );
-        add_submenu_page( 'kogu-rentals', '設定',         '設定',        'manage_options', 'kogu-settings',   [ __CLASS__, 'page_settings' ] );
+        add_submenu_page( 'kogu-rentals', 'レンタル一覧', 'レンタル一覧',   'manage_options', 'kogu-rentals',    [ __CLASS__, 'page_rentals' ] );
+        add_submenu_page( 'kogu-rentals', '延滞一覧',     '⚠️ 延滞一覧',  'manage_options', 'kogu-overdue',    [ __CLASS__, 'page_overdue' ] );
+        add_submenu_page( 'kogu-rentals', '在庫管理',     '在庫管理',      'manage_options', 'kogu-inventory',  [ __CLASS__, 'page_inventory' ] );
+        add_submenu_page( 'kogu-rentals', '商品管理',     '商品管理',      'manage_options', 'kogu-products',   [ __CLASS__, 'page_products' ] );
+        add_submenu_page( 'kogu-rentals', '購入商品管理', '🛒 購入商品管理', 'manage_options', 'kogu-addons',   [ __CLASS__, 'page_addons' ] );
+        add_submenu_page( 'kogu-rentals', '設定',         '設定',          'manage_options', 'kogu-settings',   [ __CLASS__, 'page_settings' ] );
     }
 
     // ── レンタル一覧 ──────────────────────────────────────────────────────────
@@ -555,6 +557,108 @@ class Kogu_Admin {
         <?php
     }
 
+    // ── 購入商品管理 ──────────────────────────────────────────────────────────
+    public static function page_addons() {
+        global $wpdb;
+        $table = Kogu_Database::addon_products_table();
+
+        if ( isset( $_GET['updated'] ) ) {
+            echo '<div class="notice notice-success"><p>保存しました。</p></div>';
+        }
+
+        $edit_id = isset( $_GET['edit'] ) ? (int) $_GET['edit'] : -1;
+        $edit    = $edit_id > 0 ? Kogu_Database::get_addon_product( $edit_id ) : null;
+        $nonce   = wp_create_nonce( 'kogu_addon_action' );
+        $all     = $wpdb->get_results( "SELECT * FROM $table ORDER BY id ASC" );
+        ?>
+        <div class="wrap">
+          <h1>購入商品管理
+            <?php if ( $edit_id < 0 ) : ?>
+              <a href="?page=kogu-addons&edit=0" class="page-title-action">＋ 新規商品を追加</a>
+            <?php endif; ?>
+          </h1>
+          <p style="color:#555;">電動工具レンタル時に一緒に購入できる消耗品などを登録します。</p>
+
+          <?php if ( isset( $_GET['edit'] ) ) : ?>
+          <div style="max-width:560px;background:#fff;border:1px solid #ddd;padding:24px;border-radius:8px;margin-bottom:32px;">
+            <h2><?php echo $edit ? esc_html( $edit->name ) . ' を編集' : '新規購入商品を追加'; ?></h2>
+            <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>">
+              <input type="hidden" name="action"   value="kogu_save_addon">
+              <input type="hidden" name="addon_id" value="<?php echo $edit_id > 0 ? $edit_id : 0; ?>">
+              <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
+              <table class="form-table">
+                <tr>
+                  <th><label for="aname">商品名 <em>*</em></label></th>
+                  <td><input type="text" id="aname" name="name" required class="regular-text"
+                             value="<?php echo esc_attr( $edit->name ?? '' ); ?>" /></td>
+                </tr>
+                <tr>
+                  <th><label for="adesc">説明</label></th>
+                  <td><input type="text" id="adesc" name="description" class="regular-text"
+                             value="<?php echo esc_attr( $edit->description ?? '' ); ?>"
+                             placeholder="例：木材用ネジ 40mm" /></td>
+                </tr>
+                <tr>
+                  <th><label for="aprice">単価（円） <em>*</em></label></th>
+                  <td><input type="number" id="aprice" name="price" required min="1" class="regular-text"
+                             value="<?php echo (int) ( $edit->price ?? 0 ); ?>" /></td>
+                </tr>
+                <tr>
+                  <th><label for="aunit">単位</label></th>
+                  <td><input type="text" id="aunit" name="unit" class="small-text"
+                             value="<?php echo esc_attr( $edit->unit ?? '個' ); ?>"
+                             placeholder="個・袋・箱" /></td>
+                </tr>
+                <tr>
+                  <th><label for="astatus">ステータス</label></th>
+                  <td>
+                    <select id="astatus" name="status">
+                      <option value="active"   <?php selected( $edit->status ?? 'active', 'active' ); ?>>公開中</option>
+                      <option value="inactive" <?php selected( $edit->status ?? 'active', 'inactive' ); ?>>非公開</option>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+              <?php submit_button( $edit ? '変更を保存' : '商品を追加' ); ?>
+              <a href="?page=kogu-addons" class="button" style="margin-left:8px;">キャンセル</a>
+            </form>
+          </div>
+          <?php endif; ?>
+
+          <h2>登録済み購入商品</h2>
+          <table class="wp-list-table widefat fixed striped">
+            <thead>
+              <tr>
+                <th style="width:50px">ID</th>
+                <th>商品名</th>
+                <th>説明</th>
+                <th>単価</th>
+                <th>単位</th>
+                <th>ステータス</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ( $all as $a ) : ?>
+                <tr>
+                  <td><?php echo (int) $a->id; ?></td>
+                  <td><strong><?php echo esc_html( $a->name ); ?></strong></td>
+                  <td><?php echo esc_html( $a->description ); ?></td>
+                  <td>¥<?php echo number_format( $a->price ); ?></td>
+                  <td><?php echo esc_html( $a->unit ); ?></td>
+                  <td><?php echo $a->status === 'active' ? '<span style="color:#27ae60;">公開中</span>' : '<span style="color:#999;">非公開</span>'; ?></td>
+                  <td><a href="?page=kogu-addons&edit=<?php echo (int) $a->id; ?>" class="button button-small">編集</a></td>
+                </tr>
+              <?php endforeach; ?>
+              <?php if ( empty( $all ) ) : ?>
+                <tr><td colspan="7" style="text-align:center;padding:24px;">購入商品が登録されていません。</td></tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+        <?php
+    }
+
     // ── 設定画面 ──────────────────────────────────────────────────────────────
     public static function register_settings() {
         $fields = [
@@ -650,6 +754,31 @@ class Kogu_Admin {
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id . '&updated=1' ) );
+        exit;
+    }
+
+    // ── 購入商品保存ハンドラ ──────────────────────────────────────────────────
+    public static function handle_save_addon() {
+        check_admin_referer( 'kogu_addon_action' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( '権限がありません。' );
+
+        $addon_id = (int) ( $_POST['addon_id'] ?? 0 );
+        $data = [
+            'name'        => sanitize_text_field( $_POST['name'] ?? '' ),
+            'description' => sanitize_text_field( $_POST['description'] ?? '' ),
+            'price'       => max( 0, (int) ( $_POST['price'] ?? 0 ) ),
+            'unit'        => sanitize_text_field( $_POST['unit'] ?? '個' ),
+            'status'      => in_array( $_POST['status'] ?? '', [ 'active', 'inactive' ] ) ? $_POST['status'] : 'active',
+        ];
+
+        global $wpdb;
+        if ( $addon_id ) {
+            $wpdb->update( Kogu_Database::addon_products_table(), $data, [ 'id' => $addon_id ] );
+        } else {
+            $wpdb->insert( Kogu_Database::addon_products_table(), $data );
+        }
+
+        wp_redirect( admin_url( 'admin.php?page=kogu-addons&updated=1' ) );
         exit;
     }
 

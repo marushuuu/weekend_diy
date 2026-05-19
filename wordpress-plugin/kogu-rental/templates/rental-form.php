@@ -88,6 +88,40 @@
 
     </div><!-- /kogu-period-wrap -->
 
+    <!-- 購入オプション（電動工具選択時のみ表示） -->
+    <div id="kogu-addons-wrap" style="display:none;" class="kogu-addons-wrap">
+      <h3 class="kogu-addons-title">オプション購入（任意）</h3>
+      <p class="kogu-addons-desc">レンタル工具に合わせてご購入いただけます。消耗品はそのままお使いください。</p>
+      <?php $addon_products = Kogu_Database::get_active_addon_products(); ?>
+      <?php if ( ! empty( $addon_products ) ) : ?>
+        <div class="kogu-addon-list">
+          <?php foreach ( $addon_products as $a ) : ?>
+            <div class="kogu-addon-item">
+              <div class="kogu-addon-info">
+                <span class="kogu-addon-name"><?php echo esc_html( $a->name ); ?></span>
+                <?php if ( $a->description ) : ?>
+                  <span class="kogu-addon-desc-text"><?php echo esc_html( $a->description ); ?></span>
+                <?php endif; ?>
+                <span class="kogu-addon-price">¥<?php echo number_format( $a->price ); ?> / <?php echo esc_html( $a->unit ); ?></span>
+              </div>
+              <div class="kogu-addon-qty">
+                <button type="button" class="kogu-qty-btn kogu-qty-minus" data-addon-id="<?php echo (int) $a->id; ?>">－</button>
+                <input type="number" class="kogu-qty-input"
+                       id="addon-qty-<?php echo (int) $a->id; ?>"
+                       data-addon-id="<?php echo (int) $a->id; ?>"
+                       data-addon-price="<?php echo (int) $a->price; ?>"
+                       value="0" min="0" max="99" readonly />
+                <button type="button" class="kogu-qty-btn kogu-qty-plus" data-addon-id="<?php echo (int) $a->id; ?>">＋</button>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <div class="kogu-addon-total-row" id="kogu-addon-total-row" style="display:none;">
+          <span>オプション合計</span><strong id="disp-addon-total">¥0</strong>
+        </div>
+      <?php endif; ?>
+    </div><!-- /kogu-addons-wrap -->
+
     <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled>次へ：お客様情報を入力 →</button>
   </div>
 

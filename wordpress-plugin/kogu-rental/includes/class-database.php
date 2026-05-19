@@ -9,6 +9,8 @@ class Kogu_Database {
     public static function inventory_table()       { global $wpdb; return $wpdb->prefix . 'kogu_inventory'; }
     public static function return_evidence_table() { global $wpdb; return $wpdb->prefix . 'kogu_return_evidence'; }
     public static function late_fees_table()       { global $wpdb; return $wpdb->prefix . 'kogu_late_fees'; }
+    public static function addon_products_table()  { global $wpdb; return $wpdb->prefix . 'kogu_addon_products'; }
+    public static function rental_addons_table()   { global $wpdb; return $wpdb->prefix . 'kogu_rental_addons'; }
 
     // ── Install / create tables ───────────────────────────────────────────────
     public static function install() {
@@ -23,9 +25,33 @@ class Kogu_Database {
             description      TEXT DEFAULT '',
             price_per_week   INT UNSIGNED NOT NULL DEFAULT 4900  COMMENT '1週間のレンタル料金（円）',
             deposit_amount   INT UNSIGNED NOT NULL DEFAULT 10000 COMMENT 'デポジット（円）',
+            allows_addons    TINYINT(1) NOT NULL DEFAULT 0 COMMENT '購入オプションを表示するか',
             status           ENUM('active','inactive') NOT NULL DEFAULT 'active',
             created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
+        ) $charset;" );
+
+        // ── 購入オプション商品（消耗品など） ─────────────────────────────────
+        dbDelta( "CREATE TABLE " . self::addon_products_table() . " (
+            id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            name        VARCHAR(200) NOT NULL DEFAULT '',
+            description TEXT DEFAULT '',
+            price       INT UNSIGNED NOT NULL DEFAULT 0,
+            unit        VARCHAR(50) NOT NULL DEFAULT '個',
+            status      ENUM('active','inactive') NOT NULL DEFAULT 'active',
+            created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
+        ) $charset;" );
+
+        // ── レンタルに紐づく購入オプション ───────────────────────────────────
+        dbDelta( "CREATE TABLE " . self::rental_addons_table() . " (
+            id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            rental_id        BIGINT UNSIGNED NOT NULL,
+            addon_product_id BIGINT UNSIGNED NOT NULL,
+            quantity         INT UNSIGNED NOT NULL DEFAULT 1,
+            unit_price       INT UNSIGNED NOT NULL DEFAULT 0,
+            PRIMARY KEY (id),
+            KEY rental_id (rental_id)
         ) $charset;" );
 
         // ── 在庫ユニット（物理的な1台ごと）──────────────────────────────────
@@ -135,10 +161,11 @@ class Kogu_Database {
         if ( (int) $wpdb->get_var( "SELECT COUNT(*) FROM $products_table" ) > 0 ) return;
 
         $wpdb->insert( $products_table, [
-            'name'           => 'インパクトドライバー',
-            'description'    => '18V コードレスインパクトドライバー。DIYから本格作業まで対応。',
+            'name'          => 'インパクトドライバー',
+            'description'   => '18V コードレスインパクトドライバー。DIYから本格作業まで対応。',
             'price_per_week' => 4900,
             'deposit_amount' => 10000,
+            'allows_addons'  => 1,
             'status'         => 'active',
         ] );
         $product_id = $wpdb->insert_id;
@@ -167,5 +194,47 @@ class Kogu_Database {
             "SELECT * FROM " . self::products_table() . " WHERE id = %d",
             $id
         ) ) ?: null;
+    }
+
+    // ── Addon product helpers ─────────────────────────────────────────────────
+    public static function get_active_addon_products(): array {
+        global $wpdb;
+        return $wpdb->get_results(
+            "SELECT * FROM " . self::addon_products_table() . " WHERE status = 'active' ORDER BY id ASC"
+        ) ?: [];
+    }
+
+    public static function get_addon_product( int $id ): ?object {
+        global $wpdb;
+        return $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM " . self::addon_products_table() . " WHERE id = %d",
+            $id
+        ) ) ?: null;
+    }
+
+    public static function save_rental_addons( int $rental_id, array $addons ): void {
+        global $wpdb;
+        $table = self::rental_addons_table();
+        foreach ( $addons as $addon ) {
+            $addon_product = self::get_addon_product( (int) $addon['id'] );
+            if ( ! $addon_product || (int) $addon['qty'] < 1 ) continue;
+            $wpdb->insert( $table, [
+                'rental_id'        => $rental_id,
+                'addon_product_id' => (int) $addon['id'],
+                'quantity'         => (int) $addon['qty'],
+                'unit_price'       => (int) $addon_product->price,
+            ] );
+        }
+    }
+
+    public static function get_rental_addons( int $rental_id ): array {
+        global $wpdb;
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT ra.*, ap.name, ap.unit
+             FROM " . self::rental_addons_table() . " ra
+             JOIN " . self::addon_products_table() . " ap ON ap.id = ra.addon_product_id
+             WHERE ra.rental_id = %d",
+            $rental_id
+        ) ) ?: [];
     }
 }

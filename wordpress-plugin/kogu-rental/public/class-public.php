@@ -48,6 +48,20 @@ class Kogu_Public {
                 'description'    => $p->description,
                 'price_per_week' => (int) $p->price_per_week,
                 'deposit_amount' => (int) $p->deposit_amount,
+                'allows_addons'  => (bool) $p->allows_addons,
+            ];
+        }
+
+        // 購入オプション商品データを JS へ渡す
+        $addons_raw = Kogu_Database::get_active_addon_products();
+        $addons_js  = [];
+        foreach ( $addons_raw as $a ) {
+            $addons_js[] = [
+                'id'          => (int) $a->id,
+                'name'        => $a->name,
+                'description' => $a->description,
+                'price'       => (int) $a->price,
+                'unit'        => $a->unit,
             ];
         }
 
@@ -56,6 +70,7 @@ class Kogu_Public {
             'nonce'              => wp_create_nonce( 'kogu_nonce' ),
             'stripe_public_key'  => get_option( 'kogu_stripe_public_key', '' ),
             'products'           => $products_js,
+            'addon_products'     => $addons_js,
             'week_discount_rate' => 0.70,
             'late_fee_per_day'   => 500,
         ] );
@@ -106,9 +121,17 @@ class Kogu_Public {
             wp_send_json_error( '選択した期間は在庫がありません。' );
         }
 
-        $rental_fee = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
-        $deposit    = 0;
-        $total      = $rental_fee;
+        $rental_fee  = Kogu_Rental_Manager::calc_rental_fee( $weeks, (int) $product->price_per_week );
+        $deposit     = 0;
+        $addon_total = 0;
+        $addons_raw  = json_decode( stripslashes( $_POST['addons'] ?? '[]' ), true ) ?: [];
+        foreach ( $addons_raw as $a ) {
+            $ap = Kogu_Database::get_addon_product( (int) ( $a['id'] ?? 0 ) );
+            if ( $ap && (int) ( $a['qty'] ?? 0 ) > 0 ) {
+                $addon_total += (int) $ap->price * (int) $a['qty'];
+            }
+        }
+        $total = $rental_fee + $addon_total;
 
         $customer_id = Kogu_Stripe_Handler::get_or_create_customer( $email, $name );
         $result      = Kogu_Stripe_Handler::create_payment_intent( $total, $customer_id, [
@@ -121,6 +144,7 @@ class Kogu_Public {
 
         wp_send_json_success( array_merge( $result, [
             'rental_fee'    => $rental_fee,
+            'addon_total'   => $addon_total,
             'deposit'       => $deposit,
             'total'         => $total,
             'customer_id'   => $customer_id,
@@ -172,6 +196,11 @@ class Kogu_Public {
 
         if ( ! $rental_id ) {
             wp_send_json_error( '在庫がなくなりました。再度ご確認ください。' );
+        }
+
+        $addons = json_decode( stripslashes( $_POST['addons'] ?? '[]' ), true ) ?: [];
+        if ( ! empty( $addons ) ) {
+            Kogu_Database::save_rental_addons( $rental_id, $addons );
         }
 
         wp_send_json_success( [ 'rental_id' => $rental_id ] );

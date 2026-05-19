@@ -10,6 +10,8 @@
     weeks:            0,
     availability:     {},
     rental_fee:       0,
+    addon_total:      0,
+    addons:           {},   // { addon_id: qty }
     deposit:          0,
     customer_id:      '',
     payment_intent_id: '',
@@ -65,9 +67,11 @@
       var pid = parseInt($(this).data('product-id'), 10);
       if (state.product_id === pid) return;
 
-      state.product_id  = pid;
-      state.product     = null;
+      state.product_id   = pid;
+      state.product      = null;
       state.availability = {};
+      state.addons       = {};
+      state.addon_total  = 0;
 
       $.each(KoguData.products, function (_, p) {
         if (p.id === pid) { state.product = p; return false; }
@@ -82,6 +86,15 @@
       $('#kogu-date-summary').hide();
       $('#kogu-unavailable-msg').hide();
       $('#btn-to-info').prop('disabled', true);
+
+      // 購入オプション表示切替
+      if (state.product && state.product.allows_addons && KoguData.addon_products.length > 0) {
+        $('.kogu-qty-input').val(0);
+        $('#kogu-addon-total-row').hide();
+        $('#kogu-addons-wrap').show();
+      } else {
+        $('#kogu-addons-wrap').hide();
+      }
 
       // 在庫マップを取得
       $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
@@ -98,6 +111,21 @@
 
     // 日付・週数変更
     $('#start-date, #rental-weeks').on('change', updateSummary);
+
+    // アドオン数量ボタン
+    $(document).on('click', '.kogu-qty-plus', function () {
+      var id = $(this).data('addon-id');
+      var $input = $('#addon-qty-' + id);
+      var val = parseInt($input.val(), 10) || 0;
+      $input.val(val + 1);
+      updateAddons();
+    });
+    $(document).on('click', '.kogu-qty-minus', function () {
+      var id = $(this).data('addon-id');
+      var $input = $('#addon-qty-' + id);
+      var val = parseInt($input.val(), 10) || 0;
+      if (val > 0) { $input.val(val - 1); updateAddons(); }
+    });
 
     // STEP 移動
     $('#btn-to-info').on('click', function () { showStep('step-info'); });
@@ -125,6 +153,27 @@
 
     // 支払いボタン
     $('#btn-pay').on('click', handlePayment);
+  }
+
+  // ── アドオン集計 ──────────────────────────────────────────────────────────
+  function updateAddons() {
+    state.addons      = {};
+    state.addon_total = 0;
+    $('.kogu-qty-input').each(function () {
+      var qty = parseInt($(this).val(), 10) || 0;
+      if (qty > 0) {
+        var id    = parseInt($(this).data('addon-id'), 10);
+        var price = parseInt($(this).data('addon-price'), 10) || 0;
+        state.addons[id]   = qty;
+        state.addon_total += price * qty;
+      }
+    });
+    if (state.addon_total > 0) {
+      $('#disp-addon-total').text(fmt(state.addon_total));
+      $('#kogu-addon-total-row').show();
+    } else {
+      $('#kogu-addon-total-row').hide();
+    }
   }
 
   // ── 料金サマリー更新 ──────────────────────────────────────────────────────
@@ -175,6 +224,14 @@
   }
 
   // ── PaymentIntent 作成 ────────────────────────────────────────────────────
+  function buildAddonsPayload() {
+    var list = [];
+    $.each(state.addons, function (id, qty) {
+      list.push({ id: id, qty: qty });
+    });
+    return JSON.stringify(list);
+  }
+
   function createPaymentIntent() {
     $.post(KoguData.ajax_url, {
       action:     'kogu_create_intent',
@@ -184,6 +241,7 @@
       weeks:      state.weeks,
       name:       state.customer_info.name,
       email:      state.customer_info.email,
+      addons:     buildAddonsPayload(),
     }, function (res) {
       if (!res.success) {
         showError(res.data);
@@ -253,6 +311,7 @@
       phone:              state.customer_info.phone,
       postal_code:        state.customer_info.postal_code,
       address:            state.customer_info.address,
+      addons:             buildAddonsPayload(),
     }, function (res) {
       setPayBtnLoading(false);
       if (res.success) {
