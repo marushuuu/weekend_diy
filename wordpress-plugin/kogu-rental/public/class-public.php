@@ -28,6 +28,9 @@ class Kogu_Public {
 
         // ── 会員登録完了メール ───────────────────────────────────────────────
         add_action( 'user_register', [ 'Kogu_Email_Handler', 'send_registration_complete' ] );
+
+        // ── noindex メタタグ ─────────────────────────────────────────────────
+        add_action( 'wp_head', [ __CLASS__, 'output_noindex_meta' ] );
     }
 
     public static function enqueue_assets() {
@@ -325,5 +328,15 @@ class Kogu_Public {
         }
 
         return new WP_REST_Response( 'ok', 200 );
+    }
+
+    // ── noindex メタタグ出力 ──────────────────────────────────────────────────
+    public static function output_noindex_meta() {
+        $slugs_option = get_option( 'kogu_noindex_slugs', 'tokushoho,my-page' );
+        $slugs = array_filter( array_map( 'trim', explode( ',', $slugs_option ) ) );
+
+        if ( ! empty( $slugs ) && is_page( $slugs ) ) {
+            echo '<meta name="robots" content="noindex, nofollow">' . "\n";
+        }
     }
 }

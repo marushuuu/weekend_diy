@@ -708,6 +708,7 @@ class Kogu_Admin {
             'kogu_sendgrid_api_key'      => 'SendGrid APIキー',
             'kogu_from_email'            => '送信元メールアドレス',
             'kogu_from_name'             => '送信元名',
+            'kogu_noindex_slugs'         => 'noindex にするページスラッグ（カンマ区切り）',
         ];
         foreach ( $fields as $key => $label ) {
             register_setting( 'kogu_settings', $key );
@@ -746,6 +747,20 @@ class Kogu_Admin {
                     </td>
                   </tr>
               <?php endforeach; ?>
+                  <tr>
+                    <th><label for="kogu_noindex_slugs">検索インデックスさせないページ</label></th>
+                    <td>
+                      <input type="text" id="kogu_noindex_slugs" name="kogu_noindex_slugs"
+                             value="<?php echo esc_attr( get_option( 'kogu_noindex_slugs', 'tokushoho,my-page' ) ); ?>"
+                             class="large-text" placeholder="例: tokushoho,my-page,privacy" />
+                      <p class="description">
+                        Googleにインデックスさせたくないページの<strong>スラッグ</strong>をカンマ区切りで入力してください。<br>
+                        運営者の氏名・住所が記載されるページ（特定商取引法など）を指定すると、
+                        <code>&lt;meta name="robots" content="noindex, nofollow"&gt;</code> が自動で出力されます。<br>
+                        <strong>デフォルト:</strong> <code>tokushoho, my-page</code>
+                      </p>
+                    </td>
+                  </tr>
             </table>
             <p class="description">料金・デポジットは「<a href="?page=kogu-products">商品管理</a>」で商品ごとに設定してください。</p>
             <?php submit_button( '設定を保存' ); ?>
