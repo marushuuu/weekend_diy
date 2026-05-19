@@ -122,7 +122,7 @@
       <?php endif; ?>
     </div><!-- /kogu-addons-wrap -->
 
-    <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled>次へ：お客様情報を入力 →</button>
+    <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
   </div>
 
   <!-- ── STEP 2: お客様情報 ─────────────────────────────────────────────── -->

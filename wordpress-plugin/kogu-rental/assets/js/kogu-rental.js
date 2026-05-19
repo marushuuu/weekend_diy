@@ -85,7 +85,7 @@
       $('#kogu-period-wrap').show();
       $('#kogu-date-summary').hide();
       $('#kogu-unavailable-msg').hide();
-      $('#btn-to-info').prop('disabled', true);
+      $('#btn-to-info').show().prop('disabled', true);
 
       // 購入オプション表示切替
       if (state.product && state.product.allows_addons && KoguData.addon_products.length > 0) {
