@@ -39,28 +39,13 @@
 	</div>
 </section>
 
-<!-- ── Tools ── -->
+<!-- ── Rental Form ── -->
 <section class="section alt" id="tools">
 	<div class="container">
 		<div class="section-head">
-			<h2><span class="star">★</span>レンタルできる工具</h2>
-			<a href="<?php echo esc_url( home_url( '/rental' ) ); ?>" class="see-all">申込ページへ →</a>
+			<h2><span class="star">★</span>工具を借りる</h2>
 		</div>
-
-		<?php $products = minna_kogu_get_products(); ?>
-
-		<?php if ( ! empty( $products ) ) : ?>
-			<div class="tool-grid">
-				<?php foreach ( $products as $product ) : ?>
-					<?php minna_kogu_render_card( $product ); ?>
-				<?php endforeach; ?>
-			</div>
-		<?php else : ?>
-			<div class="empty-note">
-				<p>ただいま商品を準備中です。</p>
-				<a class="empty-cta" href="<?php echo esc_url( home_url( '/rental' ) ); ?>">レンタル申込ページへ</a>
-			</div>
-		<?php endif; ?>
+		<?php echo do_shortcode( '[kogu_rental_form]' ); ?>
 	</div>
 </section>
 
