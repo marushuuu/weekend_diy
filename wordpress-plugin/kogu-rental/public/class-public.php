@@ -73,13 +73,16 @@ class Kogu_Public {
             'addon_products'     => $addons_js,
             'week_discount_rate' => 0.70,
             'late_fee_per_day'   => 500,
+            'rental_page_url'    => home_url( '/rental/' ),
         ] );
     }
 
     // ── ショートコード: レンタル申込フォーム ─────────────────────────────────
     public static function shortcode_rental_form( $atts ) {
-        $atts = shortcode_atts( [ 'show_step_titles' => 'true' ], $atts );
+        $atts = shortcode_atts( [ 'show_step_titles' => 'true', 'mode' => 'full' ], $atts );
         $show_step_titles = $atts['show_step_titles'] !== 'false';
+        $rental_page_url  = home_url( '/rental/' );
+        $is_top_mode      = $atts['mode'] === 'top';
         ob_start();
         include KOGU_PLUGIN_DIR . 'templates/rental-form.php';
         return ob_get_clean();

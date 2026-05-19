@@ -129,7 +129,11 @@
       <?php endif; ?>
     </div><!-- /kogu-addons-wrap -->
 
+    <?php if ( $is_top_mode ) : ?>
+    <a class="kogu-btn kogu-btn-primary" id="btn-to-rental" style="display:none;" href="<?php echo esc_url( $rental_page_url ); ?>">レンタルに進む →</a>
+    <?php else : ?>
     <button class="kogu-btn kogu-btn-primary" id="btn-to-info" disabled style="display:none;">次へ：お客様情報を入力 →</button>
+    <?php endif; ?>
     </div><!-- /kogu-step1-right -->
     </div><!-- /kogu-step1-layout -->
   </div>

@@ -50,14 +50,34 @@
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
+  var isTopMode = !!$('#btn-to-rental').length;
+
   $(document).ready(function () {
     if ($('#kogu-rental-app').length) {
       initRentalForm();
+      if (!isTopMode) {
+        applyUrlParams();
+      }
     }
     if ($('.kogu-mypage').length) {
       initMyPage();
     }
   });
+
+  // URLパラメータから商品・日付・週数を自動入力（/rental/ ページ用）
+  function applyUrlParams() {
+    var params = new URLSearchParams(window.location.search);
+    var pid    = parseInt(params.get('product_id'), 10);
+    var date   = params.get('start_date');
+    var weeks  = params.get('weeks');
+    if (!pid) return;
+    var $card = $('.kogu-product-card[data-product-id="' + pid + '"]');
+    if ($card.length) {
+      $card.trigger('click');
+      if (date)  { setTimeout(function(){ $('#start-date').val(date).trigger('change'); }, 300); }
+      if (weeks) { setTimeout(function(){ $('#rental-weeks').val(weeks).trigger('change'); }, 400); }
+    }
+  }
 
   // ── Rental Form ────────────────────────────────────────────────────────────
   function initRentalForm() {
@@ -215,11 +235,21 @@
     if (avail) {
       $('#kogu-stock-badge').text('在庫あり').attr('class', 'kogu-badge kogu-badge-ok');
       $('#kogu-unavailable-msg').hide();
-      $('#btn-to-info').prop('disabled', false);
+      if (isTopMode) {
+        var url = KoguData.rental_page_url + '?product_id=' + state.product_id +
+                  '&start_date=' + start + '&weeks=' + weeks;
+        $('#btn-to-rental').attr('href', url).show();
+      } else {
+        $('#btn-to-info').prop('disabled', false);
+      }
     } else {
       $('#kogu-stock-badge').text('在庫なし').attr('class', 'kogu-badge kogu-badge-empty');
       $('#kogu-unavailable-msg').show();
-      $('#btn-to-info').prop('disabled', true);
+      if (isTopMode) {
+        $('#btn-to-rental').hide();
+      } else {
+        $('#btn-to-info').prop('disabled', true);
+      }
     }
   }
 
