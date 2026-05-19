@@ -96,8 +96,10 @@
   transition: opacity .15s; text-decoration: none;
 }
 .kogu-btn:disabled { opacity: .5; cursor: not-allowed; }
-.kogu-btn-primary   { background: var(--kogu-accent); color: #fff; }
-.kogu-btn-primary:hover:not(:disabled) { opacity: .85; }
+.kogu-btn-primary,
+a.kogu-btn-primary   { background: var(--kogu-accent); color: #fff !important; text-decoration: none !important; }
+.kogu-btn-primary:hover:not(:disabled),
+a.kogu-btn-primary:hover { opacity: .85; }
 .kogu-btn-secondary { background: var(--kogu-paper2); color: var(--kogu-ink); }
 .kogu-btn-secondary:hover { background: #ddd; }
 

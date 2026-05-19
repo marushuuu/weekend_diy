@@ -294,6 +294,21 @@
     });
   }
 
+  // ── 郵便番号 → 住所自動入力 ────────────────────────────────────────────────
+  $(document).on('input', 'input[name="postal_code"]', function () {
+    var raw = $(this).val().replace(/[^0-9]/g, '');
+    if (raw.length !== 7) return;
+    fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + raw)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.results && data.results[0]) {
+          var r = data.results[0];
+          $('textarea[name="address"]').val(r.address1 + r.address2 + r.address3);
+        }
+      })
+      .catch(function () {});
+  });
+
   // ── Helpers ────────────────────────────────────────────────────────────────
   function showStep(id) {
     $('.kogu-step').hide();
