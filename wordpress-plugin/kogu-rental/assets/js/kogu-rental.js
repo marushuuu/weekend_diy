@@ -223,9 +223,22 @@
     var start = $('#start-date').val();
     var weeks = parseInt($('#rental-weeks').val(), 10) || 0;
 
-    if (!state.product || !start || !weeks) {
+    if (!state.product) {
+      // 商品未選択：日付・週数が入力済みならカード選択を促す
+      if (start && weeks && isTopMode) {
+        $('#kogu-stock-banner').show();
+        $('#kogu-stock-badge').text('商品を選んでください').attr('class', 'kogu-badge');
+        $('#kogu-stock-product-name').text('');
+      }
       $('#kogu-date-summary').hide();
       $('#btn-to-info').prop('disabled', true);
+      $('#btn-to-rental').hide();
+      return;
+    }
+
+    if (!start || !weeks) {
+      $('#kogu-date-summary').hide();
+      if (!isTopMode) { $('#btn-to-info').prop('disabled', true); }
       return;
     }
 

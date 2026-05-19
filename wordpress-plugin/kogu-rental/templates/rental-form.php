@@ -14,7 +14,8 @@
         foreach ( Kogu_Database::get_active_products() as $p ) :
           if ( mb_strpos( (string) $p->name, 'インパクト' ) !== false ) {
             $img = $img_base . 'product_impact.jpg';
-          } elseif ( mb_strpos( (string) $p->name, 'ビット' ) !== false ) {
+          } elseif ( mb_strpos( (string) $p->name, 'ビット' ) !== false ||
+                     mb_strpos( (string) $p->name, 'セット' ) !== false ) {
             $img = $img_base . 'product_bitset.jpg';
           } else {
             $img = '';

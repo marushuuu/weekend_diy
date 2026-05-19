@@ -26,7 +26,16 @@
   flex: 1; min-width: 200px; max-width: 320px;
   border: 2px solid var(--kogu-paper2); border-radius: var(--kogu-radius);
   overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s;
-  background: #fff;
+  background: #fff; position: relative;
+}
+/* 複数商品時：未選択カードに「選択」ラベルをオーバーレイ */
+.kogu-products:has(.kogu-product-card:not(.selected)) .kogu-product-card:not(.selected)::after {
+  content: 'タップして選択'; position: absolute; bottom: 8px; right: 8px;
+  background: var(--kogu-accent); color: #fff; font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px; opacity: 0; transition: opacity .2s;
+}
+.kogu-products:has(.kogu-product-card.selected) .kogu-product-card:not(.selected):hover::after {
+  opacity: 1;
 }
 .kogu-product-img {
   aspect-ratio: 4/3;
