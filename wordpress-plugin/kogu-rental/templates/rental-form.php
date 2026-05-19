@@ -127,11 +127,11 @@
       </div>
       <div class="kogu-form-row">
         <label>住所（都道府県〜番地） <em>*</em></label>
-        <input type="text" name="address1" required placeholder="例：東京都中央区晴海5-5-3" />
+        <input type="text" name="address1" required placeholder="例：東京都渋谷区道玄坂1-2-3" />
       </div>
       <div class="kogu-form-row">
         <label>建物名・部屋番号</label>
-        <input type="text" name="address2" placeholder="例：晴海フラッグ715号室（任意）" />
+        <input type="text" name="address2" placeholder="例：○○マンション101号室（任意）" />
       </div>
 
       <div style="display:flex;gap:12px;margin-top:8px;">
