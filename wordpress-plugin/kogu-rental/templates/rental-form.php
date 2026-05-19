@@ -122,11 +122,16 @@
       </div>
       <div class="kogu-form-row">
         <label>郵便番号 <em>*</em></label>
-        <input type="text" name="postal_code" required placeholder="000-0000" maxlength="8" />
+        <input type="text" name="postal_code" required placeholder="1040053" maxlength="8" />
+        <small style="color:var(--kogu-muted);font-size:11px;margin-top:3px;">7桁入力で住所を自動入力します</small>
       </div>
       <div class="kogu-form-row">
-        <label>お届け先住所 <em>*</em></label>
-        <textarea name="address" required rows="3" placeholder="都道府県・市区町村・番地・建物名"></textarea>
+        <label>住所（都道府県〜番地） <em>*</em></label>
+        <input type="text" name="address1" required placeholder="例：東京都中央区晴海5-5-3" />
+      </div>
+      <div class="kogu-form-row">
+        <label>建物名・部屋番号</label>
+        <input type="text" name="address2" placeholder="例：晴海フラッグ715号室（任意）" />
       </div>
 
       <div style="display:flex;gap:12px;margin-top:8px;">
