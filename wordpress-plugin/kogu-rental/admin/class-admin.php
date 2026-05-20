@@ -1106,7 +1106,7 @@ class Kogu_Admin {
                       <p class="description">
                         返却期限日から何日間、在庫をブロックするかを設定します。<br>
                         例: <code>3</code> → 返却期限 6/1 の場合、6/4 以降が次の貸し出し可能日になります。<br>
-                        <strong>デフォルト: 3日</strong>（郵送2日＋検品1日を想定）
+                        <strong>デフォルト: 3日</strong>（郵送3日想定）
                       </p>
                     </td>
                   </tr>

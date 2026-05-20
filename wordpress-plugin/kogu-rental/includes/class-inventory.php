@@ -3,7 +3,7 @@ defined( 'ABSPATH' ) || exit;
 
 class Kogu_Inventory {
 
-    /** 設定された折り返しバッファ日数（返却期限 + N日 まで在庫をブロック） */
+    /** 設定された折り返しバッファ日数（返却期限 + N日 まで在庫をブロック）。郵送3日想定 */
     private static function get_buffer(): int {
         return max( 0, (int) get_option( 'kogu_return_buffer_days', 3 ) );
     }
