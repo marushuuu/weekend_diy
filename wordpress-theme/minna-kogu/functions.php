@@ -30,6 +30,121 @@ function minna_kogu_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'minna_kogu_assets' );
 
+// ── SEO ───────────────────────────────────────────────────────────────────────
+
+/** ページごとの <title> タグをカスタマイズ */
+add_filter( 'pre_get_document_title', 'minna_kogu_document_title' );
+function minna_kogu_document_title( $title ) {
+	if ( is_front_page() ) {
+		return 'みんなの工具レンタル｜インパクトドライバーを1週間¥4,900から・3,000円以上送料無料';
+	}
+	if ( is_page( 'rental' ) ) {
+		return '工具をレンタルする｜みんなの工具レンタル';
+	}
+	return $title;
+}
+
+/** meta description・OGP・Twitter Card・JSON-LD を出力 */
+add_action( 'wp_head', 'minna_kogu_seo_head', 1 );
+function minna_kogu_seo_head() {
+	$site_name  = 'みんなの工具レンタル';
+	$og_image   = get_template_directory_uri() . '/assets/images/top_banner.jpeg';
+
+	if ( is_front_page() ) {
+		$desc      = 'インパクトドライバーなど電動工具を1週間¥4,900からレンタル。3,000円以上のご注文で送料無料。全国ゆうパック配送、2週目以降30%OFF。デポジット不要、返却もゆうパックで送り返すだけ。';
+		$canonical = home_url( '/' );
+		$og_title  = 'みんなの工具レンタル｜インパクトドライバーを1週間¥4,900から';
+		$og_type   = 'website';
+		$output_jsonld = true;
+	} elseif ( is_page( 'rental' ) ) {
+		$desc      = '工具レンタルのお申し込みページ。日程・週数を選んでそのままカード決済。3,000円以上のご注文で送料無料。インパクトドライバーを1週間¥4,900から、最短翌日お届け。';
+		$canonical = home_url( '/rental/' );
+		$og_title  = '工具をレンタルする｜みんなの工具レンタル';
+		$og_type   = 'website';
+		$output_jsonld = false;
+	} elseif ( is_page() ) {
+		global $post;
+		$excerpt   = wp_trim_words( strip_tags( get_the_content() ), 55, '…' );
+		$desc      = $excerpt ?: ( get_the_title() . '｜' . $site_name );
+		$canonical = get_permalink();
+		$og_title  = get_the_title() . '｜' . $site_name;
+		$og_type   = 'article';
+		$output_jsonld = false;
+	} else {
+		$desc      = 'インパクトドライバーなど電動工具を1週間¥4,900からレンタル。3,000円以上で送料無料。';
+		$canonical = home_url( '/' );
+		$og_title  = $site_name;
+		$og_type   = 'website';
+		$output_jsonld = false;
+	}
+
+	// meta description
+	echo '<meta name="description" content="' . esc_attr( $desc ) . '">' . "\n";
+	// canonical
+	echo '<link rel="canonical" href="' . esc_url( $canonical ) . '">' . "\n";
+
+	// Open Graph
+	echo '<meta property="og:type"        content="' . esc_attr( $og_type ) . '">' . "\n";
+	echo '<meta property="og:title"       content="' . esc_attr( $og_title ) . '">' . "\n";
+	echo '<meta property="og:description" content="' . esc_attr( $desc ) . '">' . "\n";
+	echo '<meta property="og:url"         content="' . esc_url( $canonical ) . '">' . "\n";
+	echo '<meta property="og:site_name"   content="' . esc_attr( $site_name ) . '">' . "\n";
+	echo '<meta property="og:image"       content="' . esc_url( $og_image ) . '">' . "\n";
+	echo '<meta property="og:locale"      content="ja_JP">' . "\n";
+
+	// Twitter Card
+	echo '<meta name="twitter:card"        content="summary_large_image">' . "\n";
+	echo '<meta name="twitter:title"       content="' . esc_attr( $og_title ) . '">' . "\n";
+	echo '<meta name="twitter:description" content="' . esc_attr( $desc ) . '">' . "\n";
+	echo '<meta name="twitter:image"       content="' . esc_url( $og_image ) . '">' . "\n";
+
+	// JSON-LD（トップページのみ）
+	if ( $output_jsonld ) {
+		$products    = minna_kogu_get_products();
+		$offers      = [];
+		foreach ( $products as $p ) {
+			$offers[] = [
+				'@type'           => 'Offer',
+				'name'            => $p->name . ' 1週間レンタル',
+				'price'           => (int) $p->price_per_week,
+				'priceCurrency'   => 'JPY',
+				'description'     => '2週目以降30%OFF。3,000円以上のご注文で送料無料。',
+				'seller'          => [ '@type' => 'Organization', 'name' => $site_name ],
+			];
+		}
+		if ( empty( $offers ) ) {
+			$offers[] = [
+				'@type'         => 'Offer',
+				'name'          => 'インパクトドライバー 1週間レンタル',
+				'price'         => 4900,
+				'priceCurrency' => 'JPY',
+				'description'   => '2週目以降30%OFF。3,000円以上のご注文で送料無料。',
+			];
+		}
+		$jsonld = [
+			'@context'    => 'https://schema.org',
+			'@type'       => 'LocalBusiness',
+			'name'        => $site_name,
+			'description' => '電動工具のレンタルサービス。インパクトドライバーなどを1週間単位で全国配送。3,000円以上のご注文で送料無料。',
+			'url'         => home_url( '/' ),
+			'image'       => $og_image,
+			'areaServed'  => [ '@type' => 'Country', 'name' => 'Japan' ],
+			'currenciesAccepted' => 'JPY',
+			'paymentAccepted'    => 'Credit Card',
+			'hasOfferCatalog'    => [
+				'@type'     => 'OfferCatalog',
+				'name'      => '工具レンタル料金',
+				'itemListElement' => $offers,
+			],
+		];
+		echo '<script type="application/ld+json">' . "\n";
+		echo wp_json_encode( $jsonld, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT );
+		echo "\n" . '</script>' . "\n";
+	}
+}
+
+// ── Theme helpers ─────────────────────────────────────────────────────────────
+
 /**
  * プラグインの有効商品を取得（プラグイン未有効時は空配列）。
  */

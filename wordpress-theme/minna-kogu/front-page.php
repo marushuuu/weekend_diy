@@ -10,7 +10,7 @@
 		<h1>はじめての工具、<br />借りるからはじめよう。</h1>
 		<p>
 			必要な日だけ、お手頃に。<br />
-			送料無料・最短翌日お届け。返却もかんたん。
+			3,000円以上のご注文で送料無料・最短翌日お届け。返却もかんたん。
 		</p>
 		<a href="#tools" class="hero-cta">▶ 工具を探す</a>
 	</div>
@@ -22,8 +22,8 @@
 		<div class="features-grid">
 			<div class="feature-item">
 				<div class="icon">📦</div>
-				<h3>発送送料無料</h3>
-				<p>お届けの送料は当店負担。<br />ゆうパックで全国へお届けします。</p>
+				<h3>3,000円以上で送料無料</h3>
+				<p>3,000円以上のご注文はお届けの送料が当店負担。<br />ゆうパックで全国へお届けします。</p>
 			</div>
 			<div class="feature-item">
 				<div class="icon">💳</div>
