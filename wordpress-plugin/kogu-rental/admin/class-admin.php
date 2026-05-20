@@ -1101,12 +1101,12 @@ class Kogu_Admin {
                     <th><label for="kogu_return_buffer_days">折り返しバッファ日数</label></th>
                     <td>
                       <input type="number" id="kogu_return_buffer_days" name="kogu_return_buffer_days"
-                             value="<?php echo (int) get_option( 'kogu_return_buffer_days', 3 ); ?>"
+                             value="<?php echo (int) get_option( 'kogu_return_buffer_days', 4 ); ?>"
                              min="0" max="14" class="small-text" />
                       <p class="description">
                         返却期限日から何日間、在庫をブロックするかを設定します。<br>
-                        例: <code>3</code> → 返却期限 6/1 の場合、6/4 以降が次の貸し出し可能日になります。<br>
-                        <strong>デフォルト: 3日</strong>（郵送3日想定）
+                        例: <code>4</code> → 返却期限 6/1 の場合、6/5 以降が次の貸し出し可能日になります。<br>
+                        <strong>デフォルト: 4日</strong>（郵送3日＋検品1日想定）
                       </p>
                     </td>
                   </tr>
