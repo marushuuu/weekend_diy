@@ -8,6 +8,7 @@ class Kogu_Admin {
         add_action( 'admin_post_kogu_admin_action',      [ __CLASS__, 'handle_admin_action' ] );
         add_action( 'admin_post_kogu_save_product',      [ __CLASS__, 'handle_save_product' ] );
         add_action( 'admin_post_kogu_save_addon',        [ __CLASS__, 'handle_save_addon' ] );
+        add_action( 'admin_post_kogu_return_addon',      [ __CLASS__, 'handle_return_addon' ] );
         add_action( 'admin_post_kogu_run_install',       [ __CLASS__, 'handle_run_install' ] );
         add_action( 'admin_init',                        [ __CLASS__, 'register_settings' ] );
     }
@@ -32,8 +33,9 @@ class Kogu_Admin {
         add_submenu_page( 'kogu-rentals', '延滞一覧',     '⚠️ 延滞一覧',  'manage_options', 'kogu-overdue',    [ __CLASS__, 'page_overdue' ] );
         add_submenu_page( 'kogu-rentals', '在庫管理',     '在庫管理',      'manage_options', 'kogu-inventory',  [ __CLASS__, 'page_inventory' ] );
         add_submenu_page( 'kogu-rentals', '商品管理',     '商品管理',      'manage_options', 'kogu-products',   [ __CLASS__, 'page_products' ] );
-        add_submenu_page( 'kogu-rentals', '購入商品管理', '🛒 購入商品管理', 'manage_options', 'kogu-addons',   [ __CLASS__, 'page_addons' ] );
-        add_submenu_page( 'kogu-rentals', '設定',         '設定',          'manage_options', 'kogu-settings',   [ __CLASS__, 'page_settings' ] );
+        add_submenu_page( 'kogu-rentals', '購入商品管理', '🛒 購入商品管理', 'manage_options', 'kogu-addons',          [ __CLASS__, 'page_addons' ] );
+        add_submenu_page( 'kogu-rentals', '購入履歴',   '📦 購入履歴',     'manage_options', 'kogu-addon-history',   [ __CLASS__, 'page_addon_history' ] );
+        add_submenu_page( 'kogu-rentals', '設定',         '設定',          'manage_options', 'kogu-settings',        [ __CLASS__, 'page_settings' ] );
     }
 
     // ── レンタル一覧 ──────────────────────────────────────────────────────────
@@ -707,6 +709,252 @@ class Kogu_Admin {
           </table>
         </div>
         <?php
+    }
+
+    // ── 購入履歴 ──────────────────────────────────────────────────────────────
+    public static function page_addon_history() {
+        // フィルター
+        $filter_addon  = isset( $_GET['addon_id'] )   ? (int) $_GET['addon_id']                        : 0;
+        $filter_status = isset( $_GET['status'] )     ? sanitize_text_field( $_GET['status'] )         : '';
+        $filter_from   = isset( $_GET['date_from'] )  ? sanitize_text_field( $_GET['date_from'] )      : '';
+        $filter_to     = isset( $_GET['date_to'] )    ? sanitize_text_field( $_GET['date_to'] )        : '';
+
+        $filters = array_filter( [
+            'addon_product_id' => $filter_addon  ?: null,
+            'status'           => $filter_status ?: null,
+            'date_from'        => $filter_from   ?: null,
+            'date_to'          => $filter_to     ?: null,
+        ] );
+
+        if ( isset( $_GET['returned'] ) ) {
+            echo '<div class="notice notice-success"><p>返品を登録しました。</p></div>';
+        }
+
+        $purchases   = Kogu_Database::get_addon_purchase_history( $filters );
+        $summary     = Kogu_Database::get_addon_sales_summary();
+        $all_addons  = Kogu_Database::get_active_addon_products();
+        $nonce       = wp_create_nonce( 'kogu_return_addon' );
+
+        $status_labels = [
+            'active'              => '<span style="color:#27ae60;font-weight:700;">販売中</span>',
+            'partially_returned'  => '<span style="color:#e67e22;font-weight:700;">一部返品</span>',
+            'returned'            => '<span style="color:#c0392b;font-weight:700;">返品済み</span>',
+        ];
+        ?>
+        <div class="wrap">
+          <h1>📦 購入履歴</h1>
+
+          <!-- 商品別サマリー -->
+          <h2>商品別集計</h2>
+          <table class="wp-list-table widefat fixed striped" style="margin-bottom:32px;">
+            <thead>
+              <tr>
+                <th>商品名</th><th>累計販売数</th><th>累計売上</th><th>返品数</th><th>現在在庫</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ( $summary as $s ) : ?>
+                <tr>
+                  <td><strong><?php echo esc_html( $s->name ); ?></strong></td>
+                  <td><strong style="color:#e85a2b;"><?php echo number_format( $s->sold_qty ); ?></strong><?php echo esc_html( $s->unit ); ?></td>
+                  <td><strong>¥<?php echo number_format( $s->sold_amount ); ?></strong></td>
+                  <td><?php echo $s->returned_qty > 0 ? '<span style="color:#c0392b;">' . number_format( $s->returned_qty ) . $s->unit . '</span>' : '—'; ?></td>
+                  <td>
+                    <?php if ( $s->stock_quantity === null ) : ?>
+                      <span style="color:#888;">無制限</span>
+                    <?php elseif ( (int) $s->stock_quantity === 0 ) : ?>
+                      <span style="color:#c0392b;font-weight:700;">品切れ</span>
+                    <?php else : ?>
+                      <span style="color:#27ae60;font-weight:700;"><?php echo (int) $s->stock_quantity; ?></span>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+              <?php if ( empty( $summary ) ) : ?>
+                <tr><td colspan="5" style="text-align:center;padding:24px;">購入履歴はありません。</td></tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+
+          <!-- フィルター -->
+          <h2>購入明細</h2>
+          <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;background:#f6f1e6;padding:16px;border-radius:8px;">
+            <input type="hidden" name="page" value="kogu-addon-history">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">商品</label>
+              <select name="addon_id" style="padding:6px 10px;">
+                <option value="">すべて</option>
+                <?php foreach ( $all_addons as $a ) : ?>
+                  <option value="<?php echo (int) $a->id; ?>" <?php selected( $filter_addon, (int) $a->id ); ?>><?php echo esc_html( $a->name ); ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">ステータス</label>
+              <select name="status" style="padding:6px 10px;">
+                <option value="">すべて</option>
+                <option value="active"             <?php selected( $filter_status, 'active' ); ?>>販売中</option>
+                <option value="partially_returned" <?php selected( $filter_status, 'partially_returned' ); ?>>一部返品</option>
+                <option value="returned"           <?php selected( $filter_status, 'returned' ); ?>>返品済み</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">購入日（From）</label>
+              <input type="date" name="date_from" value="<?php echo esc_attr( $filter_from ); ?>" style="padding:6px 10px;" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">購入日（To）</label>
+              <input type="date" name="date_to" value="<?php echo esc_attr( $filter_to ); ?>" style="padding:6px 10px;" />
+            </div>
+            <button type="submit" class="button button-primary">絞り込む</button>
+            <a href="?page=kogu-addon-history" class="button">リセット</a>
+          </form>
+
+          <!-- 件数・合計 -->
+          <?php
+          $total_qty    = array_sum( array_column( $purchases, 'quantity' ) );
+          $total_amount = array_sum( array_map( fn( $p ) => (int) $p->quantity * (int) $p->unit_price, $purchases ) );
+          ?>
+          <p style="font-size:13px;color:#555;">
+            <?php echo count( $purchases ); ?>件
+            ／ 合計販売数: <strong><?php echo number_format( $total_qty ); ?></strong>点
+            ／ 合計売上: <strong>¥<?php echo number_format( $total_amount ); ?></strong>
+          </p>
+
+          <!-- 明細テーブル -->
+          <table class="wp-list-table widefat fixed striped">
+            <thead>
+              <tr>
+                <th style="width:150px">購入日時</th>
+                <th style="width:110px">予約番号</th>
+                <th>お客様</th>
+                <th>商品名</th>
+                <th style="width:70px">数量</th>
+                <th style="width:80px">単価</th>
+                <th style="width:80px">小計</th>
+                <th style="width:90px">ステータス</th>
+                <th style="width:70px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ( $purchases as $p ) :
+                $subtotal   = (int) $p->quantity * (int) $p->unit_price;
+                $status_html = $status_labels[ $p->status ] ?? esc_html( $p->status );
+                $can_return  = $p->status !== 'returned';
+              ?>
+                <tr>
+                  <td style="font-size:12px;"><?php echo esc_html( substr( $p->created_at, 0, 16 ) ); ?></td>
+                  <td style="font-family:monospace;font-weight:700;"><?php echo esc_html( $p->reservation_number ); ?></td>
+                  <td>
+                    <strong><?php echo esc_html( $p->guest_name ); ?></strong><br>
+                    <small style="color:#888;"><?php echo esc_html( $p->guest_email ); ?></small>
+                  </td>
+                  <td><?php echo esc_html( $p->addon_name ); ?></td>
+                  <td><?php echo (int) $p->quantity; ?><?php echo esc_html( $p->unit ); ?>
+                    <?php if ( $p->returned_quantity > 0 ) : ?>
+                      <br><small style="color:#c0392b;">返品: <?php echo (int) $p->returned_quantity; ?></small>
+                    <?php endif; ?>
+                  </td>
+                  <td>¥<?php echo number_format( $p->unit_price ); ?></td>
+                  <td>¥<?php echo number_format( $subtotal ); ?></td>
+                  <td><?php echo $status_html; ?>
+                    <?php if ( $p->return_reason ) : ?>
+                      <br><small style="color:#888;" title="<?php echo esc_attr( $p->return_reason ); ?>">理由あり</small>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?php if ( $can_return ) : ?>
+                      <button type="button" class="button button-small"
+                              onclick="document.getElementById('return-form-<?php echo (int) $p->id; ?>').style.display='block';this.style.display='none';">
+                        返品
+                      </button>
+                    <?php else : ?>
+                      <span style="color:#aaa;font-size:12px;">完了</span>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+                <?php if ( $can_return ) : ?>
+                <tr id="return-form-<?php echo (int) $p->id; ?>" style="display:none;background:#fff8f0;">
+                  <td colspan="9" style="padding:16px;">
+                    <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+                      <input type="hidden" name="action"          value="kogu_return_addon">
+                      <input type="hidden" name="purchase_id"     value="<?php echo (int) $p->id; ?>">
+                      <input type="hidden" name="addon_product_id" value="<?php echo (int) $p->addon_product_id; ?>">
+                      <input type="hidden" name="_wpnonce"        value="<?php echo esc_attr( $nonce ); ?>">
+                      <div>
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">
+                          返品数量（最大: <?php echo (int) $p->quantity - (int) $p->returned_quantity; ?>）
+                        </label>
+                        <input type="number" name="return_qty" min="1"
+                               max="<?php echo (int) $p->quantity - (int) $p->returned_quantity; ?>"
+                               value="<?php echo (int) $p->quantity - (int) $p->returned_quantity; ?>"
+                               style="width:80px;padding:6px;" required />
+                      </div>
+                      <div>
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">返品理由</label>
+                        <input type="text" name="return_reason" style="width:260px;padding:6px;" placeholder="例: お客様都合、商品不良 など" />
+                      </div>
+                      <div>
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">在庫に戻す</label>
+                        <label style="display:flex;align-items:center;gap:6px;padding-top:4px;">
+                          <input type="checkbox" name="restore_stock" value="1" checked />
+                          在庫数に返品分を加算する
+                        </label>
+                      </div>
+                      <div style="padding-top:20px;">
+                        <button type="submit" class="button button-primary" style="background:#c0392b;border-color:#c0392b;">
+                          返品を登録する
+                        </button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+                <?php endif; ?>
+              <?php endforeach; ?>
+              <?php if ( empty( $purchases ) ) : ?>
+                <tr><td colspan="9" style="text-align:center;padding:24px;">該当する購入履歴はありません。</td></tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+        <?php
+    }
+
+    // ── 返品処理ハンドラ ──────────────────────────────────────────────────────
+    public static function handle_return_addon() {
+        check_admin_referer( 'kogu_return_addon' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( '権限がありません。' );
+
+        global $wpdb;
+        $purchase_id      = (int) ( $_POST['purchase_id']      ?? 0 );
+        $addon_product_id = (int) ( $_POST['addon_product_id'] ?? 0 );
+        $return_qty       = max( 1, (int) ( $_POST['return_qty'] ?? 1 ) );
+        $return_reason    = sanitize_text_field( $_POST['return_reason'] ?? '' );
+        $restore_stock    = ! empty( $_POST['restore_stock'] );
+
+        $table    = Kogu_Database::rental_addons_table();
+        $purchase = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table WHERE id = %d", $purchase_id ) );
+        if ( ! $purchase ) wp_die( '購入データが見つかりません。' );
+
+        $remaining = (int) $purchase->quantity - (int) $purchase->returned_quantity;
+        $return_qty = min( $return_qty, $remaining );
+
+        $new_returned = (int) $purchase->returned_quantity + $return_qty;
+        $new_status   = $new_returned >= (int) $purchase->quantity ? 'returned' : 'partially_returned';
+
+        $wpdb->update( $table, [
+            'status'            => $new_status,
+            'returned_quantity' => $new_returned,
+            'returned_at'       => current_time( 'mysql' ),
+            'return_reason'     => $return_reason,
+        ], [ 'id' => $purchase_id ] );
+
+        if ( $restore_stock ) {
+            Kogu_Database::restore_addon_stock( $addon_product_id, $return_qty );
+        }
+
+        wp_redirect( admin_url( 'admin.php?page=kogu-addon-history&returned=1' ) );
+        exit;
     }
 
     // ── 設定画面 ──────────────────────────────────────────────────────────────

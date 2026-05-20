@@ -52,8 +52,15 @@ class Kogu_Database {
             addon_product_id BIGINT UNSIGNED NOT NULL,
             quantity         INT UNSIGNED NOT NULL DEFAULT 1,
             unit_price       INT UNSIGNED NOT NULL DEFAULT 0,
+            status           ENUM('active','returned','partially_returned') NOT NULL DEFAULT 'active',
+            returned_quantity INT UNSIGNED NOT NULL DEFAULT 0,
+            returned_at      DATETIME DEFAULT NULL,
+            return_reason    VARCHAR(500) DEFAULT '',
+            created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            KEY rental_id (rental_id)
+            KEY rental_id (rental_id),
+            KEY addon_product_id (addon_product_id),
+            KEY status (status)
         ) $charset;" );
 
         // ── 在庫ユニット（物理的な1台ごと）──────────────────────────────────
@@ -286,5 +293,56 @@ class Kogu_Database {
              WHERE ra.rental_id = %d",
             $rental_id
         ) ) ?: [];
+    }
+
+    // ── 購入履歴取得（管理画面用） ────────────────────────────────────────────
+    public static function get_addon_purchase_history( array $filters = [] ): array {
+        global $wpdb;
+        $ra    = self::rental_addons_table();
+        $ap    = self::addon_products_table();
+        $rt    = self::rentals_table();
+
+        $where = [];
+        if ( ! empty( $filters['addon_product_id'] ) ) {
+            $where[] = $wpdb->prepare( 'ra.addon_product_id = %d', (int) $filters['addon_product_id'] );
+        }
+        if ( ! empty( $filters['status'] ) ) {
+            $where[] = $wpdb->prepare( 'ra.status = %s', $filters['status'] );
+        }
+        if ( ! empty( $filters['date_from'] ) ) {
+            $where[] = $wpdb->prepare( 'ra.created_at >= %s', $filters['date_from'] . ' 00:00:00' );
+        }
+        if ( ! empty( $filters['date_to'] ) ) {
+            $where[] = $wpdb->prepare( 'ra.created_at <= %s', $filters['date_to'] . ' 23:59:59' );
+        }
+        $where_sql = $where ? 'WHERE ' . implode( ' AND ', $where ) : '';
+
+        return $wpdb->get_results(
+            "SELECT ra.*, ap.name AS addon_name, ap.unit,
+                    r.reservation_number, r.guest_name, r.guest_email
+             FROM $ra ra
+             JOIN $ap ap ON ap.id = ra.addon_product_id
+             JOIN $rt r  ON r.id  = ra.rental_id
+             $where_sql
+             ORDER BY ra.created_at DESC
+             LIMIT 500"
+        ) ?: [];
+    }
+
+    // 商品別集計
+    public static function get_addon_sales_summary(): array {
+        global $wpdb;
+        $ra = self::rental_addons_table();
+        $ap = self::addon_products_table();
+        return $wpdb->get_results(
+            "SELECT ap.id, ap.name, ap.unit, ap.stock_quantity,
+                    COALESCE(SUM(CASE WHEN ra.status != 'returned' THEN ra.quantity ELSE 0 END), 0) AS sold_qty,
+                    COALESCE(SUM(CASE WHEN ra.status != 'returned' THEN ra.quantity * ra.unit_price ELSE 0 END), 0) AS sold_amount,
+                    COALESCE(SUM(CASE WHEN ra.status IN ('returned','partially_returned') THEN ra.returned_quantity ELSE 0 END), 0) AS returned_qty
+             FROM $ap ap
+             LEFT JOIN $ra ra ON ra.addon_product_id = ap.id
+             GROUP BY ap.id
+             ORDER BY sold_qty DESC"
+        ) ?: [];
     }
 }
