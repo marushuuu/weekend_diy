@@ -34,7 +34,7 @@
 			<div class="feature-item">
 				<div class="icon">🔄</div>
 				<h3>かんたん返却</h3>
-				<p>ゆうパックで送り返すだけ。<br />デポジット（保証金）も不要です。</p>
+				<p>ゆうパックで送り返すだけ。</p>
 			</div>
 		</div>
 	</div>
