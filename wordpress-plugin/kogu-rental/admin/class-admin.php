@@ -416,12 +416,103 @@ class Kogu_Admin {
           $available = Kogu_Inventory::available_count( $today, $today, $selected_pid );
           $total     = count( $units );
           $rented    = $total - $available;
+          $buffer    = (int) get_option( 'kogu_return_buffer_days', 3 );
           ?>
           <p>
             全 <strong><?php echo $total; ?></strong> 台中、
             貸出中 <strong style="color:#e85a2b;"><?php echo $rented; ?></strong> 台 /
+            折り返しバッファ中 <strong style="color:#e67e22;"><?php echo max(0,$total-$rented-$available); ?></strong> 台 /
             貸出可 <strong style="color:#27ae60;"><?php echo $available; ?></strong> 台
           </p>
+          <p style="font-size:12px;color:#888;">※ 折り返しバッファ: 返却期限後 <?php echo $buffer; ?> 日間は次の貸し出しをブロック（<a href="?page=kogu-settings">設定で変更</a>）</p>
+
+          <!-- 60日間 容量予測モデル -->
+          <h3 style="margin-top:32px;">📊 60日間 在庫容量予測</h3>
+          <p style="font-size:13px;color:#555;margin-bottom:12px;">
+            返却期限＋バッファ（<?php echo $buffer; ?>日）を考慮した、今後60日間の受付可能台数予測です。<br>
+            <span style="display:inline-block;width:12px;height:12px;background:#d4f4e2;border:1px solid #ccc;margin-right:4px;"></span>余裕あり
+            <span style="display:inline-block;width:12px;height:12px;background:#fff3cd;border:1px solid #ccc;margin:0 4px;"></span>残りわずか
+            <span style="display:inline-block;width:12px;height:12px;background:#fde8e8;border:1px solid #ccc;margin:0 4px;"></span>満杯
+            <span style="display:inline-block;width:12px;height:12px;background:#ece4d2;border:1px solid #ccc;margin:0 4px;"></span>バッファ中
+          </p>
+          <?php
+          $forecast    = Kogu_Inventory::capacity_forecast( 60 );
+          $product_rows = $forecast[ $selected_pid ] ?? [];
+          ?>
+          <div style="overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;">
+            <table style="border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap;">
+              <thead style="position:sticky;top:0;background:#f6f1e6;z-index:1;">
+                <tr>
+                  <th style="padding:8px 12px;border-bottom:2px solid #ddd;text-align:left;">日付</th>
+                  <th style="padding:8px 12px;border-bottom:2px solid #ddd;text-align:center;">全台数</th>
+                  <th style="padding:8px 12px;border-bottom:2px solid #ddd;text-align:center;">貸出中</th>
+                  <th style="padding:8px 12px;border-bottom:2px solid #ddd;text-align:center;">バッファ中</th>
+                  <th style="padding:8px 12px;border-bottom:2px solid #ddd;text-align:center;">受付可能</th>
+                  <th style="padding:8px 12px;border-bottom:2px solid #ddd;text-align:left;">この日が返却期限</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ( $product_rows as $row ) :
+                  $avail = $row['available'];
+                  $total_r = $row['total'];
+                  $ratio = $total_r > 0 ? $avail / $total_r : 0;
+                  if ( $avail === 0 && $row['buffer'] === 0 && $row['rented'] === 0 ) {
+                    $bg = '#fff'; // 余裕あり（全台空き）
+                  } elseif ( $avail === 0 ) {
+                    $bg = '#fde8e8'; // 満杯
+                  } elseif ( $row['buffer'] > 0 && $avail < $total_r ) {
+                    $bg = '#ece4d2'; // バッファ含む
+                  } elseif ( $ratio < 0.4 ) {
+                    $bg = '#fff3cd'; // 残りわずか
+                  } else {
+                    $bg = '#d4f4e2'; // 余裕あり
+                  }
+                  $is_today = $row['date'] === date('Y-m-d');
+                  $weekday  = ['日','月','火','水','木','金','土'][(int)date('w', strtotime($row['date']))];
+                  $is_sun   = (int)date('w', strtotime($row['date'])) === 0;
+                  $is_sat   = (int)date('w', strtotime($row['date'])) === 6;
+                ?>
+                  <tr style="background:<?php echo $bg; ?>;<?php echo $is_today ? 'font-weight:700;outline:2px solid #e85a2b;outline-offset:-2px;' : ''; ?>">
+                    <td style="padding:6px 12px;border-bottom:1px solid #eee;color:<?php echo $is_sun ? '#c0392b' : ($is_sat ? '#2980b9' : 'inherit'); ?>">
+                      <?php echo esc_html( $row['date'] ); ?>（<?php echo $weekday; ?>）
+                      <?php if ( $is_today ) echo '<span style="background:#e85a2b;color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;">今日</span>'; ?>
+                    </td>
+                    <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center;"><?php echo $row['total']; ?>台</td>
+                    <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center;color:#e85a2b;">
+                      <?php echo $row['rented'] > 0 ? $row['rented'] . '台' : '—'; ?>
+                    </td>
+                    <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center;color:#e67e22;">
+                      <?php echo $row['buffer'] > 0 ? $row['buffer'] . '台' : '—'; ?>
+                    </td>
+                    <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:<?php echo $avail > 0 ? '#27ae60' : '#c0392b'; ?>">
+                      <?php echo $avail; ?>台
+                    </td>
+                    <td style="padding:6px 12px;border-bottom:1px solid #eee;color:#888;">
+                      <?php echo ! empty( $row['ending_today'] ) ? esc_html( implode( '、', $row['ending_today'] ) ) : '—'; ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+
+          <?php
+          // サマリー: 今後30日で受け付けられる見込み件数
+          $cap30 = array_slice( $product_rows, 0, 30 );
+          $total_slots = array_sum( array_column( $cap30, 'available' ) );
+          $zero_days   = count( array_filter( $cap30, fn($r) => $r['available'] === 0 ) );
+          $avg_avail   = $total_r > 0 ? round( array_sum( array_column( $cap30, 'available' ) ) / 30, 1 ) : 0;
+          ?>
+          <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="background:#f6f1e6;border-radius:8px;padding:16px 20px;text-align:center;min-width:140px;">
+              <p style="margin:0 0 4px;font-size:12px;color:#888;">今後30日・平均空き台数</p>
+              <p style="margin:0;font-size:28px;font-weight:900;color:#27ae60;"><?php echo $avg_avail; ?>台</p>
+            </div>
+            <div style="background:#f6f1e6;border-radius:8px;padding:16px 20px;text-align:center;min-width:140px;">
+              <p style="margin:0 0 4px;font-size:12px;color:#888;">満杯の日数</p>
+              <p style="margin:0;font-size:28px;font-weight:900;color:<?php echo $zero_days > 10 ? '#c0392b' : '#e67e22'; ?>;"><?php echo $zero_days; ?>日</p>
+            </div>
+          </div>
         </div>
         <?php
     }
@@ -967,6 +1058,7 @@ class Kogu_Admin {
             'kogu_from_email'            => '送信元メールアドレス',
             'kogu_from_name'             => '送信元名',
             'kogu_noindex_slugs'         => 'noindex にするページスラッグ（カンマ区切り）',
+            'kogu_return_buffer_days'    => '折り返しバッファ日数（返却期限後に在庫をブロックする日数）',
         ];
         foreach ( $fields as $key => $label ) {
             register_setting( 'kogu_settings', $key );
@@ -1005,6 +1097,19 @@ class Kogu_Admin {
                     </td>
                   </tr>
               <?php endforeach; ?>
+                  <tr>
+                    <th><label for="kogu_return_buffer_days">折り返しバッファ日数</label></th>
+                    <td>
+                      <input type="number" id="kogu_return_buffer_days" name="kogu_return_buffer_days"
+                             value="<?php echo (int) get_option( 'kogu_return_buffer_days', 3 ); ?>"
+                             min="0" max="14" class="small-text" />
+                      <p class="description">
+                        返却期限日から何日間、在庫をブロックするかを設定します。<br>
+                        例: <code>3</code> → 返却期限 6/1 の場合、6/4 以降が次の貸し出し可能日になります。<br>
+                        <strong>デフォルト: 3日</strong>（郵送2日＋検品1日を想定）
+                      </p>
+                    </td>
+                  </tr>
                   <tr>
                     <th><label for="kogu_noindex_slugs">検索インデックスさせないページ</label></th>
                     <td>
