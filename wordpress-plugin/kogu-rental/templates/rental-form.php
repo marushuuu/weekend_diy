@@ -271,6 +271,7 @@ function kogu_product_img( $name, $base ) {
         <label>郵便番号 <em>*</em></label>
         <input type="text" name="postal_code" required placeholder="1500001" maxlength="8" />
         <small style="color:var(--kogu-muted);font-size:11px;margin-top:3px;">7桁入力で住所を自動入力します</small>
+        <small style="color:#c0392b;font-size:11px;margin-top:4px;display:block;">※北海道・沖縄・離島へのお届けは承っておりません。</small>
       </div>
       <div class="kogu-form-row">
         <label>住所（都道府県〜番地） <em>*</em></label>
