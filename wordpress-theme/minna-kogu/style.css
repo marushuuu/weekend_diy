@@ -543,6 +543,47 @@ body {
   .page-wrap { padding-block: 32px; }
 }
 
+/* ── Contact form ───────────────────────────────────── */
+.kogu-contact-form { display: flex; flex-direction: column; gap: 20px; }
+.kogu-contact-row { display: flex; flex-direction: column; gap: 6px; }
+.kogu-contact-row label { font-size: 14px; font-weight: 600; color: var(--ink); }
+.kogu-contact-row label em { color: var(--accent); font-style: normal; margin-left: 4px; }
+.kogu-contact-row input,
+.kogu-contact-row select,
+.kogu-contact-row textarea {
+  border: 1.5px solid var(--paper-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--white);
+  transition: border-color .15s;
+}
+.kogu-contact-row input:focus,
+.kogu-contact-row select:focus,
+.kogu-contact-row textarea:focus { outline: none; border-color: var(--accent); }
+.kogu-contact-row textarea { resize: vertical; min-height: 140px; }
+.kogu-contact-submit { align-self: flex-start; padding: 13px 32px; }
+.kogu-contact-error {
+  background: #fff0ee;
+  border: 1px solid #f5c0b8;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #c0392b;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.kogu-contact-thanks {
+  text-align: center;
+  padding: 40px 20px;
+}
+.kogu-contact-thanks-icon {
+  font-size: 48px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
 .empty-note {
   background: var(--white);
   border-radius: 12px;

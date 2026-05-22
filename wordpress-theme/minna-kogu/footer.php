@@ -23,6 +23,7 @@
 			<div class="footer-links">
 				<h4>サポート</h4>
 				<ul>
+					<li><a href="<?php echo esc_url( home_url( '/contact' ) ); ?>">お問い合わせ</a></li>
 					<li><a href="<?php echo esc_url( home_url( '/terms' ) ); ?>">利用規約</a></li>
 					<li><a href="<?php echo esc_url( home_url( '/tokushoho' ) ); ?>">特定商取引法に基づく表記</a></li>
 					<li><a href="<?php echo esc_url( home_url( '/privacy' ) ); ?>">プライバシーポリシー</a></li>
