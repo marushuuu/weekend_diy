@@ -44,6 +44,14 @@ function minna_kogu_document_title( $title ) {
 	return $title;
 }
 
+/** Google Search Console 検証タグを出力 */
+add_action( 'wp_head', function() {
+	$code = get_option( 'kogu_gsc_verification' );
+	if ( $code ) {
+		echo '<meta name="google-site-verification" content="' . esc_attr( $code ) . '">' . "\n";
+	}
+}, 1 );
+
 /** meta description・OGP・Twitter Card・JSON-LD を出力 */
 add_action( 'wp_head', 'minna_kogu_seo_head', 1 );
 function minna_kogu_seo_head() {

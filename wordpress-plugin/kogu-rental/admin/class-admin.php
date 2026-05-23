@@ -1059,6 +1059,7 @@ class Kogu_Admin {
             'kogu_from_name'             => '送信元名',
             'kogu_noindex_slugs'         => 'noindex にするページスラッグ（カンマ区切り）',
             'kogu_return_buffer_days'    => '折り返しバッファ日数（返却期限後に在庫をブロックする日数）',
+            'kogu_gsc_verification'      => 'Google Search Console 検証コード',
         ];
         foreach ( $fields as $key => $label ) {
             register_setting( 'kogu_settings', $key );
@@ -1097,6 +1098,18 @@ class Kogu_Admin {
                     </td>
                   </tr>
               <?php endforeach; ?>
+                  <tr>
+                    <th><label for="kogu_gsc_verification">Google Search Console 検証コード</label></th>
+                    <td>
+                      <input type="text" id="kogu_gsc_verification" name="kogu_gsc_verification"
+                             value="<?php echo esc_attr( get_option( 'kogu_gsc_verification' ) ); ?>"
+                             class="large-text" placeholder="例: google1234abcd5678efgh" />
+                      <p class="description">
+                        Google Search Console の「HTMLタグ」方式で取得したコンテンツ値を入力してください。<br>
+                        例: <code>&lt;meta name="google-site-verification" content="<strong>ここの値</strong>" /&gt;</code>
+                      </p>
+                    </td>
+                  </tr>
                   <tr>
                     <th><label for="kogu_return_buffer_days">折り返しバッファ日数</label></th>
                     <td>
