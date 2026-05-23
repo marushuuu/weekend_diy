@@ -38,6 +38,7 @@
   opacity: 1;
 }
 .kogu-product-img {
+  display: block;
   aspect-ratio: 4/3;
   overflow: hidden;
   background: var(--kogu-paper2);
