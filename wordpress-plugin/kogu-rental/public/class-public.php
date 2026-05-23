@@ -6,6 +6,11 @@ class Kogu_Public {
     public static function init() {
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_assets' ] );
 
+        // ── 商品個別ページ リライトルール ───────────────────────────────────
+        add_action( 'init',              [ __CLASS__, 'register_rewrite_rules' ] );
+        add_filter( 'query_vars',        [ __CLASS__, 'add_query_vars' ] );
+        add_filter( 'template_include',  [ __CLASS__, 'load_product_template' ] );
+
         // ── ショートコード ──────────────────────────────────────────────────
         add_shortcode( 'kogu_rental_form', [ __CLASS__, 'shortcode_rental_form' ] );
         add_shortcode( 'kogu_mypage',      [ __CLASS__, 'shortcode_mypage' ] );
@@ -31,6 +36,32 @@ class Kogu_Public {
 
         // ── noindex メタタグ ─────────────────────────────────────────────────
         add_action( 'wp_head', [ __CLASS__, 'output_noindex_meta' ] );
+    }
+
+    // ── 商品ページ リライト ────────────────────────────────────────────────
+    public static function register_rewrite_rules() {
+        add_rewrite_rule( '^products/([a-z0-9\-]+)/?$', 'index.php?kogu_product_slug=$matches[1]', 'top' );
+    }
+
+    public static function add_query_vars( $vars ) {
+        $vars[] = 'kogu_product_slug';
+        return $vars;
+    }
+
+    public static function load_product_template( $template ) {
+        $slug = get_query_var( 'kogu_product_slug' );
+        if ( ! $slug ) return $template;
+        $product = Kogu_Database::get_product_by_slug( $slug );
+        if ( ! $product ) {
+            global $wp_query;
+            $wp_query->set_404();
+            status_header( 404 );
+            return get_404_template();
+        }
+        // 商品データをグローバルにセットしてテンプレートへ渡す
+        $GLOBALS['kogu_current_product'] = $product;
+        $tpl = KOGU_PLUGIN_DIR . 'templates/single-product.php';
+        return file_exists( $tpl ) ? $tpl : $template;
     }
 
     public static function enqueue_assets() {

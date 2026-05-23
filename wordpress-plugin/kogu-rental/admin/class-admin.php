@@ -554,6 +554,15 @@ class Kogu_Admin {
                              value="<?php echo esc_attr( $edit->name ?? '' ); ?>" /></td>
                 </tr>
                 <tr>
+                  <th><label for="pslug">URLスラッグ <em>*</em></label></th>
+                  <td>
+                    <input type="text" id="pslug" name="slug" required class="regular-text"
+                           value="<?php echo esc_attr( $edit->slug ?? '' ); ?>"
+                           placeholder="例: impact-driver" pattern="[a-z0-9\-]+" />
+                    <p class="description">英小文字・数字・ハイフンのみ。公開URL: <code><?php echo esc_html( home_url( '/products/' ) ); ?><strong>{スラッグ}</strong>/</code></p>
+                  </td>
+                </tr>
+                <tr>
                   <th><label for="pdesc">説明</label></th>
                   <td><textarea id="pdesc" name="description" rows="3" class="large-text"><?php echo esc_textarea( $edit->description ?? '' ); ?></textarea></td>
                 </tr>
@@ -1260,9 +1269,10 @@ class Kogu_Admin {
             ? $_POST['status'] : 'active';
 
         global $wpdb;
+        $slug     = sanitize_title( $_POST['slug'] ?? '' ) ?: sanitize_title( $name );
         $contents = sanitize_textarea_field( $_POST['contents'] ?? '' );
         $gallery  = sanitize_text_field( $_POST['gallery'] ?? '' );
-        $data = compact( 'name', 'description', 'contents', 'gallery', 'price_per_week', 'deposit_amount', 'status' );
+        $data = compact( 'name', 'slug', 'description', 'contents', 'gallery', 'price_per_week', 'deposit_amount', 'status' );
         $data['allows_addons'] = isset( $_POST['allows_addons'] ) ? 1 : 0;
 
         if ( $product_id ) {

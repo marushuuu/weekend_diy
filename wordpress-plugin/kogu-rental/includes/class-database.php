@@ -22,6 +22,7 @@ class Kogu_Database {
         dbDelta( "CREATE TABLE " . self::products_table() . " (
             id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             name             VARCHAR(200) NOT NULL DEFAULT '',
+            slug             VARCHAR(200) NOT NULL DEFAULT '' COMMENT 'URLスラッグ（英数字・ハイフン）',
             description      TEXT DEFAULT '',
             contents         TEXT DEFAULT ''   COMMENT 'レンタルに含まれるもの（改行区切り）',
             gallery          TEXT DEFAULT ''   COMMENT '画像ファイル名カンマ区切り（pluginのassets/images/内）',
@@ -207,6 +208,14 @@ class Kogu_Database {
         return $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM " . self::products_table() . " WHERE id = %d",
             $id
+        ) ) ?: null;
+    }
+
+    public static function get_product_by_slug( string $slug ): ?object {
+        global $wpdb;
+        return $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM " . self::products_table() . " WHERE slug = %s AND status = 'active'",
+            $slug
         ) ) ?: null;
     }
 

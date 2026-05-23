@@ -469,3 +469,73 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
   .kogu-modal-box { padding: 24px 16px 20px; }
   .kogu-carousel-btn { width: 32px; height: 32px; font-size: 18px; }
 }
+
+/* ── パンくず ────────────────────────────────────────────────────────────── */
+.kogu-breadcrumb { margin-bottom: 20px; }
+.kogu-breadcrumb ol {
+  display: flex; flex-wrap: wrap; align-items: center;
+  list-style: none; margin: 0; padding: 0; gap: 4px;
+  font-size: 13px; color: #888;
+}
+.kogu-breadcrumb li + li::before { content: '›'; margin-right: 4px; }
+.kogu-breadcrumb a { color: var(--kogu-accent); text-decoration: none; }
+.kogu-breadcrumb a:hover { text-decoration: underline; }
+.kogu-breadcrumb [aria-current] { color: #555; }
+
+/* ── 商品詳細ページ ──────────────────────────────────────────────────────── */
+.kogu-single-product {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+.kogu-sp-main-img {
+  position: relative;
+  border-radius: 12px; overflow: hidden;
+  background: #f5f3ef;
+  aspect-ratio: 4/3;
+}
+.kogu-sp-main-img img { width: 100%; height: 100%; object-fit: contain; }
+.kogu-sp-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.85); border: none;
+  border-radius: 50%; width: 38px; height: 38px;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center;
+}
+.kogu-sp-prev { left: 8px; }
+.kogu-sp-next { right: 8px; }
+.kogu-sp-thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.kogu-sp-thumb {
+  width: 72px; height: 72px; border: 2px solid transparent;
+  border-radius: 8px; overflow: hidden; cursor: pointer;
+  background: #f5f3ef; padding: 0;
+  transition: border-color .15s;
+}
+.kogu-sp-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.kogu-sp-thumb.active { border-color: var(--kogu-accent); }
+
+.kogu-sp-title { font-size: 26px; font-weight: 700; margin: 0 0 10px; }
+.kogu-sp-desc  { color: #555; margin: 0 0 20px; line-height: 1.7; }
+.kogu-sp-price-box {
+  background: #faf8f5; border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 24px;
+}
+.kogu-sp-price { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.kogu-sp-price-label { font-size: 13px; color: #888; }
+.kogu-sp-price-amount { font-size: 32px; font-weight: 700; color: var(--kogu-accent); }
+.kogu-sp-price-discount { font-size: 14px; color: #555; margin-bottom: 8px; }
+.kogu-sp-shipping { font-size: 12px; color: #888; margin: 0; }
+.kogu-sp-contents { margin-bottom: 24px; }
+.kogu-sp-contents h2 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
+.kogu-sp-contents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.kogu-sp-contents li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.kogu-sp-contents li::before { content: '✓'; color: var(--kogu-accent); font-weight: 700; }
+.kogu-sp-cta { display: block; text-align: center; padding: 15px; font-size: 16px; }
+
+@media (max-width: 768px) {
+  .kogu-single-product { grid-template-columns: 1fr; gap: 24px; }
+  .kogu-sp-title { font-size: 22px; }
+  .kogu-sp-price-amount { font-size: 26px; }
+}
