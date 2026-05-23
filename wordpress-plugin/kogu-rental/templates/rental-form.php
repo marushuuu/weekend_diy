@@ -16,14 +16,33 @@ function kogu_product_img( $name, $base ) {
   <div class="kogu-top-grid">
   <?php foreach ( Kogu_Database::get_active_products() as $p ) :
     $img = kogu_product_img( (string) $p->name, $img_base );
+    // ギャラリー画像リスト
+    $gallery_imgs = [];
+    if ( ! empty( $p->gallery ) ) {
+        foreach ( array_map( 'trim', explode( ',', $p->gallery ) ) as $f ) {
+            if ( $f ) $gallery_imgs[] = KOGU_PLUGIN_URL . 'assets/images/' . $f;
+        }
+    }
+    if ( empty( $gallery_imgs ) && $img ) $gallery_imgs[] = $img;
+    // 同梱物リスト
+    $contents_list = array_filter( array_map( 'trim', explode( "\n", $p->contents ?? '' ) ) );
+    $gallery_json  = esc_attr( json_encode( $gallery_imgs ) );
+    $name_esc      = esc_attr( $p->name );
+    $contents_json = esc_attr( json_encode( array_values( $contents_list ) ) );
   ?>
     <div class="kogu-top-block" data-product-id="<?php echo (int) $p->id; ?>">
 
       <!-- 商品カード -->
-      <div class="kogu-product-card kogu-product-card-static">
+      <div class="kogu-product-card kogu-product-card-static"
+           data-gallery="<?php echo $gallery_json; ?>"
+           data-product-name="<?php echo $name_esc; ?>"
+           data-contents="<?php echo $contents_json; ?>">
         <?php if ( $img ) : ?>
           <div class="kogu-product-img">
             <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
+            <div class="kogu-card-overlay">
+              <span>詳細を見る</span>
+            </div>
           </div>
         <?php endif; ?>
         <div class="kogu-product-name"><?php echo esc_html( $p->name ); ?></div>
@@ -341,4 +360,28 @@ function kogu_product_img( $name, $base ) {
 
 <?php endif; ?>
 
+</div>
+
+<!-- ── 商品詳細モーダル ───────────────────────────────────────────────── -->
+<div id="kogu-product-modal" class="kogu-modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+  <div class="kogu-modal-box">
+    <button class="kogu-modal-close" aria-label="閉じる">✕</button>
+    <h3 class="kogu-modal-title"></h3>
+    <div class="kogu-modal-body">
+      <!-- カルーセル -->
+      <div class="kogu-carousel">
+        <button class="kogu-carousel-btn kogu-carousel-prev" aria-label="前の画像">&#8249;</button>
+        <div class="kogu-carousel-track">
+          <img class="kogu-carousel-img" src="" alt="" />
+        </div>
+        <button class="kogu-carousel-btn kogu-carousel-next" aria-label="次の画像">&#8250;</button>
+        <div class="kogu-carousel-dots"></div>
+      </div>
+      <!-- 同梱物 -->
+      <div class="kogu-modal-contents">
+        <h4>レンタルに含まれるもの</h4>
+        <ul class="kogu-contents-list"></ul>
+      </div>
+    </div>
+  </div>
 </div>

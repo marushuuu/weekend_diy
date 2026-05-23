@@ -23,6 +23,8 @@ class Kogu_Database {
             id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             name             VARCHAR(200) NOT NULL DEFAULT '',
             description      TEXT DEFAULT '',
+            contents         TEXT DEFAULT ''   COMMENT 'レンタルに含まれるもの（改行区切り）',
+            gallery          TEXT DEFAULT ''   COMMENT '画像ファイル名カンマ区切り（pluginのassets/images/内）',
             price_per_week   INT UNSIGNED NOT NULL DEFAULT 4900  COMMENT '1週間のレンタル料金（円）',
             deposit_amount   INT UNSIGNED NOT NULL DEFAULT 10000 COMMENT 'デポジット（円）',
             allows_addons    TINYINT(1) NOT NULL DEFAULT 0 COMMENT '購入オプションを表示するか',

@@ -384,3 +384,88 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
   .kogu-reservation-number { font-size: 28px; letter-spacing: 2px; }
   .kogu-btn-next { width: 100%; }
 }
+
+/* ── 商品カード ホバーオーバーレイ ──────────────────────────────────────── */
+.kogu-product-img { position: relative; overflow: hidden; cursor: pointer; }
+.kogu-card-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+.kogu-card-overlay span {
+  color: #fff; font-size: 15px; font-weight: 700;
+  border: 2px solid #fff; border-radius: 24px;
+  padding: 8px 20px; letter-spacing: .5px;
+}
+.kogu-product-card-static:hover .kogu-card-overlay { opacity: 1; }
+
+/* ── 商品詳細モーダル ───────────────────────────────────────────────────── */
+.kogu-modal-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.kogu-modal-box {
+  background: #fff; border-radius: 16px;
+  width: 100%; max-width: 560px; max-height: 90vh;
+  overflow-y: auto; position: relative;
+  padding: 32px 28px 28px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.25);
+}
+.kogu-modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; color: #888; line-height: 1;
+  padding: 4px 8px;
+}
+.kogu-modal-close:hover { color: #333; }
+.kogu-modal-title { font-size: 20px; font-weight: 700; margin: 0 0 20px; }
+.kogu-modal-body { display: flex; flex-direction: column; gap: 24px; }
+
+/* ── カルーセル ────────────────────────────────────────────────────────── */
+.kogu-carousel { position: relative; text-align: center; }
+.kogu-carousel-track {
+  border-radius: 10px; overflow: hidden;
+  background: #f5f3ef;
+  aspect-ratio: 4/3;
+  display: flex; align-items: center; justify-content: center;
+}
+.kogu-carousel-img { width: 100%; height: 100%; object-fit: contain; }
+.kogu-carousel-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.85); border: none;
+  border-radius: 50%; width: 38px; height: 38px;
+  font-size: 22px; cursor: pointer; line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.kogu-carousel-btn:hover { background: #fff; }
+.kogu-carousel-prev { left: 8px; }
+.kogu-carousel-next { right: 8px; }
+.kogu-carousel-btn:disabled { opacity: .3; cursor: default; }
+.kogu-carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+.kogu-carousel-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ccc; border: none; cursor: pointer; padding: 0;
+  transition: background .15s;
+}
+.kogu-carousel-dot.active { background: var(--kogu-accent); }
+
+/* ── 同梱物リスト ───────────────────────────────────────────────────────── */
+.kogu-modal-contents h4 { font-size: 15px; font-weight: 700; margin: 0 0 10px; }
+.kogu-contents-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.kogu-contents-list li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: #333;
+}
+.kogu-contents-list li::before {
+  content: '✓'; color: var(--kogu-accent); font-weight: 700; flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .kogu-modal-box { padding: 24px 16px 20px; }
+  .kogu-carousel-btn { width: 32px; height: 32px; font-size: 18px; }
+}

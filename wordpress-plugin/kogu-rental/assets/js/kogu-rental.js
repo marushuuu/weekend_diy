@@ -458,3 +458,76 @@
   }
 
 })(jQuery);
+
+/* ── 商品詳細モーダル ─────────────────────────────────────────────────────── */
+(function($) {
+  var modal   = $('#kogu-product-modal');
+  var imgs    = [];
+  var current = 0;
+
+  function openModal(card) {
+    imgs    = JSON.parse(card.attr('data-gallery') || '[]');
+    current = 0;
+    modal.find('.kogu-modal-title').text(card.attr('data-product-name') || '');
+
+    // 同梱物
+    var contents = JSON.parse(card.attr('data-contents') || '[]');
+    var ul = modal.find('.kogu-contents-list').empty();
+    if (contents.length) {
+      $.each(contents, function(_, item) { ul.append($('<li>').text(item)); });
+      modal.find('.kogu-modal-contents').show();
+    } else {
+      modal.find('.kogu-modal-contents').hide();
+    }
+
+    // カルーセル
+    renderCarousel();
+    modal.css('display', 'flex');
+    $('body').css('overflow', 'hidden');
+  }
+
+  function renderCarousel() {
+    if (!imgs.length) return;
+    modal.find('.kogu-carousel-img').attr('src', imgs[current]).attr('alt', '商品画像 ' + (current + 1));
+
+    // dots
+    var dots = modal.find('.kogu-carousel-dots').empty();
+    if (imgs.length > 1) {
+      $.each(imgs, function(i) {
+        var dot = $('<button class="kogu-carousel-dot">').attr('aria-label', (i+1) + '枚目');
+        if (i === current) dot.addClass('active');
+        dot.on('click', function() { current = i; renderCarousel(); });
+        dots.append(dot);
+      });
+    }
+
+    // 矢印の有効/無効
+    modal.find('.kogu-carousel-prev').prop('disabled', current === 0);
+    modal.find('.kogu-carousel-next').prop('disabled', current === imgs.length - 1);
+  }
+
+  function closeModal() {
+    modal.hide();
+    $('body').css('overflow', '');
+  }
+
+  // イベント
+  $(document).on('click', '.kogu-product-card-static .kogu-product-img', function() {
+    openModal($(this).closest('.kogu-product-card-static'));
+  });
+  $(document).on('click', '.kogu-modal-close, .kogu-modal-overlay', function(e) {
+    if (e.target === this) closeModal();
+  });
+  $(document).on('click', '.kogu-carousel-prev', function() {
+    if (current > 0) { current--; renderCarousel(); }
+  });
+  $(document).on('click', '.kogu-carousel-next', function() {
+    if (current < imgs.length - 1) { current++; renderCarousel(); }
+  });
+  $(document).on('keydown', function(e) {
+    if (!modal.is(':visible')) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowLeft' && current > 0) { current--; renderCarousel(); }
+    if (e.key === 'ArrowRight' && current < imgs.length - 1) { current++; renderCarousel(); }
+  });
+})(jQuery);

@@ -558,6 +558,22 @@ class Kogu_Admin {
                   <td><textarea id="pdesc" name="description" rows="3" class="large-text"><?php echo esc_textarea( $edit->description ?? '' ); ?></textarea></td>
                 </tr>
                 <tr>
+                  <th><label for="pcontents">レンタルに含まれるもの</label></th>
+                  <td>
+                    <textarea id="pcontents" name="contents" rows="5" class="large-text"><?php echo esc_textarea( $edit->contents ?? '' ); ?></textarea>
+                    <p class="description">1行に1項目。例：<br><code>インパクトドライバー本体<br>充電器<br>バッテリー×2<br>ビットセット</code></p>
+                  </td>
+                </tr>
+                <tr>
+                  <th><label for="pgallery">画像ギャラリー</label></th>
+                  <td>
+                    <input type="text" id="pgallery" name="gallery" class="large-text"
+                           value="<?php echo esc_attr( $edit->gallery ?? '' ); ?>"
+                           placeholder="例: product_impact.jpg,product_bitset.jpg" />
+                    <p class="description">プラグインの <code>assets/images/</code> 内のファイル名をカンマ区切りで入力してください。左から順に表示されます。</p>
+                  </td>
+                </tr>
+                <tr>
                   <th><label for="pprice">1週間のレンタル料金（円）<em>*</em></label></th>
                   <td>
                     <input type="number" id="pprice" name="price_per_week" required min="1" class="regular-text"
@@ -1244,7 +1260,9 @@ class Kogu_Admin {
             ? $_POST['status'] : 'active';
 
         global $wpdb;
-        $data = compact( 'name', 'description', 'price_per_week', 'deposit_amount', 'status' );
+        $contents = sanitize_textarea_field( $_POST['contents'] ?? '' );
+        $gallery  = sanitize_text_field( $_POST['gallery'] ?? '' );
+        $data = compact( 'name', 'description', 'contents', 'gallery', 'price_per_week', 'deposit_amount', 'status' );
         $data['allows_addons'] = isset( $_POST['allows_addons'] ) ? 1 : 0;
 
         if ( $product_id ) {
