@@ -29,6 +29,7 @@ function kogu_product_img( $name, $base ) {
     $gallery_json  = esc_attr( json_encode( $gallery_imgs ) );
     $name_esc      = esc_attr( $p->name );
     $contents_json = esc_attr( json_encode( array_values( $contents_list ) ) );
+    $product_page  = ! empty( $p->slug ) ? home_url( '/products/' . $p->slug . '/' ) : '';
   ?>
     <div class="kogu-top-block" data-product-id="<?php echo (int) $p->id; ?>">
 
@@ -40,9 +41,13 @@ function kogu_product_img( $name, $base ) {
         <?php if ( $img ) : ?>
           <div class="kogu-product-img">
             <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
-            <div class="kogu-card-overlay">
-              <span>詳細を見る</span>
-            </div>
+            <?php if ( $product_page ) : ?>
+              <a class="kogu-card-overlay" href="<?php echo esc_url( $product_page ); ?>">
+                <span>詳細を見る</span>
+              </a>
+            <?php else : ?>
+              <div class="kogu-card-overlay"><span>詳細を見る</span></div>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
         <div class="kogu-product-name"><?php echo esc_html( $p->name ); ?></div>
