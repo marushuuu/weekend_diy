@@ -1060,6 +1060,7 @@ class Kogu_Admin {
             'kogu_noindex_slugs'         => 'noindex にするページスラッグ（カンマ区切り）',
             'kogu_return_buffer_days'    => '折り返しバッファ日数（返却期限後に在庫をブロックする日数）',
             'kogu_gsc_verification'      => 'Google Search Console 検証コード',
+            'kogu_gtm_container_id'      => 'Google Tag Manager コンテナID',
         ];
         foreach ( $fields as $key => $label ) {
             register_setting( 'kogu_settings', $key );
@@ -1108,6 +1109,15 @@ class Kogu_Admin {
                         Google Search Console の「HTMLタグ」方式で取得したコンテンツ値を入力してください。<br>
                         例: <code>&lt;meta name="google-site-verification" content="<strong>ここの値</strong>" /&gt;</code>
                       </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th><label for="kogu_gtm_container_id">Google Tag Manager コンテナID</label></th>
+                    <td>
+                      <input type="text" id="kogu_gtm_container_id" name="kogu_gtm_container_id"
+                             value="<?php echo esc_attr( get_option( 'kogu_gtm_container_id' ) ); ?>"
+                             class="regular-text" placeholder="例: GTM-XXXXXXX" />
+                      <p class="description">GTMダッシュボードで確認できるコンテナID（GTM-から始まる）を入力してください。</p>
                     </td>
                   </tr>
                   <tr>

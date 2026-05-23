@@ -52,6 +52,35 @@ add_action( 'wp_head', function() {
 	}
 }, 1 );
 
+/** Google Tag Manager — <head> スニペット */
+add_action( 'wp_head', function() {
+	$gtm = get_option( 'kogu_gtm_container_id' );
+	if ( ! $gtm ) return;
+	$gtm = esc_js( $gtm );
+	echo <<<HTML
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','{$gtm}');</script>
+<!-- End Google Tag Manager -->
+HTML;
+}, 2 );
+
+/** Google Tag Manager — <body> 直後のnoscriptスニペット */
+add_action( 'wp_body_open', function() {
+	$gtm = get_option( 'kogu_gtm_container_id' );
+	if ( ! $gtm ) return;
+	$gtm = esc_attr( $gtm );
+	echo <<<HTML
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={$gtm}"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+HTML;
+} );
+
 /** noindex 対象ページに robots タグを出力 */
 add_action( 'wp_head', function() {
 	if ( ! is_page() ) return;
