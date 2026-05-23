@@ -511,9 +511,8 @@
     $('body').css('overflow', '');
   }
 
-  // オーバーレイがリンクでない場合のみモーダルを開く
-  $(document).on('click', '.kogu-product-card-static .kogu-product-img', function(e) {
-    if ($(e.target).closest('a.kogu-card-overlay').length) return; // リンクはそのまま遷移
+  // <a>でないdiv.kogu-product-imgの場合のみモーダルを開く
+  $(document).on('click', 'div.kogu-product-img', function() {
     openModal($(this).closest('.kogu-product-card-static'));
   });
   $(document).on('click', '.kogu-modal-close, .kogu-modal-overlay', function(e) {

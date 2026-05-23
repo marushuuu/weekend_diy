@@ -39,16 +39,17 @@ function kogu_product_img( $name, $base ) {
            data-product-name="<?php echo $name_esc; ?>"
            data-contents="<?php echo $contents_json; ?>">
         <?php if ( $img ) : ?>
-          <div class="kogu-product-img">
-            <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
-            <?php if ( $product_page ) : ?>
-              <a class="kogu-card-overlay" href="<?php echo esc_url( $product_page ); ?>">
-                <span>詳細を見る</span>
-              </a>
-            <?php else : ?>
+          <?php if ( $product_page ) : ?>
+            <a class="kogu-product-img" href="<?php echo esc_url( $product_page ); ?>">
+              <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
               <div class="kogu-card-overlay"><span>詳細を見る</span></div>
-            <?php endif; ?>
-          </div>
+            </a>
+          <?php else : ?>
+            <div class="kogu-product-img">
+              <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
+              <div class="kogu-card-overlay"><span>詳細を見る</span></div>
+            </div>
+          <?php endif; ?>
         <?php endif; ?>
         <div class="kogu-product-name"><?php echo esc_html( $p->name ); ?></div>
         <div class="kogu-product-desc"><?php echo esc_html( $p->description ); ?></div>
