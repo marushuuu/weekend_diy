@@ -52,6 +52,16 @@ add_action( 'wp_head', function() {
 	}
 }, 1 );
 
+/** noindex 対象ページに robots タグを出力 */
+add_action( 'wp_head', function() {
+	if ( ! is_page() ) return;
+	$slugs = array_map( 'trim', explode( ',', get_option( 'kogu_noindex_slugs', 'tokushoho,my-page,privacy,terms,contact' ) ) );
+	global $post;
+	if ( in_array( $post->post_name, $slugs, true ) ) {
+		echo '<meta name="robots" content="noindex, nofollow">' . "\n";
+	}
+}, 1 );
+
 /** meta description・OGP・Twitter Card・JSON-LD を出力 */
 add_action( 'wp_head', 'minna_kogu_seo_head', 1 );
 function minna_kogu_seo_head() {
