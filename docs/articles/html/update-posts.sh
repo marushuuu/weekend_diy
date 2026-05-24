@@ -14,8 +14,8 @@ update_post() {
     post_id=$(wp --path="$WP_ROOT" post list \
         --post_name="$slug" \
         --post_type=post \
-        --field=ID \
-        --format=ids 2>/dev/null)
+        --fields=ID \
+        --format=csv 2>/dev/null | tail -n +2 | head -1)
 
     if [ -z "$post_id" ]; then
         echo "  ⚠️  スキップ: $slug が見つかりません"
