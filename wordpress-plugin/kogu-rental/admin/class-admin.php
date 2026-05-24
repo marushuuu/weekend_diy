@@ -576,6 +576,13 @@ class Kogu_Admin {
                   </td>
                 </tr>
                 <tr>
+                  <th><label for="pspecs">スペック（仕様表）</label></th>
+                  <td>
+                    <textarea id="pspecs" name="specs" rows="10" class="large-text"><?php echo esc_textarea( $edit->specs ?? '' ); ?></textarea>
+                    <p class="description">1行に1項目。<code>項目名|値</code> の形式で入力してください。<br>例：<br><code>電圧|18V<br>最大トルク|177 N·m<br>質量|1.4 kg</code></p>
+                  </td>
+                </tr>
+                <tr>
                   <th><label for="pgallery">画像ギャラリー</label></th>
                   <td>
                     <input type="text" id="pgallery" name="gallery" class="large-text"
@@ -1273,8 +1280,9 @@ class Kogu_Admin {
         global $wpdb;
         $slug     = sanitize_title( $_POST['slug'] ?? '' ) ?: sanitize_title( $name );
         $contents = sanitize_textarea_field( $_POST['contents'] ?? '' );
+        $specs    = sanitize_textarea_field( $_POST['specs']    ?? '' );
         $gallery  = sanitize_text_field( $_POST['gallery'] ?? '' );
-        $data = compact( 'name', 'slug', 'description', 'contents', 'gallery', 'price_per_week', 'deposit_amount', 'status' );
+        $data = compact( 'name', 'slug', 'description', 'contents', 'specs', 'gallery', 'price_per_week', 'deposit_amount', 'status' );
         $data['allows_addons'] = isset( $_POST['allows_addons'] ) ? 1 : 0;
 
         if ( $product_id ) {

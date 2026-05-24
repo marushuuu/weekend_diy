@@ -26,6 +26,7 @@ class Kogu_Database {
             slug             VARCHAR(200) NOT NULL DEFAULT '' COMMENT 'URLスラッグ（英数字・ハイフン）',
             description      TEXT DEFAULT '',
             contents         TEXT DEFAULT ''   COMMENT 'レンタルに含まれるもの（改行区切り）',
+            specs            TEXT DEFAULT ''   COMMENT '仕様スペック（改行区切り、key|value形式）',
             gallery          TEXT DEFAULT ''   COMMENT '画像ファイル名カンマ区切り（pluginのassets/images/内）',
             price_per_week   INT UNSIGNED NOT NULL DEFAULT 4900  COMMENT '1週間のレンタル料金（円）',
             deposit_amount   INT UNSIGNED NOT NULL DEFAULT 10000 COMMENT 'デポジット（円）',
@@ -186,11 +187,32 @@ class Kogu_Database {
         $products_table  = self::products_table();
         $inventory_table = self::inventory_table();
 
+        // ── 既存のインパクトドライバーに HiKOKI WH18DDL2 情報をマイグレーション ──
+        $existing = $wpdb->get_row(
+            "SELECT * FROM $products_table WHERE name = 'インパクトドライバー' LIMIT 1"
+        );
+        if ( $existing && empty( $existing->specs ) ) {
+            $wpdb->update(
+                $products_table,
+                [
+                    'name'        => 'HiKOKI インパクトドライバー WH18DDL2',
+                    'slug'        => 'impact-driver',
+                    'description' => 'HiKOKI（旧日立工機）の18Vコードレスインパクトドライバー。業界初のトリプルハンマー機構で小ネジから太いボルトまで安定した締め付けが可能。4段階モード切替とIP56防じん・耐水性能で、DIYから本格作業まで幅広く活躍します。',
+                    'specs'       => "電圧|18V\n最大トルク|177 N·m\n無負荷回転数|0〜2,900 回/分\n打撃数（最大）|0〜4,000 打撃/分\nモード切替|4段階（ソフト / ノーマル / パワー / テクス）\n質量（バッテリー装着時）|1.4 kg\n全長（バッテリー装着時）|約127 mm\n防じん・耐水性能|IP56\n充電時間（急速充電器）|約30分\n対応バッテリー|HiKOKI 18V リチウムイオン電池",
+                    'contents'    => "インパクトドライバー本体（HiKOKI WH18DDL2）\n18V リチウムイオン電池 BSL1860（6.0Ah）× 2\n急速充電器 UC18YDL\nNo.2 プラスビット\n専用ケース",
+                ],
+                [ 'id' => $existing->id ]
+            );
+        }
+
         if ( (int) $wpdb->get_var( "SELECT COUNT(*) FROM $products_table" ) > 0 ) return;
 
         $wpdb->insert( $products_table, [
-            'name'          => 'インパクトドライバー',
-            'description'   => '18V コードレスインパクトドライバー。DIYから本格作業まで対応。',
+            'name'          => 'HiKOKI インパクトドライバー WH18DDL2',
+            'slug'          => 'impact-driver',
+            'description'   => 'HiKOKI（旧日立工機）の18Vコードレスインパクトドライバー。業界初のトリプルハンマー機構で小ネジから太いボルトまで安定した締め付けが可能。4段階モード切替とIP56防じん・耐水性能で、DIYから本格作業まで幅広く活躍します。',
+            'specs'         => "電圧|18V\n最大トルク|177 N·m\n無負荷回転数|0〜2,900 回/分\n打撃数（最大）|0〜4,000 打撃/分\nモード切替|4段階（ソフト / ノーマル / パワー / テクス）\n質量（バッテリー装着時）|1.4 kg\n全長（バッテリー装着時）|約127 mm\n防じん・耐水性能|IP56\n充電時間（急速充電器）|約30分\n対応バッテリー|HiKOKI 18V リチウムイオン電池",
+            'contents'      => "インパクトドライバー本体（HiKOKI WH18DDL2）\n18V リチウムイオン電池 BSL1860（6.0Ah）× 2\n急速充電器 UC18YDL\nNo.2 プラスビット\n専用ケース",
             'price_per_week' => 4900,
             'deposit_amount' => 10000,
             'allows_addons'  => 1,

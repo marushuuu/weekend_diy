@@ -23,6 +23,15 @@ if ( empty( $gallery_imgs ) ) {
 $contents_list = array_filter( array_map( 'trim', explode( "\n", $product->contents ?? '' ) ) );
 $week_price    = (int) $product->price_per_week;
 $discount_price = (int) round( $week_price * 0.7 );
+
+// スペック表 — "key|value" 形式を [key => value] 配列に変換
+$specs_rows = [];
+foreach ( array_filter( array_map( 'trim', explode( "\n", $product->specs ?? '' ) ) ) as $line ) {
+    $parts = explode( '|', $line, 2 );
+    if ( count( $parts ) === 2 ) {
+        $specs_rows[] = [ trim( $parts[0] ), trim( $parts[1] ) ];
+    }
+}
 $product_url   = home_url( '/products/' . $product->slug . '/' );
 $rental_url    = home_url( '/rental/' );
 
@@ -154,7 +163,75 @@ get_header();
         </a>
       </div>
 
+    </div><!-- /.kogu-single-product -->
+
+    <!-- スペック表（全幅） -->
+    <?php if ( ! empty( $specs_rows ) ) : ?>
+    <div class="kogu-sp-specs-section">
+      <h2 class="kogu-sp-section-title">製品スペック</h2>
+      <table class="kogu-sp-specs-table">
+        <tbody>
+          <?php foreach ( $specs_rows as $row ) : ?>
+            <tr>
+              <th><?php echo esc_html( $row[0] ); ?></th>
+              <td><?php echo esc_html( $row[1] ); ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
     </div>
+    <?php endif; ?>
+
+    <!-- 使用シーン -->
+    <div class="kogu-sp-usecase-section">
+      <h2 class="kogu-sp-section-title">こんな作業に使えます</h2>
+      <div class="kogu-sp-usecase-grid">
+        <div class="kogu-sp-usecase-item">
+          <span class="kogu-sp-usecase-icon">🪵</span>
+          <p>ウッドデッキ・<br>木材の組み立て</p>
+        </div>
+        <div class="kogu-sp-usecase-item">
+          <span class="kogu-sp-usecase-icon">🚗</span>
+          <p>カーポート・<br>フェンスの設置</p>
+        </div>
+        <div class="kogu-sp-usecase-item">
+          <span class="kogu-sp-usecase-icon">🏠</span>
+          <p>棚・収納の<br>DIY製作</p>
+        </div>
+        <div class="kogu-sp-usecase-item">
+          <span class="kogu-sp-usecase-icon">🔩</span>
+          <p>家具の組み立て・<br>解体</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="kogu-sp-faq-section">
+      <h2 class="kogu-sp-section-title">よくある質問</h2>
+      <div class="kogu-sp-faq-list">
+        <div class="kogu-sp-faq-item">
+          <p class="kogu-sp-faq-q">ビット（先端工具）は別途必要ですか？</p>
+          <p class="kogu-sp-faq-a">レンタルセットに No.2 プラスビットが1本付属しています。他のビットが必要な場合は、オプションでご購入いただくか、ホームセンター等でご購入ください。</p>
+        </div>
+        <div class="kogu-sp-faq-item">
+          <p class="kogu-sp-faq-q">初めてでも使いこなせますか？</p>
+          <p class="kogu-sp-faq-a">4段階のモード切替で、初心者でも扱いやすいソフトモードから始められます。小ネジの締めすぎを防ぎ、作業に慣れてからパワーモードへ移行できます。</p>
+        </div>
+        <div class="kogu-sp-faq-item">
+          <p class="kogu-sp-faq-q">返却方法を教えてください。</p>
+          <p class="kogu-sp-faq-a">同梱の返却用伝票を使い、ゆうパックで着払い発送してください。返却期限日の消印が有効です。マイページで追跡番号を提出すると手続き完了となります。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 下部CTA -->
+    <div class="kogu-sp-bottom-cta">
+      <p class="kogu-sp-bottom-cta-text">1週間¥<?php echo number_format( $week_price ); ?>〜。送料無料・最短翌日お届け。</p>
+      <a href="<?php echo esc_url( $rental_url ); ?>" class="kogu-btn kogu-btn-primary kogu-sp-cta">
+        このアイテムをレンタルする →
+      </a>
+    </div>
+
   </div>
 </div>
 

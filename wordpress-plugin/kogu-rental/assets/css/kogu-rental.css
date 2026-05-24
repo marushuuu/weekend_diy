@@ -541,6 +541,103 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
   .kogu-sp-price-amount { font-size: 26px; }
 }
 
+/* ── 商品ページ 共通セクションタイトル ────────────────────────────────────── */
+.kogu-sp-section-title {
+  font-size: 20px; font-weight: 700;
+  margin: 0 0 16px;
+  padding-left: 12px;
+  border-left: 4px solid var(--kogu-accent);
+  color: var(--kogu-ink);
+}
+
+/* ── スペック表 ──────────────────────────────────────────────────────────── */
+.kogu-sp-specs-section { margin: 48px 0; }
+.kogu-sp-specs-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 14px;
+}
+.kogu-sp-specs-table th,
+.kogu-sp-specs-table td {
+  padding: 11px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--kogu-paper2);
+  vertical-align: top;
+}
+.kogu-sp-specs-table th {
+  width: 40%; font-weight: 700; color: #444;
+  background: var(--kogu-paper);
+}
+.kogu-sp-specs-table td { color: var(--kogu-ink); }
+.kogu-sp-specs-table tr:last-child th,
+.kogu-sp-specs-table tr:last-child td { border-bottom: none; }
+
+/* ── 使用シーン ──────────────────────────────────────────────────────────── */
+.kogu-sp-usecase-section { margin: 48px 0; }
+.kogu-sp-usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.kogu-sp-usecase-item {
+  text-align: center;
+  padding: 20px 12px;
+  background: var(--kogu-paper);
+  border-radius: var(--kogu-radius);
+}
+.kogu-sp-usecase-icon { font-size: 32px; display: block; margin-bottom: 10px; }
+.kogu-sp-usecase-item p { font-size: 13px; color: #444; margin: 0; line-height: 1.5; }
+
+/* ── FAQ ─────────────────────────────────────────────────────────────────── */
+.kogu-sp-faq-section { margin: 48px 0; }
+.kogu-sp-faq-list { display: flex; flex-direction: column; gap: 12px; }
+.kogu-sp-faq-item {
+  border: 1px solid var(--kogu-paper2);
+  border-radius: var(--kogu-radius);
+  overflow: hidden;
+}
+.kogu-sp-faq-q {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 14px; font-weight: 700;
+  background: var(--kogu-paper);
+  color: var(--kogu-ink);
+}
+.kogu-sp-faq-q::before { content: 'Q. '; color: var(--kogu-accent); }
+.kogu-sp-faq-a {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #444;
+  background: #fff;
+}
+.kogu-sp-faq-a::before { content: 'A. '; font-weight: 700; color: var(--kogu-ok); }
+
+/* ── 下部CTA ─────────────────────────────────────────────────────────────── */
+.kogu-sp-bottom-cta {
+  text-align: center;
+  margin: 56px 0 32px;
+  padding: 40px;
+  background: var(--kogu-paper);
+  border-radius: 12px;
+}
+.kogu-sp-bottom-cta-text {
+  font-size: 18px; font-weight: 700;
+  color: var(--kogu-ink);
+  margin: 0 0 20px;
+}
+.kogu-sp-bottom-cta .kogu-sp-cta {
+  display: inline-block;
+  padding: 16px 40px;
+  font-size: 17px;
+}
+
+@media (max-width: 640px) {
+  .kogu-sp-usecase-grid { grid-template-columns: repeat(2, 1fr); }
+  .kogu-sp-specs-table th { width: 45%; font-size: 13px; }
+  .kogu-sp-bottom-cta { padding: 24px 16px; }
+}
+
 /* ── 残り日数バッジ ──────────────────────────────────────────────────────── */
 .kogu-days-badge {
   display: inline-block;
