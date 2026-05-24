@@ -28,6 +28,12 @@ class Kogu_Public {
         add_action( 'wp_ajax_kogu_submit_return',        [ __CLASS__, 'ajax_submit_return' ] );
         add_action( 'wp_ajax_nopriv_kogu_submit_return', [ __CLASS__, 'ajax_submit_return' ] );
 
+        add_action( 'wp_ajax_kogu_tool_request',         [ __CLASS__, 'ajax_tool_request' ] );
+        add_action( 'wp_ajax_nopriv_kogu_tool_request',  [ __CLASS__, 'ajax_tool_request' ] );
+
+        // ── 工具リクエストポップアップ ───────────────────────────────────────
+        add_action( 'wp_footer', [ __CLASS__, 'output_tool_request_popup' ] );
+
         // ── Stripe Webhook ───────────────────────────────────────────────────
         add_action( 'rest_api_init', [ __CLASS__, 'register_webhook_route' ] );
 
@@ -364,6 +370,77 @@ class Kogu_Public {
         }
 
         return new WP_REST_Response( 'ok', 200 );
+    }
+
+    // ── AJAX: 工具リクエスト送信 ──────────────────────────────────────────────
+    public static function ajax_tool_request() {
+        check_ajax_referer( 'kogu_nonce', 'nonce' );
+
+        $tool_name = sanitize_text_field( $_POST['tool_name'] ?? '' );
+        $email     = sanitize_email( $_POST['email'] ?? '' );
+
+        if ( ! $tool_name || ! $email || ! is_email( $email ) ) {
+            wp_send_json_error( '入力内容を確認してください。' );
+        }
+
+        global $wpdb;
+        $inserted = $wpdb->insert(
+            Kogu_Database::tool_requests_table(),
+            [ 'tool_name' => $tool_name, 'email' => $email ],
+            [ '%s', '%s' ]
+        );
+
+        if ( ! $inserted ) {
+            wp_send_json_error( '送信に失敗しました。時間をおいて再度お試しください。' );
+        }
+
+        // 管理者へ通知メール
+        $admin_email = get_option( 'admin_email' );
+        wp_mail(
+            $admin_email,
+            '【工具リクエスト】' . $tool_name,
+            "新しい工具リクエストが届きました。\n\n"
+            . "希望工具: {$tool_name}\n"
+            . "メール: {$email}\n\n"
+            . "管理画面で確認してください。\n"
+            . admin_url( 'admin.php?page=kogu-tool-requests' ),
+            [ 'Reply-To: ' . $email ]
+        );
+
+        wp_send_json_success( 'リクエストを受け付けました！入荷次第メールでお知らせします。' );
+    }
+
+    // ── 工具リクエスト ポップアップHTML出力 ──────────────────────────────────
+    public static function output_tool_request_popup() {
+        ?>
+        <div id="kogu-request-btn" class="kogu-request-fab" aria-label="工具をリクエスト" role="button" tabindex="0">
+            <span class="kogu-request-fab-icon">💡</span>
+            <span class="kogu-request-fab-label">工具をリクエスト</span>
+        </div>
+
+        <div id="kogu-request-popup" class="kogu-request-popup" role="dialog" aria-modal="true" aria-label="工具リクエストフォーム" hidden>
+            <div class="kogu-request-popup-inner">
+                <button class="kogu-request-popup-close" aria-label="閉じる">&times;</button>
+                <h3 class="kogu-request-popup-title">🔧 レンタルしたい工具は？</h3>
+                <p class="kogu-request-popup-desc">リクエストいただいた工具が入荷した際にメールでお知らせします。</p>
+                <div id="kogu-request-form-wrap">
+                    <div class="kogu-request-field">
+                        <label for="kogu-req-tool">希望の工具名 <span class="req">*</span></label>
+                        <input type="text" id="kogu-req-tool" placeholder="例: 丸ノコ、高圧洗浄機" maxlength="100" />
+                    </div>
+                    <div class="kogu-request-field">
+                        <label for="kogu-req-email">メールアドレス <span class="req">*</span></label>
+                        <input type="email" id="kogu-req-email" placeholder="your@email.com" />
+                    </div>
+                    <p id="kogu-request-error" class="kogu-request-error" hidden></p>
+                    <button id="kogu-request-submit" class="kogu-request-submit">リクエストする</button>
+                </div>
+                <div id="kogu-request-thanks" class="kogu-request-thanks" hidden>
+                    <p>✅ リクエストを受け付けました！<br>入荷次第メールでお知らせします。</p>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 
     // ── noindex メタタグ出力 ──────────────────────────────────────────────────

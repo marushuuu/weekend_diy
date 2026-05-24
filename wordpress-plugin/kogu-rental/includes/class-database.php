@@ -11,6 +11,7 @@ class Kogu_Database {
     public static function late_fees_table()       { global $wpdb; return $wpdb->prefix . 'kogu_late_fees'; }
     public static function addon_products_table()  { global $wpdb; return $wpdb->prefix . 'kogu_addon_products'; }
     public static function rental_addons_table()   { global $wpdb; return $wpdb->prefix . 'kogu_rental_addons'; }
+    public static function tool_requests_table()   { global $wpdb; return $wpdb->prefix . 'kogu_tool_requests'; }
 
     // ── Install / create tables ───────────────────────────────────────────────
     public static function install() {
@@ -162,6 +163,18 @@ class Kogu_Database {
             PRIMARY KEY (id),
             KEY rental_id (rental_id),
             KEY fee_date (fee_date)
+        ) $charset;" );
+
+        // ── 工具リクエスト ────────────────────────────────────────────────────
+        dbDelta( "CREATE TABLE " . self::tool_requests_table() . " (
+            id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            tool_name  VARCHAR(200) NOT NULL DEFAULT '',
+            email      VARCHAR(200) NOT NULL DEFAULT '',
+            status     ENUM('pending','notified') NOT NULL DEFAULT 'pending',
+            notified_at DATETIME DEFAULT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY status (status)
         ) $charset;" );
 
         self::seed();

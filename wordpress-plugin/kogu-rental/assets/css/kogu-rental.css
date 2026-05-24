@@ -540,3 +540,103 @@ label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-acc
   .kogu-sp-title { font-size: 22px; }
   .kogu-sp-price-amount { font-size: 26px; }
 }
+
+/* ── 工具リクエスト FABボタン ──────────────────────────────────────────────── */
+.kogu-request-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--kogu-ink);
+  color: #fff;
+  border-radius: 50px;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  transition: transform .15s, box-shadow .15s;
+  user-select: none;
+}
+.kogu-request-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+.kogu-request-fab-icon { font-size: 18px; line-height: 1; }
+.kogu-request-fab-label { font-size: 14px; font-weight: 700; white-space: nowrap; }
+
+/* ── 工具リクエスト ポップアップ ───────────────────────────────────────────── */
+.kogu-request-popup {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  z-index: 9001;
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  overflow: hidden;
+  animation: koguPopupIn .2s ease;
+}
+.kogu-request-popup[hidden] { display: none; }
+
+@keyframes koguPopupIn {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.kogu-request-popup-inner { padding: 24px 20px 20px; position: relative; }
+.kogu-request-popup-close {
+  position: absolute;
+  top: 10px; right: 12px;
+  background: none; border: none;
+  font-size: 22px; color: #999;
+  cursor: pointer; line-height: 1; padding: 0;
+}
+.kogu-request-popup-close:hover { color: #333; }
+.kogu-request-popup-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; color: var(--kogu-ink); }
+.kogu-request-popup-desc  { font-size: 13px; color: #666; margin: 0 0 16px; line-height: 1.5; }
+
+.kogu-request-field { margin-bottom: 12px; }
+.kogu-request-field label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: #555; margin-bottom: 4px;
+}
+.kogu-request-field label .req { color: var(--kogu-accent); }
+.kogu-request-field input {
+  width: 100%; padding: 9px 11px;
+  border: 1.5px solid #ddd; border-radius: 6px;
+  font-size: 14px; box-sizing: border-box;
+  transition: border-color .15s;
+}
+.kogu-request-field input:focus { outline: none; border-color: var(--kogu-accent); }
+
+.kogu-request-error {
+  font-size: 13px; color: var(--kogu-warn);
+  margin: 0 0 10px; padding: 8px 10px;
+  background: #fff0f0; border-radius: 6px;
+}
+.kogu-request-error[hidden] { display: none; }
+
+.kogu-request-submit {
+  width: 100%; padding: 11px;
+  background: var(--kogu-accent); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.kogu-request-submit:hover:not(:disabled) { opacity: .88; }
+.kogu-request-submit:disabled { opacity: .55; cursor: default; }
+
+.kogu-request-thanks {
+  text-align: center; padding: 8px 0 4px;
+  font-size: 15px; color: var(--kogu-ok);
+  line-height: 1.6;
+}
+.kogu-request-thanks[hidden] { display: none; }
+
+@media (max-width: 400px) {
+  .kogu-request-popup { width: calc(100vw - 32px); right: 16px; }
+  .kogu-request-fab   { right: 16px; bottom: 16px; }
+}

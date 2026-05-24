@@ -530,4 +530,67 @@
     if (e.key === 'ArrowLeft' && current > 0) { current--; renderCarousel(); }
     if (e.key === 'ArrowRight' && current < imgs.length - 1) { current++; renderCarousel(); }
   });
+
+  // ── 工具リクエスト ポップアップ ──────────────────────────────────────────
+  var $fab     = $('#kogu-request-btn');
+  var $popup   = $('#kogu-request-popup');
+  var $close   = $popup.find('.kogu-request-popup-close');
+  var $submit  = $('#kogu-request-submit');
+  var $error   = $('#kogu-request-error');
+  var $thanks  = $('#kogu-request-thanks');
+  var $formWrap = $('#kogu-request-form-wrap');
+
+  if ($fab.length) {
+    $fab.on('click keydown', function(e) {
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      var isHidden = $popup.prop('hidden');
+      $popup.prop('hidden', !isHidden);
+      if (isHidden) $popup.find('#kogu-req-tool').focus();
+    });
+
+    $close.on('click', function() { $popup.prop('hidden', true); });
+
+    $(document).on('keydown', function(e) {
+      if (e.key === 'Escape' && !$popup.prop('hidden')) $popup.prop('hidden', true);
+    });
+
+    $(document).on('click', function(e) {
+      if (!$popup.prop('hidden') &&
+          !$(e.target).closest('#kogu-request-popup, #kogu-request-btn').length) {
+        $popup.prop('hidden', true);
+      }
+    });
+
+    $submit.on('click', function() {
+      var toolName = $.trim($('#kogu-req-tool').val());
+      var email    = $.trim($('#kogu-req-email').val());
+
+      $error.prop('hidden', true).text('');
+
+      if (!toolName) { $error.text('希望の工具名を入力してください。').prop('hidden', false); return; }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        $error.text('正しいメールアドレスを入力してください。').prop('hidden', false); return;
+      }
+
+      $submit.prop('disabled', true).text('送信中…');
+
+      $.post(KoguData.ajax_url, {
+        action:    'kogu_tool_request',
+        nonce:     KoguData.nonce,
+        tool_name: toolName,
+        email:     email
+      }, function(res) {
+        if (res.success) {
+          $formWrap.hide();
+          $thanks.prop('hidden', false);
+        } else {
+          $error.text(res.data || '送信に失敗しました。').prop('hidden', false);
+          $submit.prop('disabled', false).text('リクエストする');
+        }
+      }).fail(function() {
+        $error.text('通信エラーが発生しました。').prop('hidden', false);
+        $submit.prop('disabled', false).text('リクエストする');
+      });
+    });
+  }
 })(jQuery);

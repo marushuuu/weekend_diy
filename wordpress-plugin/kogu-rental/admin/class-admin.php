@@ -9,8 +9,9 @@ class Kogu_Admin {
         add_action( 'admin_post_kogu_save_product',      [ __CLASS__, 'handle_save_product' ] );
         add_action( 'admin_post_kogu_save_addon',        [ __CLASS__, 'handle_save_addon' ] );
         add_action( 'admin_post_kogu_return_addon',      [ __CLASS__, 'handle_return_addon' ] );
-        add_action( 'admin_post_kogu_run_install',       [ __CLASS__, 'handle_run_install' ] );
-        add_action( 'admin_init',                        [ __CLASS__, 'register_settings' ] );
+        add_action( 'admin_post_kogu_run_install',          [ __CLASS__, 'handle_run_install' ] );
+        add_action( 'admin_post_kogu_notify_tool_request', [ __CLASS__, 'handle_notify_tool_request' ] );
+        add_action( 'admin_init',                          [ __CLASS__, 'register_settings' ] );
     }
 
     // ── DB初期化（テーブル作成） ──────────────────────────────────────────────
@@ -34,8 +35,9 @@ class Kogu_Admin {
         add_submenu_page( 'kogu-rentals', '在庫管理',     '在庫管理',      'manage_options', 'kogu-inventory',  [ __CLASS__, 'page_inventory' ] );
         add_submenu_page( 'kogu-rentals', '商品管理',     '商品管理',      'manage_options', 'kogu-products',   [ __CLASS__, 'page_products' ] );
         add_submenu_page( 'kogu-rentals', '購入商品管理', '🛒 購入商品管理', 'manage_options', 'kogu-addons',          [ __CLASS__, 'page_addons' ] );
-        add_submenu_page( 'kogu-rentals', '購入履歴',   '📦 購入履歴',     'manage_options', 'kogu-addon-history',   [ __CLASS__, 'page_addon_history' ] );
-        add_submenu_page( 'kogu-rentals', '設定',         '設定',          'manage_options', 'kogu-settings',        [ __CLASS__, 'page_settings' ] );
+        add_submenu_page( 'kogu-rentals', '購入履歴',     '📦 購入履歴',       'manage_options', 'kogu-addon-history',    [ __CLASS__, 'page_addon_history' ] );
+        add_submenu_page( 'kogu-rentals', '工具リクエスト', '💡 工具リクエスト', 'manage_options', 'kogu-tool-requests',   [ __CLASS__, 'page_tool_requests' ] );
+        add_submenu_page( 'kogu-rentals', '設定',         '設定',            'manage_options', 'kogu-settings',         [ __CLASS__, 'page_settings' ] );
     }
 
     // ── レンタル一覧 ──────────────────────────────────────────────────────────
@@ -1283,6 +1285,112 @@ class Kogu_Admin {
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-products&updated=1' ) );
+        exit;
+    }
+
+    // ── 工具リクエスト一覧 ────────────────────────────────────────────────────
+    public static function page_tool_requests() {
+        global $wpdb;
+        $tbl = Kogu_Database::tool_requests_table();
+
+        if ( ! empty( $_GET['notified'] ) ) {
+            echo '<div class="notice notice-success is-dismissible"><p>通知メールを送信しました。</p></div>';
+        }
+
+        $status_filter = sanitize_text_field( $_GET['status'] ?? '' );
+        $where = $status_filter ? $wpdb->prepare( 'WHERE status = %s', $status_filter ) : '';
+        $rows  = $wpdb->get_results( "SELECT * FROM $tbl $where ORDER BY created_at DESC LIMIT 300" );
+        ?>
+        <div class="wrap">
+          <h1>💡 工具リクエスト一覧</h1>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <a href="?page=kogu-tool-requests" class="button <?php echo ! $status_filter ? 'button-primary' : ''; ?>">すべて</a>
+            <a href="?page=kogu-tool-requests&status=pending" class="button <?php echo $status_filter === 'pending' ? 'button-primary' : ''; ?>">未通知</a>
+            <a href="?page=kogu-tool-requests&status=notified" class="button <?php echo $status_filter === 'notified' ? 'button-primary' : ''; ?>">通知済み</a>
+          </div>
+          <table class="wp-list-table widefat fixed striped">
+            <thead>
+              <tr>
+                <th style="width:60px">ID</th>
+                <th>希望工具</th>
+                <th>メールアドレス</th>
+                <th style="width:80px">ステータス</th>
+                <th>リクエスト日時</th>
+                <th style="width:120px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if ( empty( $rows ) ) : ?>
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:#888;">リクエストはまだありません</td></tr>
+              <?php else : ?>
+                <?php foreach ( $rows as $row ) : ?>
+                  <tr>
+                    <td><?php echo (int) $row->id; ?></td>
+                    <td><strong><?php echo esc_html( $row->tool_name ); ?></strong></td>
+                    <td><?php echo esc_html( $row->email ); ?></td>
+                    <td>
+                      <?php if ( $row->status === 'notified' ) : ?>
+                        <span style="color:#27ae60;font-weight:700;">✓ 通知済</span>
+                      <?php else : ?>
+                        <span style="color:#e85a2b;">未通知</span>
+                      <?php endif; ?>
+                    </td>
+                    <td><?php echo esc_html( $row->created_at ); ?></td>
+                    <td>
+                      <?php if ( $row->status === 'pending' ) : ?>
+                        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
+                          <?php wp_nonce_field( 'kogu_notify_tool_request' ); ?>
+                          <input type="hidden" name="action" value="kogu_notify_tool_request" />
+                          <input type="hidden" name="request_id" value="<?php echo (int) $row->id; ?>" />
+                          <button type="submit" class="button button-primary" style="font-size:12px;"
+                            onclick="return confirm('「<?php echo esc_js( $row->tool_name ); ?>」の入荷通知を <?php echo esc_js( $row->email ); ?> に送信しますか？')">
+                            入荷通知を送る
+                          </button>
+                        </form>
+                      <?php else : ?>
+                        <span style="color:#999;font-size:12px;"><?php echo esc_html( substr( $row->notified_at, 0, 10 ) ); ?> 送信済</span>
+                      <?php endif; ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+        <?php
+    }
+
+    // ── 入荷通知メール送信 ────────────────────────────────────────────────────
+    public static function handle_notify_tool_request() {
+        check_admin_referer( 'kogu_notify_tool_request' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( '権限がありません。' );
+
+        global $wpdb;
+        $id  = (int) ( $_POST['request_id'] ?? 0 );
+        $tbl = Kogu_Database::tool_requests_table();
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $tbl WHERE id = %d", $id ) );
+
+        if ( $row && $row->status === 'pending' ) {
+            $site = get_bloginfo( 'name' );
+            $url  = home_url( '/rental/' );
+            $body = "こんにちは！\n\n"
+                . "先日リクエストいただいた「{$row->tool_name}」が入荷しました。\n\n"
+                . "ぜひこちらからレンタルをお試しください👇\n"
+                . "{$url}\n\n"
+                . "引き続き {$site} をよろしくお願いいたします。";
+
+            wp_mail( $row->email, "【{$site}】「{$row->tool_name}」が入荷しました！", $body );
+
+            $wpdb->update(
+                $tbl,
+                [ 'status' => 'notified', 'notified_at' => current_time( 'mysql' ) ],
+                [ 'id' => $id ],
+                [ '%s', '%s' ],
+                [ '%d' ]
+            );
+        }
+
+        wp_redirect( admin_url( 'admin.php?page=kogu-tool-requests&notified=1' ) );
         exit;
     }
 }
