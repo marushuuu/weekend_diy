@@ -531,6 +531,47 @@
     if (e.key === 'ArrowRight' && current < imgs.length - 1) { current++; renderCarousel(); }
   });
 
+  // ── マイページ: レンタル延長 ──────────────────────────────────────────────
+  $(document).on('click', '.kogu-btn-extend', function() {
+    var $btn   = $(this);
+    var rid    = $btn.data('rental-id');
+    var rn     = $btn.data('reservation-number');
+    var fee    = $btn.data('ext-fee');
+    var newEnd = $btn.data('new-end');
+    var $msg   = $btn.siblings('.kogu-extend-msg');
+
+    if (!confirm('1週間延長します。\n新しい返却期限: ' + newEnd + '\n延長料金: ¥' + Number(fee).toLocaleString('ja-JP') + '\n\nご登録のカードに請求されます。よろしいですか？')) return;
+
+    $btn.prop('disabled', true).text('処理中…');
+    $msg.hide().removeClass('kogu-error kogu-ok');
+
+    $.post(KoguData.ajax_url, {
+      action:             'kogu_extend_rental',
+      nonce:              KoguData.nonce,
+      rental_id:          rid,
+      reservation_number: rn
+    }, function(res) {
+      if (res.success) {
+        $msg.addClass('kogu-ok')
+            .html('✅ 延長完了！新しい返却期限: <strong>' + res.data.new_end_date + '</strong>')
+            .show();
+        $btn.closest('.kogu-extend-section').find('.kogu-extend-info').hide();
+        $btn.hide();
+        // 返却期限表示を更新
+        var $card = $btn.closest('.kogu-rental-card');
+        $card.find('.kogu-info-row').filter(function() {
+          return $(this).find('span').first().text().indexOf('返却期限') !== -1;
+        }).find('strong').contents().first().replaceWith(res.data.new_end_date + ' ');
+      } else {
+        $msg.addClass('kogu-error').text(res.data || '延長に失敗しました。').show();
+        $btn.prop('disabled', false).text('1週間延長する（¥' + Number(fee).toLocaleString('ja-JP') + '）');
+      }
+    }).fail(function() {
+      $msg.addClass('kogu-error').text('通信エラーが発生しました。').show();
+      $btn.prop('disabled', false).text('1週間延長する（¥' + Number(fee).toLocaleString('ja-JP') + '）');
+    });
+  });
+
   // ── 工具リクエスト ポップアップ ──────────────────────────────────────────
   var $fab     = $('#kogu-request-btn');
   var $popup   = $('#kogu-request-popup');

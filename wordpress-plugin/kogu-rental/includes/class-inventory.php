@@ -247,4 +247,26 @@ class Kogu_Inventory {
 
         return $result;
     }
+
+    /**
+     * 特定ユニットが指定期間に空いているか確認する（延長可否判定用）。
+     * exclude_rental_id: 自身のレンタルIDを除外する。
+     */
+    public static function is_unit_free_in_period( int $unit_id, string $start, string $end, int $exclude_rental_id ): bool {
+        global $wpdb;
+        $ren    = Kogu_Database::rentals_table();
+        $buffer = self::get_buffer();
+
+        $count = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM $ren
+             WHERE inventory_unit_id = %d
+               AND id != %d
+               AND status NOT IN ('returned','cancelled')
+               AND rental_start_date <= %s
+               AND DATE_ADD(rental_end_date, INTERVAL %d DAY) >= %s",
+            $unit_id, $exclude_rental_id, $end, $buffer, $start
+        ) );
+
+        return $count === 0;
+    }
 }

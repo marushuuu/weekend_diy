@@ -66,6 +66,12 @@ $status_labels = [
         $is_active  = in_array( $r->status, [ 'shipped_to_customer', 'active', 'overdue' ], true );
         $is_overdue = $r->status === 'overdue';
         $product    = Kogu_Database::get_product( (int) $r->product_id );
+
+        // 返却期限まで残り日数
+        $today        = new DateTime( 'today' );
+        $end_dt       = new DateTime( $r->rental_end_date );
+        $days_left    = (int) $today->diff( $end_dt )->days * ( $today <= $end_dt ? 1 : -1 );
+        $can_extend   = Kogu_Rental_Manager::can_extend( (int) $r->id );
       ?>
         <div class="kogu-rental-card <?php echo $is_overdue ? 'kogu-overdue' : ''; ?>">
           <div class="kogu-rental-card-header">
@@ -75,7 +81,23 @@ $status_labels = [
           <div class="kogu-rental-card-body">
             <div class="kogu-info-row"><span>商品</span><strong><?php echo esc_html( $product->name ?? '—' ); ?></strong></div>
             <div class="kogu-info-row"><span>貸出開始</span><strong><?php echo esc_html( $r->rental_start_date ); ?></strong></div>
-            <div class="kogu-info-row kogu-warn"><span>返却期限</span><strong><?php echo esc_html( $r->rental_end_date ); ?></strong></div>
+            <div class="kogu-info-row <?php echo $is_overdue ? 'kogu-warn' : ''; ?>">
+              <span>返却期限</span>
+              <strong>
+                <?php echo esc_html( $r->rental_end_date ); ?>
+                <?php if ( in_array( $r->status, [ 'confirmed', 'shipped_to_customer', 'active', 'overdue' ], true ) ) : ?>
+                  <?php if ( $is_overdue ) : ?>
+                    <span class="kogu-days-badge kogu-days-overdue">⚠️ <?php echo abs( $days_left ); ?>日超過</span>
+                  <?php elseif ( $days_left === 0 ) : ?>
+                    <span class="kogu-days-badge kogu-days-today">今日が期限です</span>
+                  <?php elseif ( $days_left <= 3 ) : ?>
+                    <span class="kogu-days-badge kogu-days-soon">残り<?php echo $days_left; ?>日</span>
+                  <?php else : ?>
+                    <span class="kogu-days-badge">残り<?php echo $days_left; ?>日</span>
+                  <?php endif; ?>
+                <?php endif; ?>
+              </strong>
+            </div>
             <div class="kogu-info-row"><span>レンタル期間</span><strong><?php echo (int) $r->rental_weeks; ?>週間</strong></div>
             <?php if ( $r->rental_fee ) : ?>
               <div class="kogu-info-row"><span>レンタル料金</span><strong>¥<?php echo number_format( $r->rental_fee ); ?></strong></div>
@@ -94,6 +116,33 @@ $status_labels = [
               </div>
             <?php endif; ?>
           </div>
+
+          <?php if ( $can_extend ) :
+            $product_for_ext = Kogu_Database::get_product( (int) $r->product_id );
+            $ext_fee = $product_for_ext
+                ? (int) round( (int) $product_for_ext->price_per_week * 0.70 )
+                : 0;
+            $new_end_preview = date( 'Y-m-d', strtotime( $r->rental_end_date . ' +7 days' ) );
+          ?>
+          <div class="kogu-extend-section" id="kogu-extend-<?php echo (int) $r->id; ?>">
+            <div class="kogu-extend-info">
+              <p class="kogu-extend-title">📅 レンタルを1週間延長する</p>
+              <p class="kogu-extend-desc">
+                延長後の返却期限: <strong><?php echo esc_html( $new_end_preview ); ?></strong>
+                ／ 延長料金: <strong>¥<?php echo number_format( $ext_fee ); ?></strong>（30%OFF）
+              </p>
+              <p class="kogu-extend-note">ご登録のクレジットカードに即時請求されます。</p>
+            </div>
+            <button class="kogu-btn kogu-btn-extend"
+                    data-rental-id="<?php echo (int) $r->id; ?>"
+                    data-reservation-number="<?php echo esc_attr( $reservation_number ); ?>"
+                    data-ext-fee="<?php echo (int) $ext_fee; ?>"
+                    data-new-end="<?php echo esc_attr( $new_end_preview ); ?>">
+              1週間延長する（¥<?php echo number_format( $ext_fee ); ?>）
+            </button>
+            <div class="kogu-extend-msg" style="display:none;"></div>
+          </div>
+          <?php endif; ?>
 
           <?php if ( $is_active && ! $r->tracking_return ) : ?>
           <div class="kogu-return-section">

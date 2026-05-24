@@ -330,4 +330,33 @@ class Kogu_Email_Handler {
             <p>またのご利用をお待ちしております。</p>";
         self::send( $email, $name, '【工具レンタル】返却完了のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
+
+    // ── 延長確認メール ────────────────────────────────────────────────────────
+    public static function send_extension_confirmation( $rental_id, $new_end_date, $ext_fee, $new_weeks ) {
+        $rental = Kogu_Rental_Manager::get( $rental_id );
+        if ( ! $rental ) return;
+
+        $email        = self::get_rental_email( $rental );
+        $name         = self::get_rental_name( $rental );
+        $product_name = self::get_product_name( $rental );
+        $mypage_url   = home_url( '/my-page/' );
+        $fee_fmt      = number_format( $ext_fee );
+
+        $content = "
+            <h2 style='color:#e85a2b;'>レンタル期間を延長しました</h2>
+            <p>{$name} 様</p>
+            <p>{$product_name}のレンタル期間を1週間延長しました。</p>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-size:16px;font-weight:bold;'>{$rental->reservation_number}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>商品</td><td style='padding:8px 12px;'>{$product_name}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>延長後の週数</td><td style='padding:8px 12px;'>{$new_weeks}週間</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>新しい返却期限</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;font-size:18px;'>{$new_end_date}</strong></td></tr>
+              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>延長料金（追加請求）</td><td style='padding:8px 12px;font-size:16px;font-weight:bold;'>¥{$fee_fmt}</td></tr>
+            </table>
+            <p style='font-size:13px;color:#666;'>延長料金はご登録のクレジットカードに請求されます。</p>
+            <p style='margin-top:20px;'>
+              <a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで確認する</a>
+            </p>";
+        self::send( $email, $name, '【工具レンタル】レンタル期間延長のお知らせ #' . $rental_id, self::wrap( $content ) );
+    }
 }

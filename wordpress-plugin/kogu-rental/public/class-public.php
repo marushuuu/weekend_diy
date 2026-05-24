@@ -28,8 +28,11 @@ class Kogu_Public {
         add_action( 'wp_ajax_kogu_submit_return',        [ __CLASS__, 'ajax_submit_return' ] );
         add_action( 'wp_ajax_nopriv_kogu_submit_return', [ __CLASS__, 'ajax_submit_return' ] );
 
-        add_action( 'wp_ajax_kogu_tool_request',         [ __CLASS__, 'ajax_tool_request' ] );
+        add_action( 'wp_ajax_kogu_tool_request',          [ __CLASS__, 'ajax_tool_request' ] );
         add_action( 'wp_ajax_nopriv_kogu_tool_request',  [ __CLASS__, 'ajax_tool_request' ] );
+
+        add_action( 'wp_ajax_kogu_extend_rental',         [ __CLASS__, 'ajax_extend_rental' ] );
+        add_action( 'wp_ajax_nopriv_kogu_extend_rental',  [ __CLASS__, 'ajax_extend_rental' ] );
 
         // ── 工具リクエストポップアップ ───────────────────────────────────────
         add_action( 'wp_footer', [ __CLASS__, 'output_tool_request_popup' ] );
@@ -370,6 +373,35 @@ class Kogu_Public {
         }
 
         return new WP_REST_Response( 'ok', 200 );
+    }
+
+    // ── AJAX: レンタル延長 ────────────────────────────────────────────────────
+    public static function ajax_extend_rental() {
+        check_ajax_referer( 'kogu_nonce', 'nonce' );
+
+        $rental_id          = (int) ( $_POST['rental_id']          ?? 0 );
+        $reservation_number = strtoupper( sanitize_text_field( $_POST['reservation_number'] ?? '' ) );
+
+        if ( ! $rental_id || ! $reservation_number ) {
+            wp_send_json_error( 'パラメータが不足しています。' );
+        }
+
+        $rental = Kogu_Rental_Manager::get( $rental_id );
+        if ( ! $rental || $rental->reservation_number !== $reservation_number ) {
+            wp_send_json_error( '予約が見つかりません。' );
+        }
+
+        if ( ! Kogu_Rental_Manager::can_extend( $rental_id ) ) {
+            wp_send_json_error( 'この予約は現在延長できません。在庫状況をご確認ください。' );
+        }
+
+        $result = Kogu_Rental_Manager::extend_rental( $rental_id, $reservation_number );
+
+        if ( ! $result ) {
+            wp_send_json_error( '延長処理に失敗しました。決済情報をご確認いただくか、お問い合わせください。' );
+        }
+
+        wp_send_json_success( $result );
     }
 
     // ── AJAX: 工具リクエスト送信 ──────────────────────────────────────────────

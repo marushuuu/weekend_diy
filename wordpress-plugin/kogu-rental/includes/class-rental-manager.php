@@ -240,6 +240,81 @@ class Kogu_Rental_Manager {
         ) );
     }
 
+    /**
+     * 1週間延長が可能か判定する。
+     * 延長可能条件: ステータスが active/shipped_to_customer/confirmed/overdue、かつ
+     * 同一ユニットが延長期間（現在の rental_end_date + 1日 〜 +7日）に空いている。
+     */
+    public static function can_extend( int $rental_id ): bool {
+        $rental = self::get( $rental_id );
+        if ( ! $rental ) return false;
+
+        $extendable = [ 'confirmed', 'shipped_to_customer', 'active', 'overdue' ];
+        if ( ! in_array( $rental->status, $extendable, true ) ) return false;
+
+        if ( ! $rental->inventory_unit_id ) return false;
+
+        $new_start = date( 'Y-m-d', strtotime( $rental->rental_end_date . ' +1 day' ) );
+        $new_end   = date( 'Y-m-d', strtotime( $rental->rental_end_date . ' +7 days' ) );
+
+        return Kogu_Inventory::is_unit_free_in_period(
+            (int) $rental->inventory_unit_id, $new_start, $new_end, $rental_id
+        );
+    }
+
+    /**
+     * 1週間延長を実行する。
+     * Stripe で追加決済し、rental_end_date / rental_weeks / rental_fee を更新する。
+     * 成功時は ['new_end_date', 'ext_fee', 'new_weeks'] を返す。失敗時は false。
+     */
+    public static function extend_rental( int $rental_id, string $reservation_number ) {
+        $rental = self::get( $rental_id );
+        if ( ! $rental ) return false;
+        if ( $rental->reservation_number !== $reservation_number ) return false;
+        if ( ! self::can_extend( $rental_id ) ) return false;
+
+        $product = Kogu_Database::get_product( (int) $rental->product_id );
+        if ( ! $product ) return false;
+
+        $new_end   = date( 'Y-m-d', strtotime( $rental->rental_end_date . ' +7 days' ) );
+        $new_weeks = (int) $rental->rental_weeks + 1;
+        $ext_fee   = (int) round( (int) $product->price_per_week * self::WEEK_DISCOUNT_RATE );
+
+        // 登録カードに追加決済（Stripe秘密鍵が未設定のテスト環境ではスキップ）
+        if ( $rental->stripe_customer_id && $rental->stripe_payment_method_id ) {
+            $charge_id = Kogu_Stripe_Handler::charge_additional(
+                $rental->stripe_customer_id,
+                $rental->stripe_payment_method_id,
+                $ext_fee,
+                "レンタル#{$rental_id} 1週間延長（{$new_weeks}週目）"
+            );
+            if ( $charge_id === false ) {
+                return false;
+            }
+        }
+
+        global $wpdb;
+        $wpdb->update(
+            Kogu_Database::rentals_table(),
+            [
+                'rental_end_date' => $new_end,
+                'rental_weeks'    => $new_weeks,
+                'rental_fee'      => (int) $rental->rental_fee + $ext_fee,
+                // 延滞中だった場合はステータスをactiveに戻す
+                'status'          => $rental->status === 'overdue' ? 'active' : $rental->status,
+            ],
+            [ 'id' => $rental_id ]
+        );
+
+        Kogu_Email_Handler::send_extension_confirmation( $rental_id, $new_end, $ext_fee, $new_weeks );
+
+        return [
+            'new_end_date' => $new_end,
+            'ext_fee'      => $ext_fee,
+            'new_weeks'    => $new_weeks,
+        ];
+    }
+
     /** 後方互換のため残す */
     public static function calc_days( $start, $end ) {
         $s = new DateTime( $start );
