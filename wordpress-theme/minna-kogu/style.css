@@ -135,6 +135,9 @@ body {
   border-radius: 1px;
 }
 
+/* モバイル専用リンク（デスクトップでは非表示） */
+.nav-links-mobile-only { display: none; }
+
 @media (max-width: 768px) {
   .nav-links {
     display: none;
@@ -149,10 +152,14 @@ body {
     padding: 8px 24px 16px;
     border-bottom: 1px solid var(--paper-2);
     box-shadow: 0 8px 16px rgba(0,0,0,.08);
+    z-index: 99;
   }
   .nav-links.open { display: flex; }
-  .nav-links li { width: 100%; padding: 10px 0; border-bottom: 1px solid var(--paper-2); }
+  .nav-links li { width: 100%; padding: 12px 0; border-bottom: 1px solid var(--paper-2); }
+  .nav-links a { font-size: 15px; font-weight: 600; }
+  .nav-links-mobile-only { display: list-item; }
   .nav-menu-btn { display: flex; }
+  .nav-cta { display: none; }  /* モバイルではCTAボタン非表示 */
   .nav-logo { font-size: 15px; }
 }
 

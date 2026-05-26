@@ -28,10 +28,12 @@
 			} else {
 				?>
 				<ul class="nav-links" id="primary-menu">
-					<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">ホーム</a></li>
-					<li><a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>">マイページ</a></li>
-					<li><a href="<?php echo esc_url( home_url( '/terms' ) ); ?>">利用規約</a></li>
-					<li><a href="<?php echo esc_url( home_url( '/tokushoho' ) ); ?>">特商法表記</a></li>
+					<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">工具レンタルTOP</a></li>
+					<li><a href="<?php echo esc_url( home_url( '/rental' ) ); ?>">工具を借りる</a></li>
+					<li><a href="<?php echo esc_url( home_url( '/?post_type=post' ) ); ?>">DIYコラム</a></li>
+					<li><a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>">予約確認・返却</a></li>
+					<li class="nav-links-mobile-only"><a href="<?php echo esc_url( home_url( '/terms' ) ); ?>">利用規約</a></li>
+					<li class="nav-links-mobile-only"><a href="<?php echo esc_url( home_url( '/tokushoho' ) ); ?>">特商法表記</a></li>
 				</ul>
 				<?php
 			}
