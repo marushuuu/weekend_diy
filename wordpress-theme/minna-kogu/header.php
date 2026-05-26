@@ -27,10 +27,15 @@
 				] );
 			} else {
 				?>
+				<?php
+				$blog_url = ( $pid = get_option( 'page_for_posts' ) )
+				            ? get_permalink( $pid )
+				            : home_url( '/blog/' );
+				?>
 				<ul class="nav-links" id="primary-menu">
 					<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">工具レンタルTOP</a></li>
 					<li><a href="<?php echo esc_url( home_url( '/rental' ) ); ?>">工具を借りる</a></li>
-					<li><a href="<?php echo esc_url( home_url( '/?post_type=post' ) ); ?>">DIYコラム</a></li>
+					<li><a href="<?php echo esc_url( $blog_url ); ?>">DIYコラム</a></li>
 					<li><a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>">予約確認・返却</a></li>
 					<li class="nav-links-mobile-only"><a href="<?php echo esc_url( home_url( '/terms' ) ); ?>">利用規約</a></li>
 					<li class="nav-links-mobile-only"><a href="<?php echo esc_url( home_url( '/tokushoho' ) ); ?>">特商法表記</a></li>
