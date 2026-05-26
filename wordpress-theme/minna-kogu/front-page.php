@@ -40,6 +40,31 @@
 	</div>
 </section>
 
+<!-- ── Blog ── -->
+<?php
+$recent_posts = get_posts( [ 'numberposts' => 3, 'post_status' => 'publish' ] );
+if ( $recent_posts ) : ?>
+<section class="section" id="blog">
+	<div class="container">
+		<div class="section-head">
+			<h2><span class="star">★</span>DIYのヒント</h2>
+		</div>
+		<div class="top-blog-grid">
+			<?php foreach ( $recent_posts as $post ) : setup_postdata( $post ); ?>
+			<a class="top-blog-card" href="<?php the_permalink(); ?>">
+				<div class="top-blog-card-meta"><?php echo get_the_date( 'Y.m.d' ); ?></div>
+				<div class="top-blog-card-title"><?php the_title(); ?></div>
+				<div class="top-blog-card-more">続きを読む →</div>
+			</a>
+			<?php endforeach; wp_reset_postdata(); ?>
+		</div>
+		<div style="text-align:center;margin-top:24px;">
+			<a href="<?php echo get_permalink( get_option( 'page_for_posts' ) ) ?: home_url( '/?post_type=post' ); ?>" class="btn-outline">記事一覧を見る</a>
+		</div>
+	</div>
+</section>
+<?php endif; ?>
+
 <!-- ── Rental Form ── -->
 <section class="section alt" id="tools">
 	<div class="container">
