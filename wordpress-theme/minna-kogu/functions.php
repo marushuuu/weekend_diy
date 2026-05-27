@@ -190,6 +190,14 @@ function minna_kogu_seo_head() {
 	}
 }
 
+// VK All in One Expansion Unit の SNSシェアボタンのみ無効化
+add_filter( 'vkExUnit_common_settings', function( $settings ) {
+	if ( isset( $settings['social_bookmarks'] ) ) {
+		$settings['social_bookmarks']['active'] = false;
+	}
+	return $settings;
+} );
+
 // ── Theme helpers ─────────────────────────────────────────────────────────────
 
 /**
