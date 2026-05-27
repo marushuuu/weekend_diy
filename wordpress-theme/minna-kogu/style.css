@@ -705,3 +705,10 @@ body {
   text-decoration: none; transition: background .15s, color .15s;
 }
 .btn-outline:hover { background: #e85a2b; color: #fff; }
+
+/* ── VK All in One: SNSシェアボタン非表示 ────────────────────────────── */
+.vk-social-bookmarks,
+.vk_social_bookmarks,
+.vkExUnit_social_bookmarks,
+[class*="vk-share"],
+[class*="social-bookmarks"] { display: none !important; }
