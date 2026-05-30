@@ -683,6 +683,22 @@ body {
   .blog-card-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 768px) {
+  .blog-pagination .nav-links {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    position: static !important;
+    background: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-bottom: none !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+  }
+}
+
 /* ── Top page: blog section ───────────────────────────────────────────── */
 .top-blog-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;
