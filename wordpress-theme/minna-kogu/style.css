@@ -633,7 +633,7 @@ body {
 .blog-card-link:hover { text-decoration: underline; }
 
 .blog-pagination { margin-top: 48px; display: flex; justify-content: center; }
-.blog-pagination .nav-links { display: flex; gap: 8px; align-items: center; }
+.blog-pagination .nav-links { display: flex !important; flex-direction: row !important; flex-wrap: wrap; gap: 8px; align-items: center; position: static !important; background: none !important; box-shadow: none !important; padding: 0 !important; border-bottom: none !important; }
 .blog-pagination .page-numbers { display: inline-block; padding: 8px 14px; border-radius: 6px; font-size: 14px; color: var(--ink); text-decoration: none; border: 1px solid #ddd; transition: background .15s; }
 .blog-pagination .page-numbers:hover, .blog-pagination .page-numbers.current { background: var(--accent); color: #fff; border-color: var(--accent); }
 
