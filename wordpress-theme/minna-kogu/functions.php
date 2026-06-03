@@ -1,6 +1,43 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
+// ── メンテナンスモード ────────────────────────────────────────────────────────
+// 解除するには下の true を false に変えてデプロイ
+define( 'KOGU_MAINTENANCE', true );
+
+add_action( 'template_redirect', function() {
+	if ( ! KOGU_MAINTENANCE ) return;
+	if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) return;
+	http_response_code( 503 );
+	header( 'Retry-After: 86400' );
+	?><!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>準備中｜みんなの工具レンタル</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f0eb; font-family: 'Noto Sans JP', sans-serif; }
+  .wrap { text-align: center; padding: 40px 24px; }
+  .icon { font-size: 56px; margin-bottom: 24px; }
+  h1 { font-size: 22px; font-weight: 700; color: #1f1d1a; margin-bottom: 16px; }
+  p { font-size: 15px; color: #6b6560; line-height: 1.8; }
+  .brand { margin-top: 40px; font-size: 13px; color: #9e9890; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="icon">🔧</div>
+    <h1>ただいま準備中です</h1>
+    <p>サービス開始に向けて準備を進めています。<br>もうしばらくお待ちください。</p>
+    <p class="brand">みんなの工具レンタル</p>
+  </div>
+</body>
+</html><?php
+	exit;
+} );
+
 if ( ! function_exists( 'minna_kogu_setup' ) ) {
 	function minna_kogu_setup() {
 		add_theme_support( 'title-tag' );
