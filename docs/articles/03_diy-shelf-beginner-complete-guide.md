@@ -161,6 +161,13 @@ status: 執筆完了・入稿待ち
 
 ---
 
+---
+
+## 関連記事
+
+- [インパクトドライバーをレンタルする方法](https://weekend-diy.com/blog/impact-driver-rental-how-to/) — 棚作りの主役・インパクトドライバーのレンタル
+- [電動サンダーとは？種類・選び方・使い方](https://weekend-diy.com/blog/electric-sander-how-to-use/) — 仕上げに使う電動サンダーの使い方
+
 ## まとめ——棚DIYの全工程を振り返る
 
 1. 設計：何を入れるかから逆算してサイズを決める

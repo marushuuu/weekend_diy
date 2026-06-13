@@ -117,6 +117,13 @@ status: 執筆完了・入稿待ち
 
 ---
 
+---
+
+## 関連記事
+
+- [インパクトドライバーをレンタルする方法](https://weekend-diy.com/blog/impact-driver-rental-how-to/) — インパクトドライバーを実際にレンタルする手順はこちら
+- [インパクトドライバーはレンタルと購入どちらがお得？](https://weekend-diy.com/blog/impact-driver-rental-vs-purchase/) — 買うべきか迷ったら：レンタルと購入の比較
+
 ## まとめ
 
 - インパクトドライバーは「回転＋打撃」でパワフルにビスを締める工具

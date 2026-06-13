@@ -151,6 +151,12 @@ status: 執筆完了・入稿待ち
 
 ---
 
+---
+
+## 関連記事
+
+- [DIY初心者が棚を作る全手順](https://weekend-diy.com/blog/diy-shelf-beginner-complete-guide/) — ジグソーを使った棚DIYの全手順
+
 ## まとめ
 
 - ジグソーは曲線・中抜き・異形カットが得意な電動ノコギリ

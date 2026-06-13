@@ -133,6 +133,12 @@ status: 執筆完了・入稿待ち
 
 ---
 
+---
+
+## 関連記事
+
+- [DIY初心者が棚を作る全手順](https://weekend-diy.com/blog/diy-shelf-beginner-complete-guide/) — サンダーを使った棚DIYの全手順
+
 ## まとめ
 
 - 電動サンダーは「やすりがけを機械化した研磨工具」。塗装の仕上がりを左右する

@@ -140,6 +140,13 @@ status: 執筆完了・入稿待ち
 
 ---
 
+---
+
+## 関連記事
+
+- [インパクトドライバーをレンタルする方法](https://weekend-diy.com/blog/impact-driver-rental-how-to/) — インパクトドライバーをレンタルする方法
+- [ハンマードリルとは？使い方・コンクリート穴あけ](https://weekend-diy.com/blog/hammer-drill-how-to-use/) — ハンマードリルの使い方とレンタル
+
 ## まとめ
 
 - HiKOKI（ハイコーキ）は旧日立工機が2018年に改称した国内2強の電動工具メーカー
