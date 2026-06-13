@@ -154,6 +154,12 @@ status: 執筆完了・入稿待ち
 
 ---
 
+---
+
+## 関連記事
+
+- [DIY初心者が棚を作る全手順](https://weekend-diy.com/blog/diy-shelf-beginner-complete-guide/) — カンナで整えた材料で棚を作る手順
+
 ## まとめ
 
 - 電気カンナは木材を薄く削って厚み・反り・寸法を整える電動工具
