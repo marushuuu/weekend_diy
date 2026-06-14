@@ -1124,7 +1124,7 @@ class Kogu_Admin {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; font-size: 13px; color: #1f1d1a; background: #f5f5f5; }
-  .slip { width: 148mm; min-height: 210mm; margin: 8mm auto; padding: 10mm; background: #fff; border: 1px solid #ccc; }
+  .slip { width: 190mm; min-height: 277mm; margin: 8mm auto; padding: 12mm; background: #fff; border: 1px solid #ccc; }
   .header { background: #1f1d1a; color: #fff; padding: 8px 12px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
   .header .title { font-size: 16px; font-weight: bold; }
   .header .label { font-size: 11px; background: #e85a2b; padding: 2px 10px; border-radius: 3px; letter-spacing: 1px; }
