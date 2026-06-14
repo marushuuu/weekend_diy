@@ -38,6 +38,7 @@ class Kogu_Admin {
         add_submenu_page( 'kogu-rentals', '購入履歴',     '📦 購入履歴',       'manage_options', 'kogu-addon-history',    [ __CLASS__, 'page_addon_history' ] );
         add_submenu_page( 'kogu-rentals', '工具リクエスト', '💡 工具リクエスト', 'manage_options', 'kogu-tool-requests',   [ __CLASS__, 'page_tool_requests' ] );
         add_submenu_page( 'kogu-rentals', '設定',         '設定',            'manage_options', 'kogu-settings',         [ __CLASS__, 'page_settings' ] );
+        add_submenu_page( null, '同梱紙', '同梱紙', 'manage_options', 'kogu-packing-slip', [ __CLASS__, 'page_packing_slip' ] );
     }
 
     // ── レンタル一覧 ──────────────────────────────────────────────────────────
@@ -151,7 +152,10 @@ class Kogu_Admin {
         $weeks = (int) $rental->rental_weeks ?: 1;
         ?>
         <div style="margin-top:32px;background:#fff;border:1px solid #ddd;padding:24px;border-radius:8px;max-width:700px;">
-          <h2>レンタル #<?php echo (int) $rental->id; ?> 詳細</h2>
+          <h2>レンタル #<?php echo (int) $rental->id; ?> 詳細
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=kogu-packing-slip&rental_id=' . $rental_id ) ); ?>"
+               target="_blank" class="button button-secondary" style="float:right;font-size:13px;">🖨 同梱紙を印刷</a>
+          </h2>
 
           <table class="form-table">
             <tr><th>ステータス</th><td><?php echo esc_html( $rental->status ); ?></td></tr>
@@ -1083,6 +1087,121 @@ class Kogu_Admin {
     }
 
     // ── 設定画面 ──────────────────────────────────────────────────────────────
+    // ── 同梱紙（印刷専用ページ）────────────────────────────────────────────────
+    public static function page_packing_slip() {
+        $rental_id = isset( $_GET['rental_id'] ) ? (int) $_GET['rental_id'] : 0;
+        if ( ! $rental_id || ! current_user_can( 'manage_options' ) ) {
+            wp_die( '不正なアクセスです。' );
+        }
+        global $wpdb;
+        $table  = Kogu_Database::rentals_table();
+        $ptbl   = Kogu_Database::products_table();
+        $rental = $wpdb->get_row( $wpdb->prepare(
+            "SELECT r.*, p.name AS product_name FROM $table r
+             LEFT JOIN $ptbl p ON p.id = r.product_id
+             WHERE r.id = %d",
+            $rental_id
+        ) );
+        if ( ! $rental ) {
+            wp_die( '予約が見つかりません。' );
+        }
+
+        $name           = esc_html( $rental->guest_name ?: ( $rental->user_id ? get_userdata( $rental->user_id )->display_name : '' ) );
+        $product_name   = esc_html( $rental->product_name ?? '工具' );
+        $end_date       = esc_html( $rental->rental_end_date );
+        $reservation    = esc_html( $rental->reservation_number ?? '' );
+        $from_email     = esc_html( get_option( 'kogu_from_email', 'support@weekend-diy.com' ) );
+        $return_address = get_option( 'kogu_return_address', '' );
+        $addr_lines     = $return_address
+            ? nl2br( esc_html( $return_address ) ) . '<br><strong>みんなのレンタル工具 行</strong>'
+            : '<span style="color:#c0392b;">（管理画面 → 設定 → 返送先住所を設定してください）</span>';
+        ?>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>同梱紙 #<?php echo $rental_id; ?></title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; font-size: 13px; color: #1f1d1a; background: #f5f5f5; }
+  .slip { width: 148mm; min-height: 210mm; margin: 8mm auto; padding: 10mm; background: #fff; border: 1px solid #ccc; }
+  .header { background: #1f1d1a; color: #fff; padding: 8px 12px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .header .title { font-size: 16px; font-weight: bold; }
+  .header .label { font-size: 11px; background: #e85a2b; padding: 2px 10px; border-radius: 3px; letter-spacing: 1px; }
+  .thank-you { border: 1px solid #e0d8c8; border-top: none; border-radius: 0 0 4px 4px; padding: 8px 12px; font-size: 12px; line-height: 1.8; color: #444; }
+  .reservation-box { text-align: center; border: 2px solid #e85a2b; border-radius: 6px; padding: 10px; margin: 10px 0; }
+  .reservation-box .label { font-size: 11px; color: #888; margin-bottom: 2px; }
+  .reservation-box .number { font-size: 30px; font-weight: 900; letter-spacing: 3px; color: #e85a2b; }
+  table.info { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+  table.info th { width: 30%; padding: 5px 8px; background: #f6f1e6; font-weight: bold; vertical-align: top; border: 1px solid #ddd; }
+  table.info td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; }
+  .deadline-badge { display: inline-block; background: #e85a2b; color: #fff; font-size: 14px; font-weight: bold; padding: 2px 10px; border-radius: 4px; }
+  .section-title { font-size: 13px; font-weight: bold; border-left: 3px solid #e85a2b; padding-left: 8px; margin: 14px 0 6px; }
+  ol.steps { padding-left: 20px; font-size: 12px; line-height: 2.3; }
+  .address-box { background: #f6f1e6; border-left: 3px solid #e85a2b; padding: 8px 14px; font-size: 14px; line-height: 2; margin: 6px 0; }
+  .note { font-size: 10px; color: #888; line-height: 1.8; margin-top: 8px; }
+  .contact { margin-top: 12px; font-size: 11px; color: #666; border-top: 1px dashed #ccc; padding-top: 8px; }
+  .no-print { text-align: center; padding: 12px; background: #e8f0fe; font-size: 13px; }
+  @media print {
+    body { background: #fff; }
+    .slip { border: none; margin: 0; width: 100%; box-shadow: none; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button onclick="window.print()" style="padding:8px 24px;background:#e85a2b;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;margin-right:8px;">🖨 印刷する</button>
+  <a href="javascript:window.close()" style="font-size:13px;color:#666;">閉じる</a>
+</div>
+<div class="slip">
+  <div class="header">
+    <span class="title">みんなのレンタル工具</span>
+    <span class="label">返却のしおり</span>
+  </div>
+  <div class="thank-you">
+    <?php echo $name; ?> 様、ご利用ありがとうございます！返却期限日までにご返送をお願いいたします。
+  </div>
+
+  <div class="reservation-box">
+    <div class="label">予約番号</div>
+    <div class="number"><?php echo $reservation; ?></div>
+  </div>
+
+  <table class="info">
+    <tr><th>お名前</th><td><?php echo $name; ?> 様</td></tr>
+    <tr><th>商品</th><td><?php echo $product_name; ?></td></tr>
+    <tr>
+      <th>返却期限</th>
+      <td><span class="deadline-badge"><?php echo $end_date; ?></span> までに発送</td>
+    </tr>
+  </table>
+
+  <div class="section-title">返却手順</div>
+  <ol class="steps">
+    <li>工具と付属品を<strong>付属のプチプチで包む</strong>（刃先・先端は厚めに）</li>
+    <li>ダンボール箱に入れ、隙間に緩衝材を詰めてガムテープで封をする</li>
+    <li>最寄りの<strong>郵便局・コンビニ（ローソン / ミニストップ）</strong>で<br>
+        <strong>「ゆうパック 着払い」</strong>で発送（伝票は窓口に置いてあります）</li>
+    <li>発送後、マイページ（weekend-diy.com/my-page/）で追跡番号を登録</li>
+  </ol>
+  <p class="note">
+    ※ 期限日までに「発送」していれば到着が翌日以降でも問題ありません。<br>
+    ※ 返送料はお客様ご負担（着払い）となります。<br>
+    ※ 期限超過は1日 ¥500 の延滞料金が登録カードに発生します。
+  </p>
+
+  <div class="section-title">返送先</div>
+  <div class="address-box"><?php echo $addr_lines; ?></div>
+
+  <div class="contact">お問い合わせ：<?php echo $from_email; ?></div>
+</div>
+</body>
+</html>
+        <?php
+        exit;
+    }
+
     public static function register_settings() {
         $fields = [
             'kogu_stripe_public_key'     => 'Stripe 公開鍵（pk_live_...）',
@@ -1093,6 +1212,7 @@ class Kogu_Admin {
             'kogu_from_name'             => '送信元名',
             'kogu_noindex_slugs'         => 'noindex にするページスラッグ（カンマ区切り）',
             'kogu_return_buffer_days'    => '折り返しバッファ日数（返却期限後に在庫をブロックする日数）',
+            'kogu_return_address'        => '返送先住所（予約確認メール・同梱紙に表示）',
             'kogu_gsc_verification'      => 'Google Search Console 検証コード',
             'kogu_gtm_container_id'      => 'Google Tag Manager コンテナID',
         ];
@@ -1165,6 +1285,13 @@ class Kogu_Admin {
                         例: <code>4</code> → 返却期限 6/1 の場合、6/5 以降が次の貸し出し可能日になります。<br>
                         <strong>デフォルト: 4日</strong>（郵送3日＋検品1日想定）
                       </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th><label for="kogu_return_address">返送先住所</label></th>
+                    <td>
+                      <textarea id="kogu_return_address" name="kogu_return_address" rows="4" class="large-text"><?php echo esc_textarea( get_option( 'kogu_return_address', '' ) ); ?></textarea>
+                      <p class="description">予約確認メール・発送通知・同梱紙に表示される返送先住所を入力してください（例: 〒123-4567 東京都○○市○○1-2-3）。</p>
                     </td>
                   </tr>
                   <tr>

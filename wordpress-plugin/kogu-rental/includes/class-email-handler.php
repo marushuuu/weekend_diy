@@ -31,6 +31,35 @@ class Kogu_Email_Handler {
         return $product ? $product->name : '工具';
     }
 
+    // ── 返却手順ブロック（予約確認・発送通知・リマインダーで共用）─────────────
+    private static function return_instructions_block( $rental ): string {
+        $return_address = get_option( 'kogu_return_address', '' );
+        $addr_html = $return_address
+            ? "<div style='background:#f6f1e6;border-left:3px solid #e85a2b;padding:10px 14px;margin:10px 0;font-size:13px;line-height:1.9;'>"
+              . nl2br( esc_html( $return_address ) )
+              . "<br><strong>みんなのレンタル工具 行</strong></div>"
+            : '';
+        $end_date    = esc_html( $rental->rental_end_date );
+        $reservation = esc_html( $rental->reservation_number ?? '' );
+        return "
+            <div style='background:#f9f9f9;border:1px solid #e0d8c8;border-radius:8px;padding:20px 24px;margin:24px 0;'>
+              <h3 style='margin:0 0 12px;font-size:15px;color:#1f1d1a;border-bottom:1px solid #e0d8c8;padding-bottom:8px;'>返却方法</h3>
+              <p style='margin:0 0 10px;font-size:13px;'>返却期限日（<strong style='color:#e85a2b;font-size:15px;'>{$end_date}</strong>）までに発送してください。</p>
+              <ol style='margin:8px 0 12px;padding-left:20px;font-size:13px;line-height:2.4;'>
+                <li>工具と付属品を<strong>付属のプチプチで包み</strong>、ダンボール箱に入れる</li>
+                <li>隙間に緩衝材（新聞紙・プチプチ）を詰めてガムテープで封をする</li>
+                <li>最寄りの<strong>郵便局 / コンビニ（ローソン・ミニストップ）</strong>から<br>
+                    <strong>「ゆうパック 着払い」</strong>で発送</li>
+                <li>発送後、マイページで追跡番号を登録（予約番号：<strong>{$reservation}</strong>）</li>
+              </ol>
+              {$addr_html}
+              <p style='margin:10px 0 0;font-size:11px;color:#888;'>
+                ※ 返却期限日までに「発送」していれば問題ありません（到着日ではありません）。<br>
+                ※ 返送料はお客様ご負担（着払い）となります。
+              </p>
+            </div>";
+    }
+
     // ── 共通送信処理（wp_mail 経由 / WP Mail SMTP + Resend）────────────────────
     private static function send( $to_email, $to_name, $subject, $html_body ) {
         $from_email = get_option( 'kogu_from_email', 'info@weekend-diy.com' );
@@ -126,6 +155,7 @@ class Kogu_Email_Handler {
             </table>
             <p style='font-size:12px;color:#888;'>※ 延滞・損傷がなければ追加費用は一切かかりません。</p>
             <p>商品は準備が整い次第、ゆうパックにてお届けします。追跡番号が確定しましたら別途ご連絡いたします。</p>
+            " . self::return_instructions_block( $rental ) . "
             <p>ご不明な点はお問い合わせください。</p>
             <p style='margin-top:20px;'>
               <a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで予約を確認する</a>
@@ -155,12 +185,7 @@ class Kogu_Email_Handler {
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>返却期限日</td><td style='padding:8px 12px;'><strong style='color:#e85a2b;'>{$rental->rental_end_date}</strong></td></tr>
             </table>
             <p><a href='https://www.post.japanpost.jp/cgi-yubin/navi/DispList.do?number={$tracking_number}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>ゆうパック追跡を確認する</a></p>
-            <h3 style='margin-top:24px;'>返却方法</h3>
-            <ol>
-              <li><strong>{$rental->rental_end_date}まで</strong>に最寄りの郵便局またはコンビニから着払いで発送してください。</li>
-              <li>発送後、マイページから予約番号 <strong>{$reservation_number}</strong> を入力して返却証跡を提出してください。</li>
-              <li>返却期限を過ぎた場合、1日あたり¥500の延滞料金が登録カードに請求されます。</li>
-            </ol>
+            " . self::return_instructions_block( $rental ) . "
             <p><a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで返却手続きをする</a></p>";
         self::send( $email, $name, '【工具レンタル】商品発送のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
@@ -183,12 +208,7 @@ class Kogu_Email_Handler {
             <p>レンタル中の{$product_name}の返却期限が<strong>明日（{$rental->rental_end_date}）</strong>に迫っています。</p>
             <p><strong>返却期限日までに発送</strong>してください。<br>
             期限を過ぎると1日あたり¥500の延滞料金が登録カードに請求されます。</p>
-            <h3>返却手順</h3>
-            <ol>
-              <li>商品を梱包してください（付属品を必ず同梱）。</li>
-              <li>最寄りの郵便局またはコンビニから<strong>着払い</strong>で発送してください。</li>
-              <li>マイページで予約番号 <strong>{$reservation_number}</strong> を入力して返却証跡を提出してください。</li>
-            </ol>
+            " . self::return_instructions_block( $rental ) . "
             <p><a href='{$mypage_url}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>マイページで返却手続きをする</a></p>";
         self::send( $email, $name, '【工具レンタル】⚠️ 返却期限前日のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
