@@ -87,7 +87,16 @@
       $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
         if (res.success) {
           state.availability = res.data[pid] || {};
+          var map = state.availability;
+          var hasStock = Object.keys(map).some(function (d) { return map[d] > 0; });
+          if (hasStock) {
+            $('#kogu-stock-badge').text('在庫あり').attr('class', 'kogu-badge kogu-badge-ok');
+          } else {
+            $('#kogu-stock-badge').text('在庫なし').attr('class', 'kogu-badge kogu-badge-empty');
+          }
           updateSummary();
+        } else {
+          $('#kogu-stock-badge').text('取得失敗').attr('class', 'kogu-badge kogu-badge-empty');
         }
       });
     });
