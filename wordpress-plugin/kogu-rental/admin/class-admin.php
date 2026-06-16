@@ -1160,7 +1160,7 @@ class Kogu_Admin {
     <span class="label">返却のしおり</span>
   </div>
   <div class="thank-you">
-    <?php echo $name; ?> 様、ご利用ありがとうございます！返却期限日までにご返送をお願いいたします。
+    <?php echo $name; ?> 様、ご利用ありがとうございます。返却期限日までにご返送をお願いいたします。
   </div>
 
   <div class="reservation-box">
@@ -1179,15 +1179,14 @@ class Kogu_Admin {
 
   <div class="section-title">返却手順</div>
   <ol class="steps">
-    <li>工具と付属品を<strong>付属のプチプチで包む</strong>（刃先・先端は厚めに）</li>
+    <li>工具と付属品を<strong>同梱の緩衝材で包む</strong></li>
     <li>ダンボール箱に入れ、隙間に緩衝材を詰めてガムテープで封をする</li>
     <li>最寄りの<strong>郵便局・コンビニ（ローソン / ミニストップ）</strong>で<br>
-        <strong>「ゆうパック 着払い」</strong>で発送（伝票は窓口に置いてあります）</li>
-    <li>発送後、マイページ（weekend-diy.com/my-page/）で追跡番号を登録</li>
+        <strong>「ゆうパック 着払い」</strong>で発送（同梱の伝票をご利用ください）</li>
   </ol>
   <p class="note">
     ※ 期限日までに「発送」していれば到着が翌日以降でも問題ありません。<br>
-    ※ 返送料はお客様ご負担（着払い）となります。<br>
+    ※ 他の手段で返送する際は、記載の返送先にご送付ください。<br>
     ※ 期限超過は1日 ¥500 の延滞料金が登録カードに発生します。
   </p>
 

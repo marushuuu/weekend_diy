@@ -46,16 +46,15 @@ class Kogu_Email_Handler {
               <h3 style='margin:0 0 12px;font-size:15px;color:#1f1d1a;border-bottom:1px solid #e0d8c8;padding-bottom:8px;'>返却方法</h3>
               <p style='margin:0 0 10px;font-size:13px;'>返却期限日（<strong style='color:#e85a2b;font-size:15px;'>{$end_date}</strong>）までに発送してください。</p>
               <ol style='margin:8px 0 12px;padding-left:20px;font-size:13px;line-height:2.4;'>
-                <li>工具と付属品を<strong>付属のプチプチで包み</strong>、ダンボール箱に入れる</li>
-                <li>隙間に緩衝材（新聞紙・プチプチ）を詰めてガムテープで封をする</li>
+                <li>工具と付属品を<strong>同梱の緩衝材で包み</strong>、ダンボール箱に入れる</li>
+                <li>隙間に緩衝材を詰めてガムテープで封をする</li>
                 <li>最寄りの<strong>郵便局 / コンビニ（ローソン・ミニストップ）</strong>から<br>
-                    <strong>「ゆうパック 着払い」</strong>で発送</li>
-                <li>発送後、マイページで追跡番号を登録（予約番号：<strong>{$reservation}</strong>）</li>
+                    <strong>「ゆうパック 着払い」</strong>で発送（同梱の伝票をご利用ください）</li>
               </ol>
               {$addr_html}
               <p style='margin:10px 0 0;font-size:11px;color:#888;'>
                 ※ 返却期限日までに「発送」していれば問題ありません（到着日ではありません）。<br>
-                ※ 返送料はお客様ご負担（着払い）となります。
+                ※ 他の手段で返送する際は、記載の返送先にご送付ください。
               </p>
             </div>";
     }
