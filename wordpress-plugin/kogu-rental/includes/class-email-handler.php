@@ -150,7 +150,7 @@ class Kogu_Email_Handler {
             <h3 style='margin-top:24px;font-size:15px;'>追加費用について</h3>
             <p>以下に該当する場合のみ、ご登録のカードに別途請求いたします。</p>
             <table style='width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:13px;'>
-              <tr style='background:#f6f1e6;'><td style='padding:6px 12px;font-weight:bold;width:40%;'>延滞料金</td><td style='padding:6px 12px;'>返却期限日を過ぎた場合、1日あたり <strong>¥500</strong></td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:6px 12px;font-weight:bold;width:40%;'>延滞料金</td><td style='padding:6px 12px;'>返却期限日を過ぎた場合、<strong>レンタル料金を日割りした金額</strong>（1日あたり）</td></tr>
               <tr><td style='padding:6px 12px;font-weight:bold;'>損害費用</td><td style='padding:6px 12px;'>商品の破損・紛失・著しい汚損があった場合、損害の程度に応じた実費</td></tr>
             </table>
             <p style='font-size:12px;color:#888;'>※ 延滞・損傷がなければ追加費用は一切かかりません。</p>
@@ -207,7 +207,7 @@ class Kogu_Email_Handler {
             <p>{$name} 様</p>
             <p>レンタル中の{$product_name}の返却期限が<strong>明日（{$rental->rental_end_date}）</strong>に迫っています。</p>
             <p><strong>返却期限日までに発送</strong>してください。<br>
-            期限を過ぎると1日あたり¥500の延滞料金が登録カードに請求されます。</p>
+            期限を過ぎるとレンタル料金の日割り額が延滞料金として登録カードに請求されます。</p>
             " . self::return_instructions_block( $rental ) . "
             <p><a href='{$mypage_url}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>マイページで返却手続きをする</a></p>";
         self::send( $email, $name, '【工具レンタル】⚠️ 返却期限前日のお知らせ #' . $rental_id, self::wrap( $content ) );

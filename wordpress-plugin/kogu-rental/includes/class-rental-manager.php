@@ -3,7 +3,6 @@ defined( 'ABSPATH' ) || exit;
 
 class Kogu_Rental_Manager {
 
-    const LATE_FEE_PER_DAY   = 500;  // 円/日
     const WEEK_DISCOUNT_RATE = 0.70; // 2週目以降 30%OFF
 
     // ── 新規レンタル作成 ─────────────────────────────────────────────────────
@@ -159,6 +158,11 @@ class Kogu_Rental_Manager {
         $end_date = new DateTime( $rental->rental_end_date );
         $today    = new DateTime( 'today' );
 
+        // 割引前の週単価を取得して1日あたりの延滞料金を算出（小数点以下切り捨て）
+        $product        = Kogu_Database::get_product( (int) $rental->product_id );
+        $price_per_week = $product ? (int) $product->price_per_week : 0;
+        $daily_rate     = (int) floor( $price_per_week / 7 );
+
         $cursor = clone $end_date;
         $cursor->modify( '+1 day' );
 
@@ -173,7 +177,7 @@ class Kogu_Rental_Manager {
                 $wpdb->insert( Kogu_Database::late_fees_table(), [
                     'rental_id' => $rental_id,
                     'fee_date'  => $date,
-                    'amount'    => self::LATE_FEE_PER_DAY,
+                    'amount'    => $daily_rate,
                     'status'    => 'pending',
                 ] );
             }
@@ -184,9 +188,13 @@ class Kogu_Rental_Manager {
             'SELECT COUNT(*) FROM ' . Kogu_Database::late_fees_table() . ' WHERE rental_id=%d',
             $rental_id
         ) );
+        $total_late_fee = (int) $wpdb->get_var( $wpdb->prepare(
+            'SELECT COALESCE(SUM(amount),0) FROM ' . Kogu_Database::late_fees_table() . ' WHERE rental_id=%d',
+            $rental_id
+        ) );
         $wpdb->update( Kogu_Database::rentals_table(), [
             'late_fee_days'  => $total_late_days,
-            'late_fee_total' => $total_late_days * self::LATE_FEE_PER_DAY,
+            'late_fee_total' => $total_late_fee,
             'status'         => 'overdue',
         ], [ 'id' => $rental_id ] );
     }
