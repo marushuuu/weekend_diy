@@ -65,14 +65,14 @@ $product_jsonld = [
         ],
         'availability'    => 'https://schema.org/InStock',
         'url'             => $rental_url,
-        'description'     => '2週目以降30%OFF。3,000円以上のご注文で送料無料（北海道・沖縄・離島除く）。',
+        'description'     => '2週目以降30%OFF。3,500円以上のご注文で送料無料（北海道・沖縄・離島除く）。',
     ],
 ];
 
 add_action( 'wp_head', function() use ( $breadcrumb_jsonld, $product_jsonld, $product, $product_url ) {
     $site_name = 'みんなの工具レンタル';
     $title     = esc_attr( $product->name . 'レンタル｜' . $site_name );
-    echo '<meta name="description" content="' . esc_attr( $product->name . 'をレンタル。1週間¥' . number_format( (int)$product->price_per_week ) . 'から。2週目以降30%OFF。3,000円以上送料無料（北海道・沖縄・離島除く）。' ) . '">' . "\n";
+    echo '<meta name="description" content="' . esc_attr( $product->name . 'をレンタル。1週間¥' . number_format( (int)$product->price_per_week ) . 'から。2週目以降30%OFF。3,500円以上送料無料（北海道・沖縄・離島除く）。' ) . '">' . "\n";
     echo '<link rel="canonical" href="' . esc_url( $product_url ) . '">' . "\n";
     echo '<meta property="og:title" content="' . $title . '">' . "\n";
     echo '<meta property="og:type" content="product">' . "\n";
@@ -144,7 +144,7 @@ get_header();
             2週目以降 ¥<?php echo number_format( $discount_price ); ?>/週
             <span class="kogu-badge-discount">30%OFF</span>
           </div>
-          <p class="kogu-sp-shipping">3,000円以上のご注文で送料無料（北海道・沖縄・離島除く）</p>
+          <p class="kogu-sp-shipping">3,500円以上のご注文で送料無料（北海道・沖縄・離島除く）</p>
         </div>
 
         <?php if ( ! empty( $contents_list ) ) : ?>
@@ -219,14 +219,14 @@ get_header();
         </div>
         <div class="kogu-sp-faq-item">
           <p class="kogu-sp-faq-q">返却方法を教えてください。</p>
-          <p class="kogu-sp-faq-a">同梱の返却用伝票を使い、ゆうパックで着払い発送してください。返却期限日の消印が有効です。マイページで追跡番号を提出すると手続き完了となります。</p>
+          <p class="kogu-sp-faq-a">同梱の返却用伝票を使い、最寄りの郵便局またはコンビニ（ローソン・ミニストップ）からゆうパック着払いで発送してください。返却期限日までの発送で返却完了となります。</p>
         </div>
       </div>
     </div>
 
     <!-- 下部CTA -->
     <div class="kogu-sp-bottom-cta">
-      <p class="kogu-sp-bottom-cta-text">1週間¥<?php echo number_format( $week_price ); ?>〜。送料無料・最短翌日お届け。</p>
+      <p class="kogu-sp-bottom-cta-text">1週間¥<?php echo number_format( $week_price ); ?>〜。3,500円以上のご注文で送料無料。</p>
       <a href="<?php echo esc_url( $rental_url ); ?>" class="kogu-btn kogu-btn-primary kogu-sp-cta">
         このアイテムをレンタルする →
       </a>

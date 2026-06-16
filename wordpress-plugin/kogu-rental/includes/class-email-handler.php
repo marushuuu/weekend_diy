@@ -134,7 +134,7 @@ class Kogu_Email_Handler {
             <div style='background:#fff9f6;border:2px solid #e85a2b;border-radius:8px;padding:20px 24px;margin:20px 0;text-align:center;'>
               <p style='margin:0 0 6px;font-size:13px;color:#888;'>あなたの予約番号</p>
               <p style='margin:0;font-size:32px;font-weight:900;letter-spacing:3px;color:#e85a2b;'>{$reservation_number}</p>
-              <p style='margin:8px 0 0;font-size:12px;color:#888;'>マイページでこの番号を入力すると予約状況の確認・返却手続きができます</p>
+              <p style='margin:8px 0 0;font-size:12px;color:#888;'>ご不明な点はメールにてお問い合わせください</p>
             </div>
 
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
@@ -186,7 +186,7 @@ class Kogu_Email_Handler {
             </table>
             <p><a href='https://www.post.japanpost.jp/cgi-yubin/navi/DispList.do?number={$tracking_number}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>ゆうパック追跡を確認する</a></p>
             " . self::return_instructions_block( $rental ) . "
-            <p><a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで返却手続きをする</a></p>";
+            <p>ご不明な点はお問い合わせください。</p>";
         self::send( $email, $name, '【工具レンタル】商品発送のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
@@ -209,7 +209,7 @@ class Kogu_Email_Handler {
             <p><strong>返却期限日までに発送</strong>してください。<br>
             期限を過ぎるとレンタル料金の日割り額が延滞料金として登録カードに請求されます。</p>
             " . self::return_instructions_block( $rental ) . "
-            <p><a href='{$mypage_url}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>マイページで返却手続きをする</a></p>";
+            <p>ご不明な点はお問い合わせください。</p>";
         self::send( $email, $name, '【工具レンタル】⚠️ 返却期限前日のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
@@ -236,9 +236,8 @@ class Kogu_Email_Handler {
               <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>延滞日数</td><td style='padding:8px 12px;color:#c0392b;font-weight:bold;'>{$late_days}日</td></tr>
               <tr><td style='padding:8px 12px;font-weight:bold;'>延滞料金（累計）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$late_total}</td></tr>
             </table>
-            <p>延滞料金は登録カードに直接請求いたします。至急ご返送ください。</p>
-            <p><strong>至急、返送手続きをお願いいたします。</strong></p>
-            <p><a href='{$mypage_url}' style='background:#c0392b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>今すぐ返却手続きをする（予約番号: {$reservation_number}）</a></p>";
+            <p>延滞料金は登録カードに直接請求いたします。<strong>至急ご返送ください。</strong></p>
+            <p>返却方法：同梱の返送伝票を使い、郵便局またはコンビニからゆうパック着払いで発送してください。</p>";
         self::send( $email, $name, '【工具レンタル】⛔ 返却期限超過のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
@@ -249,11 +248,11 @@ class Kogu_Email_Handler {
         $email = self::get_rental_email( $rental );
         $name  = self::get_rental_name( $rental );
         $content = "
-            <h2 style='color:#27ae60;'>返却証跡を受け付けました</h2>
+            <h2 style='color:#27ae60;'>ご返送を確認しました</h2>
             <p>{$name} 様</p>
-            <p>返却のお手続きありがとうございます。追跡番号を確認しました。</p>
+            <p>商品のご返送ありがとうございます。返送を確認いたしました。</p>
             <p>商品到着後に状態を確認します。延滞・損傷があった場合のみ、登録カードへの請求をご連絡いたします。</p>
-            <p>追跡番号: <strong>{$rental->tracking_return}</strong></p>";
+            <p>延滞・損傷がなければ追加費用は一切かかりません。ご利用ありがとうございました。</p>";
         self::send( $email, $name, '【工具レンタル】返却受付完了 #' . $rental_id, self::wrap( $content ) );
     }
 

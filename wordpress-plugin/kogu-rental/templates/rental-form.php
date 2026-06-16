@@ -356,11 +356,11 @@ function kogu_product_img( $name, $base ) {
       <strong class="kogu-reservation-number" id="disp-reservation-number">—</strong>
       <p class="kogu-reservation-note">
         この番号はメールにも記載されています。<br>
-        <a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>">マイページ</a>で予約番号を入力すると返却手続きができます。
+        返却方法はメールをご確認ください。
       </p>
     </div>
 
-    <a href="<?php echo esc_url( home_url( '/my-page' ) ); ?>" class="kogu-btn kogu-btn-primary" style="margin-top:20px;">マイページで予約を確認する</a>
+    <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="kogu-btn kogu-btn-primary" style="margin-top:20px;">トップページへ戻る</a>
     <p style="font-size:12px;color:var(--kogu-muted);margin-top:12px;">レンタル番号: <span id="disp-rental-id">—</span></p>
   </div>
 
