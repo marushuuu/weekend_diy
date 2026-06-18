@@ -153,7 +153,7 @@ class Kogu_Admin {
         ?>
         <div style="margin-top:32px;background:#fff;border:1px solid #ddd;padding:24px;border-radius:8px;max-width:700px;">
           <h2>レンタル #<?php echo (int) $rental->id; ?> 詳細
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=kogu-packing-slip&rental_id=' . $rental_id ) ); ?>"
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=kogu-packing-slip&reservation_number=' . urlencode( $rental->reservation_number ) ) ); ?>"
                target="_blank" class="button button-secondary" style="float:right;font-size:13px;">🖨 同梱紙を印刷</a>
           </h2>
 
@@ -1089,38 +1089,59 @@ class Kogu_Admin {
     // ── 設定画面 ──────────────────────────────────────────────────────────────
     // ── 同梱紙（印刷専用ページ）────────────────────────────────────────────────
     public static function page_packing_slip() {
-        $rental_id = isset( $_GET['rental_id'] ) ? (int) $_GET['rental_id'] : 0;
-        if ( ! $rental_id || ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( '不正なアクセスです。' );
         }
+
+        // reservation_number ベースで取得（rental_id は後方互換のためフォールバック）
+        $reservation_number = isset( $_GET['reservation_number'] )
+            ? sanitize_text_field( strtoupper( $_GET['reservation_number'] ) )
+            : '';
+
+        if ( ! $reservation_number && isset( $_GET['rental_id'] ) ) {
+            $r = Kogu_Rental_Manager::get( (int) $_GET['rental_id'] );
+            if ( $r ) $reservation_number = $r->reservation_number;
+        }
+
+        if ( ! $reservation_number ) {
+            wp_die( '不正なアクセスです。' );
+        }
+
         global $wpdb;
-        $table  = Kogu_Database::rentals_table();
-        $ptbl   = Kogu_Database::products_table();
-        $rental = $wpdb->get_row( $wpdb->prepare(
-            "SELECT r.*, p.name AS product_name FROM $table r
+        $rtbl = Kogu_Database::rentals_table();
+        $ptbl = Kogu_Database::products_table();
+
+        $rentals = $wpdb->get_results( $wpdb->prepare(
+            "SELECT r.*, p.name AS product_name
+             FROM $rtbl r
              LEFT JOIN $ptbl p ON p.id = r.product_id
-             WHERE r.id = %d",
-            $rental_id
+             WHERE r.reservation_number = %s
+             ORDER BY r.id ASC",
+            $reservation_number
         ) );
-        if ( ! $rental ) {
+
+        if ( empty( $rentals ) ) {
             wp_die( '予約が見つかりません。' );
         }
 
-        $name           = esc_html( $rental->guest_name ?: ( $rental->user_id ? get_userdata( $rental->user_id )->display_name : '' ) );
-        $product_name   = esc_html( $rental->product_name ?? '工具' );
-        $end_date       = esc_html( $rental->rental_end_date );
-        $reservation    = esc_html( $rental->reservation_number ?? '' );
+        $first          = $rentals[0];
+        $name           = esc_html( $first->guest_name ?: ( $first->user_id ? get_userdata( $first->user_id )->display_name : '' ) );
+        $reservation    = esc_html( $reservation_number );
         $from_email     = esc_html( get_option( 'kogu_from_email', 'support@weekend-diy.com' ) );
         $return_address = get_option( 'kogu_return_address', '' );
         $addr_lines     = $return_address
             ? nl2br( esc_html( $return_address ) ) . '<br><strong>みんなのレンタル工具 行</strong>'
             : '<span style="color:#c0392b;">（管理画面 → 設定 → 返送先住所を設定してください）</span>';
+
+        // 複数商品で最も遅い返却期限を代表値として使用
+        $latest_end_date = max( array_map( fn( $r ) => $r->rental_end_date, $rentals ) );
+        $multi           = count( $rentals ) > 1;
         ?>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>同梱紙 #<?php echo $rental_id; ?></title>
+<title>同梱紙 <?php echo $reservation; ?></title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; font-size: 13px; color: #1f1d1a; background: #f5f5f5; }
@@ -1135,6 +1156,8 @@ class Kogu_Admin {
   table.info { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
   table.info th { width: 30%; padding: 5px 8px; background: #f6f1e6; font-weight: bold; vertical-align: top; border: 1px solid #ddd; }
   table.info td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; }
+  .item-row td { background: #fff; }
+  .item-row:nth-child(even) td { background: #fafafa; }
   .deadline-badge { display: inline-block; background: #e85a2b; color: #fff; font-size: 14px; font-weight: bold; padding: 2px 10px; border-radius: 4px; }
   .section-title { font-size: 13px; font-weight: bold; border-left: 3px solid #e85a2b; padding-left: 8px; margin: 14px 0 6px; }
   ol.steps { padding-left: 20px; font-size: 12px; line-height: 2.3; }
@@ -1170,11 +1193,41 @@ class Kogu_Admin {
 
   <table class="info">
     <tr><th>お名前</th><td><?php echo $name; ?> 様</td></tr>
-    <tr><th>商品</th><td><?php echo $product_name; ?></td></tr>
-    <tr>
-      <th>返却期限</th>
-      <td><span class="deadline-badge"><?php echo $end_date; ?></span> までに発送</td>
-    </tr>
+    <?php if ( $multi ) : ?>
+      <tr>
+        <th>ご注文内容</th>
+        <td>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead>
+              <tr style="background:#f6f1e6;">
+                <th style="padding:3px 6px;text-align:left;border-bottom:1px solid #ddd;">商品</th>
+                <th style="padding:3px 6px;text-align:left;border-bottom:1px solid #ddd;">返却期限</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ( $rentals as $r ) : ?>
+              <tr class="item-row">
+                <td style="padding:3px 6px;"><?php echo esc_html( $r->product_name ?? '工具' ); ?></td>
+                <td style="padding:3px 6px;"><span class="deadline-badge" style="font-size:11px;"><?php echo esc_html( $r->rental_end_date ); ?></span></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    <?php else : ?>
+      <tr><th>商品</th><td><?php echo esc_html( $rentals[0]->product_name ?? '工具' ); ?></td></tr>
+      <tr>
+        <th>返却期限</th>
+        <td><span class="deadline-badge"><?php echo esc_html( $latest_end_date ); ?></span> までに発送</td>
+      </tr>
+    <?php endif; ?>
+    <?php if ( $multi ) : ?>
+      <tr>
+        <th>返却期限（最終）</th>
+        <td><span class="deadline-badge"><?php echo esc_html( $latest_end_date ); ?></span> までに全て発送</td>
+      </tr>
+    <?php endif; ?>
   </table>
 
   <div class="section-title">返却手順</div>
