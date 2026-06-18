@@ -7,7 +7,6 @@ class Kogu_Cron {
         add_action( 'kogu_daily_tasks', [ __CLASS__, 'run_daily_tasks' ] );
 
         if ( ! wp_next_scheduled( 'kogu_daily_tasks' ) ) {
-            // 毎朝9:00（サーバー時刻）に実行
             wp_schedule_event( strtotime( 'today 09:00' ), 'daily', 'kogu_daily_tasks' );
         }
     }
@@ -52,7 +51,6 @@ class Kogu_Cron {
 
         $today = date( 'Y-m-d' );
 
-        // 期限を過ぎているのに返却証跡が出ていない注文
         $rentals = $wpdb->get_results( $wpdb->prepare(
             'SELECT * FROM ' . Kogu_Database::rentals_table() .
             " WHERE rental_end_date < %s
@@ -61,17 +59,14 @@ class Kogu_Cron {
         ) );
 
         foreach ( $rentals as $rental ) {
-            // 延滞ステータスに変更
             $wpdb->update(
                 Kogu_Database::rentals_table(),
                 [ 'status' => 'overdue' ],
                 [ 'id' => $rental->id ]
             );
 
-            // 延滞料金レコードを生成
             Kogu_Rental_Manager::generate_late_fees( $rental->id );
 
-            // 初回のみ通知
             if ( ! $rental->overdue_notified ) {
                 Kogu_Email_Handler::send_overdue_notification( $rental->id );
                 $wpdb->update(

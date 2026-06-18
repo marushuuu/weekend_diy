@@ -12,49 +12,95 @@
 
 .kogu-wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; font-family: inherit; }
 
-/* ── Steps ──────────────────────────────────────────────────────────────── */
-.kogu-step-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: var(--kogu-ink); border-left: 4px solid var(--kogu-accent); padding-left: 12px; }
-
-/* ── Availability banner ─────────────────────────────────────────────────── */
-.kogu-availability-banner { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.kogu-badge { display: inline-block; padding: 5px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; }
-.kogu-badge.in-stock   { background: #d4f4e2; color: var(--kogu-ok); }
-.kogu-badge.soldout-bg { background: #fde8e8; color: var(--kogu-warn); }
-.kogu-badge.checking   { background: var(--kogu-paper2); color: var(--kogu-muted); }
-.kogu-stock-label { font-size: 14px; color: var(--kogu-muted); }
-
-/* ── Calendar ────────────────────────────────────────────────────────────── */
-.kogu-calendar { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 20px; }
-.kogu-cal-month { flex: 1; min-width: 280px; }
-.kogu-cal-month-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; color: var(--kogu-ink); }
-.kogu-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-.kogu-cal-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--kogu-muted); padding: 4px 0; }
-.kogu-cal-day {
-  position: relative; text-align: center; padding: 6px 2px;
-  border-radius: 6px; font-size: 13px; cursor: default; user-select: none;
-  line-height: 1.2;
+/* ── Step titles ─────────────────────────────────────────────────────────── */
+.kogu-step-title {
+  font-size: 20px; font-weight: 700; margin-bottom: 20px;
+  color: var(--kogu-ink); border-left: 4px solid var(--kogu-accent); padding-left: 12px;
 }
-.kogu-cal-day.past        { color: var(--kogu-paper2); }
-.kogu-cal-day.available   { cursor: pointer; background: var(--kogu-paper); color: var(--kogu-ink); }
-.kogu-cal-day.available:hover { background: var(--kogu-paper2); }
-.kogu-cal-day.soldout     { background: #fde8e8; color: #c0a0a0; font-size: 10px; }
-.kogu-cal-day.in-range    { background: #fde8d8; }
-.kogu-cal-day.selected    { background: var(--kogu-accent) !important; color: #fff !important; font-weight: 700; }
-.kogu-avail-count { display: block; font-size: 9px; color: var(--kogu-ok); font-weight: 700; }
-.kogu-cal-day.selected .kogu-avail-count { color: #ffd; }
 
-/* ── Date summary ────────────────────────────────────────────────────────── */
-.kogu-date-summary { background: var(--kogu-paper); border: 1px solid var(--kogu-paper2); border-radius: var(--kogu-radius); padding: 16px 20px; margin-bottom: 16px; }
+/* ── Product cards ───────────────────────────────────────────────────────── */
+.kogu-products {
+  display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;
+}
+.kogu-product-card {
+  flex: 1; min-width: 200px; max-width: 320px;
+  border: 2px solid var(--kogu-paper2); border-radius: var(--kogu-radius);
+  overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+  background: #fff;
+}
+.kogu-product-img {
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: var(--kogu-paper2);
+}
+.kogu-product-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .3s;
+}
+.kogu-product-card:hover .kogu-product-img img { transform: scale(1.04); }
+.kogu-product-card .kogu-product-name,
+.kogu-product-card .kogu-product-desc,
+.kogu-product-card .kogu-product-price,
+.kogu-product-card .kogu-product-price-discount {
+  padding-inline: 14px;
+}
+.kogu-product-card .kogu-product-name { margin-top: 14px; }
+.kogu-product-card .kogu-product-price-discount { padding-bottom: 14px; }
+.kogu-product-card:hover { border-color: var(--kogu-accent); box-shadow: 0 2px 8px rgba(232,90,43,.15); }
+.kogu-product-card.selected {
+  border-color: var(--kogu-accent); background: #fff9f6;
+  box-shadow: 0 2px 12px rgba(232,90,43,.2);
+}
+.kogu-product-name { font-size: 16px; font-weight: 700; color: var(--kogu-ink); margin-bottom: 6px; }
+.kogu-product-desc { font-size: 12px; color: var(--kogu-muted); margin-bottom: 10px; line-height: 1.5; }
+.kogu-product-price { display: flex; align-items: baseline; gap: 6px; }
+.kogu-price-label  { font-size: 12px; color: var(--kogu-muted); }
+.kogu-price-amount { font-size: 22px; font-weight: 700; color: var(--kogu-accent); }
+.kogu-product-price-discount {
+  font-size: 12px; color: var(--kogu-muted); margin-top: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.kogu-badge-discount {
+  display: inline-block; padding: 1px 7px; border-radius: 999px;
+  background: #fde8d8; color: var(--kogu-accent); font-size: 11px; font-weight: 700;
+}
+
+/* ── Period wrap ─────────────────────────────────────────────────────────── */
+.kogu-period-wrap { margin-top: 8px; }
+.kogu-in-stock-banner { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.kogu-badge { display: inline-block; padding: 5px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+.kogu-badge-ok       { background: #d4f4e2; color: var(--kogu-ok); }
+.kogu-badge-empty    { background: #fde8e8; color: var(--kogu-warn); }
+.kogu-badge-checking { background: var(--kogu-paper2); color: var(--kogu-muted); }
+.kogu-stock-label    { font-size: 14px; color: var(--kogu-muted); }
+
+/* ── Date/period summary ─────────────────────────────────────────────────── */
+.kogu-date-summary {
+  background: var(--kogu-paper); border: 1px solid var(--kogu-paper2);
+  border-radius: var(--kogu-radius); padding: 16px 20px; margin: 16px 0;
+}
 .kogu-date-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 14px; }
 .kogu-date-row.kogu-total { font-size: 18px; font-weight: 700; color: var(--kogu-accent); padding-top: 12px; }
 .kogu-divider { border: none; border-top: 1px dashed var(--kogu-paper2); margin: 8px 0; }
+.kogu-price-breakdown {
+  font-size: 12px; color: var(--kogu-muted); padding: 6px 0;
+  border-top: 1px dashed var(--kogu-paper2); margin-top: 4px;
+}
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
-.kogu-btn { display: inline-block; padding: 12px 24px; border-radius: var(--kogu-radius); font-size: 15px; font-weight: 700; border: none; cursor: pointer; transition: opacity .15s; text-decoration: none; }
+.kogu-btn {
+  display: inline-block; padding: 12px 24px; border-radius: var(--kogu-radius);
+  font-size: 15px; font-weight: 700; border: none; cursor: pointer;
+  transition: opacity .15s; text-decoration: none;
+}
 .kogu-btn:disabled { opacity: .5; cursor: not-allowed; }
-.kogu-btn-primary   { background: var(--kogu-accent); color: #fff; }
-.kogu-btn-primary:hover:not(:disabled) { opacity: .85; }
-.kogu-btn-secondary { background: var(--kogu-paper2); color: var(--kogu-ink); margin-right: 10px; }
+.kogu-btn-primary,
+a.kogu-btn-primary   { background: var(--kogu-accent); color: #fff !important; text-decoration: none !important; }
+.kogu-btn-primary:hover:not(:disabled),
+a.kogu-btn-primary:hover { opacity: .85; }
+.kogu-btn-secondary { background: var(--kogu-paper2); color: var(--kogu-ink); }
 .kogu-btn-secondary:hover { background: #ddd; }
 
 /* ── Form ────────────────────────────────────────────────────────────────── */
@@ -62,19 +108,34 @@
 .kogu-form-row { display: flex; flex-direction: column; gap: 5px; }
 .kogu-form-row label { font-size: 13px; font-weight: 600; color: var(--kogu-ink); }
 .kogu-form-row em { color: var(--kogu-accent); font-style: normal; }
-.kogu-form-row input, .kogu-form-row textarea, .kogu-form-row select {
-  padding: 10px 12px; border: 1.5px solid var(--kogu-paper2); border-radius: 6px;
-  font-size: 15px; font-family: inherit; outline: none;
+.kogu-form-row input,
+.kogu-form-row textarea,
+.kogu-form-row select,
+#start-date,
+#rental-weeks {
+  padding: 10px 12px; border: 1.5px solid var(--kogu-paper2);
+  border-radius: 6px; font-size: 15px; font-family: inherit; outline: none;
   transition: border-color .15s;
 }
-.kogu-form-row input:focus, .kogu-form-row textarea:focus { border-color: var(--kogu-accent); }
+.kogu-form-row input:focus,
+.kogu-form-row textarea:focus,
+#start-date:focus,
+#rental-weeks:focus { border-color: var(--kogu-accent); }
 
-/* ── Auth links ──────────────────────────────────────────────────────────── */
+/* period inputs */
+#start-date, #rental-weeks { display: block; width: 100%; box-sizing: border-box; }
+label[for="start-date"], label[for="rental-weeks"] {
+  display: block; font-size: 13px; font-weight: 600; color: var(--kogu-ink);
+  margin-bottom: 5px;
+}
+label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-accent); font-style: normal; }
+
+/* ── Auth / notice ───────────────────────────────────────────────────────── */
 .kogu-auth-links { background: var(--kogu-paper); border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
 .kogu-auth-links a { color: var(--kogu-accent); text-decoration: underline; }
 .kogu-notice { background: #d4f4e2; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--kogu-ok); margin-bottom: 14px; }
 
-/* ── Stripe element ──────────────────────────────────────────────────────── */
+/* ── Stripe / error / payment ────────────────────────────────────────────── */
 .kogu-stripe-element { border: 1.5px solid var(--kogu-paper2); border-radius: var(--kogu-radius); padding: 16px; margin: 16px 0; background: #fff; }
 .kogu-error { background: #fde8e8; color: var(--kogu-warn); border-radius: 6px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
 .kogu-payment-summary { background: var(--kogu-paper); border-radius: var(--kogu-radius); padding: 14px 16px; margin-bottom: 16px; font-size: 14px; }
@@ -97,23 +158,24 @@
 .kogu-rental-card-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--kogu-paper); border-bottom: 1px solid var(--kogu-paper2); }
 .kogu-rental-id { font-weight: 700; font-size: 14px; }
 .kogu-status-badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--kogu-paper2); color: var(--kogu-ink); }
-.kogu-status-overdue { background: #fde8e8; color: var(--kogu-warn); }
+.kogu-status-overdue  { background: #fde8e8; color: var(--kogu-warn); }
 .kogu-status-returned { background: #d4f4e2; color: var(--kogu-ok); }
 .kogu-rental-card-body { padding: 14px 16px; }
 .kogu-info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; border-bottom: 1px solid var(--kogu-paper); }
 .kogu-info-row.kogu-warn strong { color: var(--kogu-warn); }
 .kogu-return-section { padding: 14px 16px; border-top: 1px solid var(--kogu-paper2); background: var(--kogu-paper); }
 .kogu-return-section h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
-.kogu-return-section p { font-size: 13px; color: var(--kogu-muted); margin-bottom: 10px; }
+.kogu-return-section p  { font-size: 13px; color: var(--kogu-muted); margin-bottom: 10px; }
 .kogu-tracking-row { display: flex; gap: 8px; }
 .kogu-tracking-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--kogu-paper2); border-radius: 6px; font-size: 14px; }
 .kogu-return-msg { margin-top: 8px; font-size: 13px; }
 .kogu-return-complete { padding: 12px 16px; background: #d4f4e2; font-size: 14px; }
 .kogu-empty { color: var(--kogu-muted); font-size: 14px; padding: 24px 0; }
 
+/* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .kogu-calendar { flex-direction: column; }
+  .kogu-products { flex-direction: column; }
+  .kogu-product-card { max-width: 100%; }
   .kogu-tracking-row { flex-direction: column; }
-  .kogu-btn { width: 100%; text-align: center; margin-bottom: 8px; }
-  .kogu-btn-secondary { margin-right: 0; }
+  .kogu-btn { width: 100%; text-align: center; }
 }
