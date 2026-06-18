@@ -144,16 +144,6 @@ $status_labels = [
           </div>
           <?php endif; ?>
 
-          <?php if ( $r->tracking_return ) : ?>
-          <div class="kogu-return-complete">
-            <p>📦 返送追跡番号: <strong><?php echo esc_html( $r->tracking_return ); ?></strong></p>
-            <p>
-              <a href="https://www.post.japanpost.jp/cgi-yubin/navi/DispList.do?number=<?php echo esc_attr( $r->tracking_return ); ?>" target="_blank" rel="noopener">
-                ゆうパックで追跡する →
-              </a>
-            </p>
-          </div>
-          <?php endif; ?>
 
           <?php if ( $r->status === 'returned' ) : ?>
           <div class="kogu-return-complete">
