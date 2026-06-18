@@ -23,7 +23,7 @@ $status_labels = [
     'confirmed'                  => '予約確定',
     'shipped_to_customer'        => '発送済み',
     'active'                     => 'レンタル中',
-    'return_evidence_submitted'  => '返却手続き済み',
+    'return_evidence_submitted'  => '返却確認中',
     'returned'                   => '返却完了',
     'overdue'                    => '⚠️ 延滞中',
     'cancelled'                  => 'キャンセル',
@@ -32,7 +32,7 @@ $status_labels = [
 
 <div class="kogu-wrap kogu-mypage">
   <h2>マイページ</h2>
-  <p class="kogu-mypage-intro">予約確認メールに記載の<strong>予約番号</strong>を入力すると、予約状況の確認や返却手続きができます。</p>
+  <p class="kogu-mypage-intro">予約確認メールに記載の<strong>予約番号</strong>を入力すると、予約状況の確認ができます。</p>
 
   <!-- 予約番号入力フォーム -->
   <div class="kogu-rn-lookup">
@@ -144,22 +144,7 @@ $status_labels = [
           </div>
           <?php endif; ?>
 
-          <?php if ( $is_active && ! $r->tracking_return ) : ?>
-          <div class="kogu-return-section">
-            <h4>返却手続き</h4>
-            <p>ゆうパック（着払い）で発送後、追跡番号を入力してください。</p>
-            <form class="kogu-return-form"
-                  data-rental-id="<?php echo (int) $r->id; ?>"
-                  data-reservation-number="<?php echo esc_attr( $r->reservation_number ); ?>">
-              <div class="kogu-tracking-row">
-                <input type="text" name="tracking" required
-                       placeholder="ゆうパック追跡番号（例: 1234567890123）" maxlength="30" />
-                <button type="submit" class="kogu-btn kogu-btn-primary">提出する</button>
-              </div>
-              <div class="kogu-return-msg" style="display:none;"></div>
-            </form>
-          </div>
-          <?php elseif ( $r->tracking_return ) : ?>
+          <?php if ( $r->tracking_return ) : ?>
           <div class="kogu-return-complete">
             <p>📦 返送追跡番号: <strong><?php echo esc_html( $r->tracking_return ); ?></strong></p>
             <p>
