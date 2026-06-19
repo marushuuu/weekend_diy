@@ -153,7 +153,7 @@ class Kogu_Admin {
         ?>
         <div style="margin-top:32px;background:#fff;border:1px solid #ddd;padding:24px;border-radius:8px;max-width:700px;">
           <h2>レンタル #<?php echo (int) $rental->id; ?> 詳細
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=kogu-packing-slip&reservation_number=' . urlencode( $rental->reservation_number ) ) ); ?>"
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=kogu-packing-slip&reservation_number=' . urlencode( $rental->reservation_number ) . '&rental_id=' . $rental_id ) ); ?>"
                target="_blank" class="button button-secondary" style="float:right;font-size:13px;">🖨 同梱紙を印刷</a>
           </h2>
 
@@ -1093,32 +1093,50 @@ class Kogu_Admin {
             wp_die( '不正なアクセスです。' );
         }
 
-        // reservation_number ベースで取得（rental_id は後方互換のためフォールバック）
-        $reservation_number = isset( $_GET['reservation_number'] )
-            ? sanitize_text_field( strtoupper( $_GET['reservation_number'] ) )
-            : '';
-
-        if ( ! $reservation_number && isset( $_GET['rental_id'] ) ) {
-            $r = Kogu_Rental_Manager::get( (int) $_GET['rental_id'] );
-            if ( $r ) $reservation_number = $r->reservation_number;
-        }
-
-        if ( ! $reservation_number ) {
-            wp_die( '不正なアクセスです。' );
-        }
-
         global $wpdb;
         $rtbl = Kogu_Database::rentals_table();
         $ptbl = Kogu_Database::products_table();
 
-        $rentals = $wpdb->get_results( $wpdb->prepare(
-            "SELECT r.*, p.name AS product_name
-             FROM $rtbl r
-             LEFT JOIN $ptbl p ON p.id = r.product_id
-             WHERE r.reservation_number = %s
-             ORDER BY r.id ASC",
-            $reservation_number
-        ) );
+        $reservation_number = isset( $_GET['reservation_number'] )
+            ? sanitize_text_field( strtoupper( $_GET['reservation_number'] ) )
+            : '';
+        $rental_id_param = isset( $_GET['rental_id'] ) ? (int) $_GET['rental_id'] : 0;
+
+        $rentals = [];
+
+        if ( $reservation_number ) {
+            $rentals = $wpdb->get_results( $wpdb->prepare(
+                "SELECT r.*, p.name AS product_name
+                 FROM $rtbl r LEFT JOIN $ptbl p ON p.id = r.product_id
+                 WHERE r.reservation_number = %s
+                 ORDER BY r.id ASC",
+                $reservation_number
+            ) );
+        }
+
+        // reservation_number で見つからない場合は rental_id にフォールバック
+        if ( empty( $rentals ) && $rental_id_param ) {
+            $single = $wpdb->get_row( $wpdb->prepare(
+                "SELECT r.*, p.name AS product_name
+                 FROM $rtbl r LEFT JOIN $ptbl p ON p.id = r.product_id
+                 WHERE r.id = %d",
+                $rental_id_param
+            ) );
+            if ( $single ) {
+                // 同じ reservation_number の全レンタルを取得
+                if ( $single->reservation_number ) {
+                    $rentals = $wpdb->get_results( $wpdb->prepare(
+                        "SELECT r.*, p.name AS product_name
+                         FROM $rtbl r LEFT JOIN $ptbl p ON p.id = r.product_id
+                         WHERE r.reservation_number = %s
+                         ORDER BY r.id ASC",
+                        $single->reservation_number
+                    ) );
+                } else {
+                    $rentals = [ $single ];
+                }
+            }
+        }
 
         if ( empty( $rentals ) ) {
             wp_die( '予約が見つかりません。' );
