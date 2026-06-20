@@ -1123,14 +1123,23 @@ class Kogu_Admin {
                 $rental_id_param
             ) );
             if ( $single ) {
-                // 同じ reservation_number の全レンタルを取得
                 if ( $single->reservation_number ) {
+                    // reservation_number が振られていればそれで全件取得
                     $rentals = $wpdb->get_results( $wpdb->prepare(
                         "SELECT r.*, p.name AS product_name
                          FROM $rtbl r LEFT JOIN $ptbl p ON p.id = r.product_id
                          WHERE r.reservation_number = %s
                          ORDER BY r.id ASC",
                         $single->reservation_number
+                    ) );
+                } elseif ( $single->stripe_payment_intent_id ) {
+                    // reservation_number が空の旧データ → 同一 PaymentIntent で同一注文を特定
+                    $rentals = $wpdb->get_results( $wpdb->prepare(
+                        "SELECT r.*, p.name AS product_name
+                         FROM $rtbl r LEFT JOIN $ptbl p ON p.id = r.product_id
+                         WHERE r.stripe_payment_intent_id = %s
+                         ORDER BY r.id ASC",
+                        $single->stripe_payment_intent_id
                     ) );
                 } else {
                     $rentals = [ $single ];
