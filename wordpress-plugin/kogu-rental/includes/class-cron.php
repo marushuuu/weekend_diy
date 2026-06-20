@@ -89,6 +89,7 @@ class Kogu_Cron {
 
         foreach ( $overdue_rentals as $rental ) {
             Kogu_Rental_Manager::generate_late_fees( $rental->id );
+            Kogu_Email_Handler::send_overdue_daily_update( $rental->id );
         }
     }
 }

@@ -241,6 +241,32 @@ class Kogu_Email_Handler {
         self::send( $email, $name, '【工具レンタル】⛔ 返却期限超過のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
+    // ── 延滞料金日次更新通知 ──────────────────────────────────────────────────
+    public static function send_overdue_daily_update( $rental_id ) {
+        $rental = Kogu_Rental_Manager::get( $rental_id );
+        if ( ! $rental ) return;
+
+        $email        = self::get_rental_email( $rental );
+        $name         = self::get_rental_name( $rental );
+        $late_days    = (int) $rental->late_fee_days;
+        $late_total   = number_format( $rental->late_fee_total );
+        $product_name = self::get_product_name( $rental );
+        $reservation_number = $rental->reservation_number ?? '';
+
+        $content = "
+            <h2 style='color:#c0392b;'>⚠️ 延滞料金のお知らせ（{$late_days}日目）</h2>
+            <p>{$name} 様</p>
+            <p>レンタル中の{$product_name}が返却期限（{$rental->rental_end_date}）を{$late_days}日超過しています。</p>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-weight:bold;'>{$reservation_number}</td></tr>
+              <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>延滞日数</td><td style='padding:8px 12px;color:#c0392b;font-weight:bold;'>{$late_days}日</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>延滞料金（累計）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$late_total}</td></tr>
+            </table>
+            <p>延滞料金は返却確認後、登録カードに請求いたします。<strong>至急ご返送ください。</strong></p>
+            <p>返却方法：同梱の返送伝票を使い、郵便局またはコンビニからゆうパック着払いで発送してください。</p>";
+        self::send( $email, $name, '【工具レンタル】延滞料金のご連絡（' . $late_days . '日目）#' . $rental_id, self::wrap( $content ) );
+    }
+
     // ── 返却受領通知 ──────────────────────────────────────────────────────────
     public static function send_return_received_notification( $rental_id ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );
