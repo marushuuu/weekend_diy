@@ -1153,6 +1153,11 @@ class Kogu_Admin {
 
         $first          = $rentals[0];
         $name           = esc_html( $first->guest_name ?: ( $first->user_id ? get_userdata( $first->user_id )->display_name : '' ) );
+
+        // GETパラメータにない場合はDBから補完。旧データは rental_id で代替表示
+        if ( ! $reservation_number ) {
+            $reservation_number = $first->reservation_number ?: ( 'レンタル #' . implode( ', #', array_map( fn( $r ) => (int) $r->id, $rentals ) ) );
+        }
         $reservation    = esc_html( $reservation_number );
         $from_email     = esc_html( get_option( 'kogu_from_email', 'support@weekend-diy.com' ) );
         $return_address = get_option( 'kogu_return_address', '' );
