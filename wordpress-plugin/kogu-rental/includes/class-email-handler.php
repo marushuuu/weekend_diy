@@ -213,7 +213,7 @@ class Kogu_Email_Handler {
         self::send( $email, $name, '【工具レンタル】⚠️ 返却期限前日のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
-    // ── 延滞3日目警告（翌日から料金発生） ────────────────────────────────────
+    // ── 延滞料金発生通知（期限超過4日目に1回） ────────────────────────────
     public static function send_overdue_warning( $rental_id ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );
         if ( ! $rental ) return;
@@ -222,23 +222,21 @@ class Kogu_Email_Handler {
         $name         = self::get_rental_name( $rental );
         $product_name = self::get_product_name( $rental );
         $reservation_number = $rental->reservation_number ?? '';
-
-        // 商品の週単価から1日あたりの延滞料金を計算して案内
-        $product    = Kogu_Database::get_product( (int) $rental->product_id );
-        $daily_rate = $product ? number_format( (int) floor( (int) $product->price_per_week / 7 ) ) : '—';
+        $late_total   = number_format( (int) $rental->late_fee_total );
+        $late_days    = (int) $rental->late_fee_days;
 
         $content = "
-            <h2 style='color:#c0392b;'>⚠️ 返却期限を過ぎています</h2>
+            <h2 style='color:#c0392b;'>⛔ 延滞料金が発生しています</h2>
             <p>{$name} 様</p>
-            <p>レンタル中の{$product_name}の返却期限（{$rental->rental_end_date}）を過ぎております。</p>
-            <p>本日中にご返送いただければ追加費用はかかりません。</p>
+            <p>レンタル中の{$product_name}の返却期限（{$rental->rental_end_date}）を過ぎており、延滞料金が発生しています。</p>
             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
               <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-weight:bold;'>{$reservation_number}</td></tr>
-              <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>⚠️ 明日以降</td><td style='padding:8px 12px;color:#c0392b;font-weight:bold;'>延滞料金 ¥{$daily_rate}/日 が発生します</td></tr>
+              <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>延滞日数</td><td style='padding:8px 12px;color:#c0392b;font-weight:bold;'>{$late_days}日</td></tr>
+              <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>延滞料金（現在）</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$late_total}</td></tr>
             </table>
-            <p>延滞料金は返却確認後に登録カードへ請求いたします。</p>
-            <p><strong>至急ご返送ください。</strong><br>返却方法：同梱の返送伝票を使い、郵便局またはコンビニからゆうパック着払いで発送してください。</p>";
-        self::send( $email, $name, '【工具レンタル】⚠️ 返却期限超過のお知らせ #' . $rental_id, self::wrap( $content ) );
+            <p>延滞料金は返却確認後に登録カードへ請求いたします。返却が遅れるほど金額が増加します。<strong>至急ご返送ください。</strong></p>
+            <p>返却方法：同梱の返送伝票を使い、郵便局またはコンビニからゆうパック着払いで発送してください。</p>";
+        self::send( $email, $name, '【工具レンタル】⛔ 延滞料金発生のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
     // ── 返却受領通知 ──────────────────────────────────────────────────────────

@@ -61,19 +61,19 @@ class Kogu_Cron {
         ) );
     }
 
-    // ── 期限超過3日目：翌日から延滞料金が発生する旨を通知 ───────────────────
+    // ── 期限超過4日目：延滞料金が発生した旨を通知（1回のみ）────────────────
     private static function send_overdue_warnings() {
         global $wpdb;
 
-        // 期限から3日後（猶予最終日）に1回だけ送信
-        $three_days_ago = date( 'Y-m-d', strtotime( '-3 days' ) );
+        // 期限から4日後（料金発生初日）に1回だけ送信
+        $four_days_ago = date( 'Y-m-d', strtotime( '-4 days' ) );
 
         $rentals = $wpdb->get_results( $wpdb->prepare(
             'SELECT * FROM ' . Kogu_Database::rentals_table() .
             " WHERE rental_end_date = %s
                AND status = 'overdue'
                AND overdue_notified = 0",
-            $three_days_ago
+            $four_days_ago
         ) );
 
         foreach ( $rentals as $rental ) {
