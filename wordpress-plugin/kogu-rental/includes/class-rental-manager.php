@@ -163,8 +163,9 @@ class Kogu_Rental_Manager {
         $price_per_week = $product ? (int) $product->price_per_week : 0;
         $daily_rate     = (int) floor( $price_per_week / 7 );
 
+        // 返却期限日から3日間は猶予期間のため料金不発生、4日目から算出
         $cursor = clone $end_date;
-        $cursor->modify( '+1 day' );
+        $cursor->modify( '+4 days' );
 
         while ( $cursor <= $today ) {
             $date   = $cursor->format( 'Y-m-d' );

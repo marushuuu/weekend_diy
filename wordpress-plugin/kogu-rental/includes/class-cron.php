@@ -18,6 +18,7 @@ class Kogu_Cron {
     public static function run_daily_tasks() {
         self::send_return_reminders();
         self::detect_overdue();
+        self::send_overdue_warnings();
         self::accrue_late_fees();
     }
 
@@ -45,40 +46,47 @@ class Kogu_Cron {
         }
     }
 
-    // ── 延滞検出・ステータス更新・初回通知 ────────────────────────────────────
+    // ── 延滞検出・ステータス更新のみ（通知・料金計算はしない）────────────────
     private static function detect_overdue() {
         global $wpdb;
 
         $today = date( 'Y-m-d' );
 
+        $wpdb->query( $wpdb->prepare(
+            'UPDATE ' . Kogu_Database::rentals_table() .
+            " SET status = 'overdue'
+              WHERE rental_end_date < %s
+                AND status IN ('shipped_to_customer','active','confirmed')",
+            $today
+        ) );
+    }
+
+    // ── 期限超過3日目：翌日から延滞料金が発生する旨を通知 ───────────────────
+    private static function send_overdue_warnings() {
+        global $wpdb;
+
+        // 期限から3日後（猶予最終日）に1回だけ送信
+        $three_days_ago = date( 'Y-m-d', strtotime( '-3 days' ) );
+
         $rentals = $wpdb->get_results( $wpdb->prepare(
             'SELECT * FROM ' . Kogu_Database::rentals_table() .
-            " WHERE rental_end_date < %s
-               AND status IN ('shipped_to_customer','active','confirmed')",
-            $today
+            " WHERE rental_end_date = %s
+               AND status = 'overdue'
+               AND overdue_notified = 0",
+            $three_days_ago
         ) );
 
         foreach ( $rentals as $rental ) {
+            Kogu_Email_Handler::send_overdue_warning( $rental->id );
             $wpdb->update(
                 Kogu_Database::rentals_table(),
-                [ 'status' => 'overdue' ],
+                [ 'overdue_notified' => 1 ],
                 [ 'id' => $rental->id ]
             );
-
-            Kogu_Rental_Manager::generate_late_fees( $rental->id );
-
-            if ( ! $rental->overdue_notified ) {
-                Kogu_Email_Handler::send_overdue_notification( $rental->id );
-                $wpdb->update(
-                    Kogu_Database::rentals_table(),
-                    [ 'overdue_notified' => 1 ],
-                    [ 'id' => $rental->id ]
-                );
-            }
         }
     }
 
-    // ── すでに延滞中の注文：毎日延滞料金を追加 ───────────────────────────────
+    // ── 猶予期間後（4日目以降）の延滞料金を積算 ─────────────────────────────
     private static function accrue_late_fees() {
         global $wpdb;
 
@@ -89,7 +97,6 @@ class Kogu_Cron {
 
         foreach ( $overdue_rentals as $rental ) {
             Kogu_Rental_Manager::generate_late_fees( $rental->id );
-            Kogu_Email_Handler::send_overdue_daily_update( $rental->id );
         }
     }
 }
