@@ -183,7 +183,16 @@ class Kogu_Admin {
             <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
             <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
             <h3>発送処理</h3>
-            <input type="text" name="tracking_outbound" placeholder="ゆうパック追跡番号" required style="width:280px;padding:6px 10px;margin-right:8px;" />
+            <table style="border-collapse:collapse;margin-bottom:10px;">
+              <tr>
+                <td style="padding:4px 10px 4px 0;font-weight:bold;white-space:nowrap;">往路追跡番号（顧客への発送）</td>
+                <td><input type="text" name="tracking_outbound" placeholder="ゆうパック追跡番号" required style="width:280px;padding:6px 10px;" /></td>
+              </tr>
+              <tr>
+                <td style="padding:4px 10px 4px 0;font-weight:bold;white-space:nowrap;">返却用送り状番号 <span style="color:#c0392b;">※必須</span></td>
+                <td><input type="text" name="tracking_return_label" placeholder="同梱する返送伝票の追跡番号" required style="width:280px;padding:6px 10px;" /></td>
+              </tr>
+            </table>
             <button type="submit" class="button button-primary">発送済みにする</button>
           </form>
           <?php endif; ?>
@@ -1424,8 +1433,12 @@ class Kogu_Admin {
         $rental_id = (int) ( $_POST['rental_id'] ?? 0 );
 
         if ( $op === 'ship' ) {
-            $tracking = sanitize_text_field( $_POST['tracking_outbound'] ?? '' );
-            Kogu_Rental_Manager::mark_shipped_to_customer( $rental_id, $tracking );
+            $tracking_out    = sanitize_text_field( $_POST['tracking_outbound'] ?? '' );
+            $tracking_return = sanitize_text_field( $_POST['tracking_return_label'] ?? '' );
+            if ( $tracking_out === '' || $tracking_return === '' ) {
+                wp_die( '往路追跡番号と返却用送り状番号の両方を入力してください。', '入力エラー', [ 'back_link' => true ] );
+            }
+            Kogu_Rental_Manager::mark_shipped_to_customer( $rental_id, $tracking_out, $tracking_return );
         }
 
         if ( $op === 'submit_return' ) {

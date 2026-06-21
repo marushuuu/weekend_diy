@@ -65,9 +65,10 @@ class Kogu_Rental_Manager {
     }
 
     // ── 発送済み（管理者操作） ────────────────────────────────────────────────
-    public static function mark_shipped_to_customer( $rental_id, $tracking_number ) {
+    public static function mark_shipped_to_customer( $rental_id, $tracking_number, $tracking_return = '' ) {
         self::update_status( $rental_id, 'shipped_to_customer', [
             'tracking_outbound' => $tracking_number,
+            'tracking_return'   => $tracking_return,
         ] );
         Kogu_Email_Handler::send_shipped_notification( $rental_id, $tracking_number );
     }
