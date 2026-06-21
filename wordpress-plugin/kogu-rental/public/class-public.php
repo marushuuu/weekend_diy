@@ -167,6 +167,12 @@ class Kogu_Public {
             wp_send_json_error( '必須項目が不足しています。' );
         }
 
+        $buffer_days = max( 1, (int) get_option( 'kogu_return_buffer_days', 4 ) );
+        $min_start   = date( 'Y-m-d', strtotime( "+{$buffer_days} days" ) );
+        if ( $start < $min_start ) {
+            wp_send_json_error( "貸出開始日は本日より{$buffer_days}日後以降の日付を選択してください。" );
+        }
+
         $end        = Kogu_Rental_Manager::calc_end_date( $start, $weeks );
         $rental_fee = 0;
 

@@ -1,6 +1,7 @@
 <?php defined( 'ABSPATH' ) || exit;
 $img_base = KOGU_PLUGIN_URL . 'assets/images/';
-$date_min = date( 'Y-m-d', strtotime( '+2 days' ) );
+$buffer_days = max( 1, (int) get_option( 'kogu_return_buffer_days', 4 ) );
+$date_min = date( 'Y-m-d', strtotime( "+{$buffer_days} days" ) );
 $date_max = date( 'Y-m-d', strtotime( '+88 days' ) );
 function kogu_product_img( $name, $base ) {
     if ( mb_strpos( $name, 'インパクト' ) !== false ) return $base . 'product_impact.jpg';
