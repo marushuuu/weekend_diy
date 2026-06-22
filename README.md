@@ -63,7 +63,7 @@ ssh -i ~/.ssh/xserver_key xs277376@sv17063.xserver.jp -p 10022
 
 ```bash
 cd /home/xs277376/weekend_diy_deploy && \
-git pull origin claude/eager-archimedes-BfZ3e && \
+git pull origin work/task-6fSYE && \
 cp -r wordpress-plugin/kogu-rental/* \
       /home/xs277376/weekend-diy.com/public_html/wp-content/plugins/kogu-rental/
 ```
@@ -82,5 +82,5 @@ grep "KOGU_VERSION" /home/xs277376/weekend-diy.com/public_html/wp-content/plugin
 - プラグイン: 工具レンタル（kogu-rental）
 
 ### 開発ブランチ
-- 作業ブランチ: `claude/eager-archimedes-BfZ3e`
+- 作業ブランチ: `work/task-6fSYE`
 - リモート: `https://github.com/marushuuu/weekend_diy.git`
