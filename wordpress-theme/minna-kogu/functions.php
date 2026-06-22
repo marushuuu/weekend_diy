@@ -73,7 +73,7 @@ add_action( 'wp_enqueue_scripts', 'minna_kogu_assets' );
 add_filter( 'pre_get_document_title', 'minna_kogu_document_title' );
 function minna_kogu_document_title( $title ) {
 	if ( is_front_page() ) {
-		return 'みんなの工具レンタル｜インパクトドライバーを1週間¥4,900から・3,000円以上送料無料';
+		return 'みんなの工具レンタル｜インパクトドライバーを1週間¥4,900から・3,500円以上送料無料';
 	}
 	if ( is_page( 'rental' ) ) {
 		return '工具をレンタルする｜みんなの工具レンタル';
@@ -135,13 +135,13 @@ function minna_kogu_seo_head() {
 	$og_image   = get_template_directory_uri() . '/assets/images/top_banner.jpeg';
 
 	if ( is_front_page() ) {
-		$desc      = 'インパクトドライバーなど電動工具を1週間¥4,900からレンタル。3,000円以上のご注文で送料無料（北海道・沖縄・離島除く）。2週目以降30%OFF。デポジット不要、返却もゆうパックで送り返すだけ。';
+		$desc      = 'インパクトドライバーなど電動工具を1週間¥4,900からレンタル。3,500円以上のご注文で送料無料（北海道・沖縄・離島除く）。2週目以降30%OFF。デポジット不要、返却もゆうパックで送り返すだけ。';
 		$canonical = home_url( '/' );
 		$og_title  = 'みんなの工具レンタル｜インパクトドライバーを1週間¥4,900から';
 		$og_type   = 'website';
 		$output_jsonld = true;
 	} elseif ( is_page( 'rental' ) ) {
-		$desc      = '工具レンタルのお申し込みページ。日程・週数を選んでそのままカード決済。3,000円以上のご注文で送料無料（北海道・沖縄・離島除く）。インパクトドライバーを1週間¥4,900から。';
+		$desc      = '工具レンタルのお申し込みページ。日程・週数を選んでそのままカード決済。3,500円以上のご注文で送料無料（北海道・沖縄・離島除く）。インパクトドライバーを1週間¥4,900から。';
 		$canonical = home_url( '/rental/' );
 		$og_title  = '工具をレンタルする｜みんなの工具レンタル';
 		$og_type   = 'website';
@@ -155,7 +155,7 @@ function minna_kogu_seo_head() {
 		$og_type   = 'article';
 		$output_jsonld = false;
 	} else {
-		$desc      = 'インパクトドライバーなど電動工具を1週間¥4,900からレンタル。3,000円以上で送料無料（北海道・沖縄・離島除く）。';
+		$desc      = 'インパクトドライバーなど電動工具を1週間¥4,900からレンタル。3,500円以上で送料無料（北海道・沖縄・離島除く）。';
 		$canonical = home_url( '/' );
 		$og_title  = $site_name;
 		$og_type   = 'website';
@@ -192,7 +192,7 @@ function minna_kogu_seo_head() {
 				'name'            => $p->name . ' 1週間レンタル',
 				'price'           => (int) $p->price_per_week,
 				'priceCurrency'   => 'JPY',
-				'description'     => '2週目以降30%OFF。3,000円以上のご注文で送料無料（北海道・沖縄・離島除く）。',
+				'description'     => '2週目以降30%OFF。3,500円以上のご注文で送料無料（北海道・沖縄・離島除く）。',
 				'seller'          => [ '@type' => 'Organization', 'name' => $site_name ],
 			];
 		}
@@ -202,14 +202,14 @@ function minna_kogu_seo_head() {
 				'name'          => 'インパクトドライバー 1週間レンタル',
 				'price'         => 4900,
 				'priceCurrency' => 'JPY',
-				'description'   => '2週目以降30%OFF。3,000円以上のご注文で送料無料（北海道・沖縄・離島除く）。',
+				'description'   => '2週目以降30%OFF。3,500円以上のご注文で送料無料（北海道・沖縄・離島除く）。',
 			];
 		}
 		$jsonld = [
 			'@context'    => 'https://schema.org',
 			'@type'       => 'LocalBusiness',
 			'name'        => $site_name,
-			'description' => '電動工具のレンタルサービス。インパクトドライバーなどを1週間単位でお届け（北海道・沖縄・離島除く）。3,000円以上のご注文で送料無料。',
+			'description' => '電動工具のレンタルサービス。インパクトドライバーなどを1週間単位でお届け（北海道・沖縄・離島除く）。3,500円以上のご注文で送料無料。',
 			'url'         => home_url( '/' ),
 			'image'       => $og_image,
 			'areaServed'  => [ '@type' => 'Country', 'name' => 'Japan' ],
