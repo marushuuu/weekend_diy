@@ -109,6 +109,7 @@ $articles = [
     [ 'title' => 'コアドリル・コンクリートドリルをレンタルする方法｜エアコンスリーブ・配管穴あけの料金と手順',                              'slug' => 'core-drill-rental',                           'category' => 'レンタル活用術', 'file' => __DIR__ . '/../docs/articles/20_core-drill-rental.md' ],
     [ 'title' => 'アングルインパクト・アングルドライバーとは？使い方・マキタ対応機種・レンタル方法を解説',                                  'slug' => 'angle-impact-driver-how-to',                  'category' => '工具の使い方',   'file' => __DIR__ . '/../docs/articles/21_angle-impact-driver.md' ],
     [ 'title' => 'HiKOKI（ハイコーキ）の電動工具とは？ビス打ち機・釘打ち機・マルチボルトの特徴とレンタル方法を解説',                       'slug' => 'hikoki-tool-rental-guide',                    'category' => '工具の使い方',   'file' => __DIR__ . '/../docs/articles/22_hikoki-tool-rental-guide.md' ],
+    [ 'title' => '工具レンタルの返し方｜梱包・ゆうパック着払いの手順を写真で解説',                                                         'slug' => 'return-method',                               'category' => 'レンタル活用術', 'file' => __DIR__ . '/../wordpress-content/blog/return-method.html' ],
 ];
 
 foreach ( $articles as $article ) {
@@ -117,8 +118,8 @@ foreach ( $articles as $article ) {
         WP_CLI::error( "File not found: {$article['file']}" );
         continue;
     }
-    $md      = file_get_contents( $article['file'] );
-    $content = md2html( $md );
+    $raw     = file_get_contents( $article['file'] );
+    $content = str_ends_with( $article['file'], '.html' ) ? $raw : md2html( $raw );
     $cat_id  = get_or_create_category( $article['category'] );
 
     // 既存チェック（slug重複防止）
