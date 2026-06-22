@@ -15,6 +15,7 @@ if ( ! empty( $product->gallery ) ) {
 if ( empty( $gallery_imgs ) ) {
     if ( mb_strpos( $product->name, 'インパクト' ) !== false ) {
         $gallery_imgs[] = $img_base . 'product_impact.jpg';
+        $gallery_imgs[] = $img_base . 'product_impact_2.jpg';
     } elseif ( mb_strpos( $product->name, 'ビット' ) !== false ) {
         $gallery_imgs[] = $img_base . 'product_bitset.jpg';
     }

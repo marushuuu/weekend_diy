@@ -119,7 +119,12 @@ foreach ( $articles as $article ) {
         continue;
     }
     $raw     = file_get_contents( $article['file'] );
-    $content = str_ends_with( $article['file'], '.html' ) ? $raw : md2html( $raw );
+    if ( str_ends_with( $article['file'], '.html' ) ) {
+        $plugin_url = plugins_url( 'kogu-rental/' );
+        $content    = str_replace( '##PLUGIN_URL##', $plugin_url, $raw );
+    } else {
+        $content = md2html( $raw );
+    }
     $cat_id  = get_or_create_category( $article['category'] );
 
     // 既存チェック（slug重複防止）
