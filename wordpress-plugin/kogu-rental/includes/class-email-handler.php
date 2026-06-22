@@ -118,7 +118,7 @@ class Kogu_Email_Handler {
         $weeks        = (int) $rental->rental_weeks;
         // total_charged = rental_fee + addon_total + shipping_fee なので差分で送料を逆算
         $shipping_fee = max( 0, (int) $rental->total_charged - (int) $rental->rental_fee ) >= 2500
-                        ? 2500 : ( (int) $rental->rental_fee < 3500 ? 2500 : 0 );
+                        ? 2500 : ( (int) $rental->rental_fee < 3000 ? 2500 : 0 );
         $shipping_row = $shipping_fee > 0
             ? "<tr><td style='padding:8px 12px;font-weight:bold;'>送料</td><td style='padding:8px 12px;color:#c0392b;'>¥" . number_format( $shipping_fee ) . "</td></tr>"
             : "<tr><td style='padding:8px 12px;font-weight:bold;'>送料</td><td style='padding:8px 12px;color:#27ae60;'>無料</td></tr>";
