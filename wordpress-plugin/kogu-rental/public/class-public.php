@@ -202,14 +202,25 @@ class Kogu_Public {
         $shipping_fee = $subtotal < 3000 ? 2500 : 0;
         $total        = $subtotal + $shipping_fee;
 
-        $customer_id = Kogu_Stripe_Handler::get_or_create_customer( $email, $name );
-        $result      = Kogu_Stripe_Handler::create_payment_intent( $total, $customer_id, [
-            'product_ids'  => implode( ',', $product_ids ),
-            'rental_start' => $start,
-            'rental_end'   => $end,
-            'rental_weeks' => (string) $weeks,
-            'email'        => $email,
-        ] );
+        try {
+            $customer_id = Kogu_Stripe_Handler::get_or_create_customer( $email, $name );
+            $result      = Kogu_Stripe_Handler::create_payment_intent( $total, $customer_id, [
+                'product_ids'  => implode( ',', $product_ids ),
+                'rental_start' => $start,
+                'rental_end'   => $end,
+                'rental_weeks' => (string) $weeks,
+                'email'        => $email,
+            ] );
+        } catch ( \Stripe\Exception\AuthenticationException $e ) {
+            error_log( 'Kogu Stripe auth error: ' . $e->getMessage() );
+            wp_send_json_error( '決済の初期化に失敗しました。管理者にお問い合わせください。（Stripe認証エラー）' );
+        } catch ( \Stripe\Exception\ApiErrorException $e ) {
+            error_log( 'Kogu Stripe API error: ' . $e->getMessage() );
+            wp_send_json_error( '決済処理でエラーが発生しました。しばらく経ってから再度お試しください。' );
+        } catch ( \Exception $e ) {
+            error_log( 'Kogu create_intent error: ' . $e->getMessage() );
+            wp_send_json_error( '決済の準備に失敗しました。お手数ですがお問い合わせください。' );
+        }
 
         wp_send_json_success( array_merge( $result, [
             'rental_fee'   => $rental_fee,

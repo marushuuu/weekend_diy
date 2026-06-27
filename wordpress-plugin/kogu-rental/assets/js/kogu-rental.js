@@ -356,6 +356,10 @@
       var elements = stripe.elements({ clientSecret: res.data.client_secret, locale: 'ja' });
       state.stripe_elements = elements;
       elements.create('payment').mount('#stripe-payment-element');
+      $('#agree-terms').trigger('change');
+    }).fail(function () {
+      showError('決済の準備に失敗しました。通信エラーが発生しています。しばらく経ってから再度お試しください。');
+      showStep('step-info');
     });
   }
 
