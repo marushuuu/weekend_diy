@@ -11,7 +11,36 @@ class Kogu_Admin {
         add_action( 'admin_post_kogu_return_addon',      [ __CLASS__, 'handle_return_addon' ] );
         add_action( 'admin_post_kogu_run_install',          [ __CLASS__, 'handle_run_install' ] );
         add_action( 'admin_post_kogu_notify_tool_request', [ __CLASS__, 'handle_notify_tool_request' ] );
+        add_action( 'admin_post_kogu_toggle_product',    [ __CLASS__, 'handle_toggle_product' ] );
+        add_action( 'admin_post_kogu_toggle_addon',      [ __CLASS__, 'handle_toggle_addon' ] );
         add_action( 'admin_init',                          [ __CLASS__, 'register_settings' ] );
+    }
+
+    // ── 商品・購入商品のステータス即時切り替え ─────────────────────────────────
+    public static function handle_toggle_product() {
+        $id = isset( $_POST['product_id'] ) ? (int) $_POST['product_id'] : 0;
+        check_admin_referer( 'kogu_toggle_product_' . $id );
+        if ( ! current_user_can( 'manage_options' ) || ! $id ) wp_die( '権限がありません。' );
+        global $wpdb;
+        $table  = Kogu_Database::products_table();
+        $cur    = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM $table WHERE id = %d", $id ) );
+        $new    = $cur === 'active' ? 'inactive' : 'active';
+        $wpdb->update( $table, [ 'status' => $new ], [ 'id' => $id ] );
+        wp_redirect( admin_url( 'admin.php?page=kogu-products&toggled=1' ) );
+        exit;
+    }
+
+    public static function handle_toggle_addon() {
+        $id = isset( $_POST['addon_id'] ) ? (int) $_POST['addon_id'] : 0;
+        check_admin_referer( 'kogu_toggle_addon_' . $id );
+        if ( ! current_user_can( 'manage_options' ) || ! $id ) wp_die( '権限がありません。' );
+        global $wpdb;
+        $table  = Kogu_Database::addon_products_table();
+        $cur    = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM $table WHERE id = %d", $id ) );
+        $new    = $cur === 'active' ? 'inactive' : 'active';
+        $wpdb->update( $table, [ 'status' => $new ], [ 'id' => $id ] );
+        wp_redirect( admin_url( 'admin.php?page=kogu-addons&toggled=1' ) );
+        exit;
     }
 
     // ── DB初期化（テーブル作成） ──────────────────────────────────────────────
@@ -540,12 +569,14 @@ class Kogu_Admin {
         if ( isset( $_GET['updated'] ) ) {
             echo '<div class="notice notice-success"><p>保存しました。</p></div>';
         }
+        if ( isset( $_GET['toggled'] ) ) {
+            echo '<div class="notice notice-success"><p>ステータスを切り替えました。</p></div>';
+        }
 
         $edit_id = isset( $_GET['edit'] ) ? (int) $_GET['edit'] : 0;
         $edit    = $edit_id ? Kogu_Database::get_product( $edit_id ) : null;
 
         $nonce   = wp_create_nonce( 'kogu_product_action' );
-        $products = Kogu_Database::get_active_products();
         ?>
         <div class="wrap">
           <h1>商品管理
@@ -672,19 +703,36 @@ class Kogu_Admin {
                     " WHERE product_id = %d AND status != 'retired'",
                     $p->id
                 ) );
-                $discounted = (int) round( $p->price_per_week * 0.7 );
+                $discounted    = (int) round( $p->price_per_week * 0.7 );
+                $toggle_nonce  = wp_create_nonce( 'kogu_toggle_product_' . (int) $p->id );
+                $is_active     = $p->status === 'active';
               ?>
-                <tr>
+                <tr style="<?php echo $is_active ? '' : 'opacity:.55;'; ?>">
                   <td><?php echo (int) $p->id; ?></td>
                   <td><strong><?php echo esc_html( $p->name ); ?></strong><br><small><?php echo esc_html( mb_strimwidth( $p->description, 0, 50, '…' ) ); ?></small></td>
                   <td>¥<?php echo number_format( $p->price_per_week ); ?></td>
                   <td>¥<?php echo number_format( $discounted ); ?>/週 <small style="color:#888;">(30%OFF)</small></td>
                   <td>¥<?php echo number_format( $p->deposit_amount ); ?></td>
-                  <td><?php echo $p->status === 'active' ? '<span style="color:#27ae60;">公開中</span>' : '<span style="color:#999;">非公開</span>'; ?></td>
-                  <td><?php echo $inv_count; ?>台</td>
                   <td>
+                    <?php if ( $is_active ) : ?>
+                      <span style="color:#27ae60;font-weight:600;">● 公開中</span>
+                    <?php else : ?>
+                      <span style="color:#aaa;font-weight:600;">○ 非公開</span>
+                    <?php endif; ?>
+                  </td>
+                  <td><?php echo $inv_count; ?>台</td>
+                  <td style="white-space:nowrap;">
                     <a href="?page=kogu-products&edit=<?php echo (int) $p->id; ?>" class="button button-small">編集</a>
-                    <a href="?page=kogu-inventory&product_id=<?php echo (int) $p->id; ?>" class="button button-small">在庫管理</a>
+                    <a href="?page=kogu-inventory&product_id=<?php echo (int) $p->id; ?>" class="button button-small">在庫</a>
+                    <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="display:inline;">
+                      <input type="hidden" name="action"     value="kogu_toggle_product">
+                      <input type="hidden" name="product_id" value="<?php echo (int) $p->id; ?>">
+                      <input type="hidden" name="_wpnonce"   value="<?php echo esc_attr( $toggle_nonce ); ?>">
+                      <button type="submit" class="button button-small"
+                              style="<?php echo $is_active ? 'color:#c0392b;' : 'color:#27ae60;'; ?>">
+                        <?php echo $is_active ? '非公開にする' : '公開する'; ?>
+                      </button>
+                    </form>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -718,6 +766,9 @@ class Kogu_Admin {
 
         if ( isset( $_GET['updated'] ) ) {
             echo '<div class="notice notice-success"><p>保存しました。</p></div>';
+        }
+        if ( isset( $_GET['toggled'] ) ) {
+            echo '<div class="notice notice-success"><p>ステータスを切り替えました。</p></div>';
         }
 
         $edit_id = isset( $_GET['edit'] ) ? (int) $_GET['edit'] : -1;
@@ -823,21 +874,40 @@ class Kogu_Admin {
             </thead>
             <tbody>
               <?php foreach ( $all as $a ) :
-                $stock_disp = $a->stock_quantity === null
+                $stock_disp   = $a->stock_quantity === null
                     ? '<span style="color:#888;">無制限</span>'
                     : ( (int) $a->stock_quantity === 0
                         ? '<span style="color:#c0392b;font-weight:700;">品切れ</span>'
                         : '<span style="color:#27ae60;font-weight:700;">' . (int) $a->stock_quantity . '</span>' );
+                $a_is_active  = $a->status === 'active';
+                $a_toggle_nonce = wp_create_nonce( 'kogu_toggle_addon_' . (int) $a->id );
               ?>
-                <tr>
+                <tr style="<?php echo $a_is_active ? '' : 'opacity:.55;'; ?>">
                   <td><?php echo (int) $a->id; ?></td>
                   <td><strong><?php echo esc_html( $a->name ); ?></strong></td>
                   <td><?php echo esc_html( $a->description ); ?></td>
                   <td>¥<?php echo number_format( $a->price ); ?></td>
                   <td><?php echo esc_html( $a->unit ); ?></td>
                   <td><?php echo $stock_disp; ?></td>
-                  <td><?php echo $a->status === 'active' ? '<span style="color:#27ae60;">公開中</span>' : '<span style="color:#999;">非公開</span>'; ?></td>
-                  <td><a href="?page=kogu-addons&edit=<?php echo (int) $a->id; ?>" class="button button-small">編集</a></td>
+                  <td>
+                    <?php if ( $a_is_active ) : ?>
+                      <span style="color:#27ae60;font-weight:600;">● 公開中</span>
+                    <?php else : ?>
+                      <span style="color:#aaa;font-weight:600;">○ 非公開</span>
+                    <?php endif; ?>
+                  </td>
+                  <td style="white-space:nowrap;">
+                    <a href="?page=kogu-addons&edit=<?php echo (int) $a->id; ?>" class="button button-small">編集</a>
+                    <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="display:inline;">
+                      <input type="hidden" name="action"   value="kogu_toggle_addon">
+                      <input type="hidden" name="addon_id" value="<?php echo (int) $a->id; ?>">
+                      <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $a_toggle_nonce ); ?>">
+                      <button type="submit" class="button button-small"
+                              style="<?php echo $a_is_active ? 'color:#c0392b;' : 'color:#27ae60;'; ?>">
+                        <?php echo $a_is_active ? '非公開にする' : '公開する'; ?>
+                      </button>
+                    </form>
+                  </td>
                 </tr>
               <?php endforeach; ?>
               <?php if ( empty( $all ) ) : ?>
