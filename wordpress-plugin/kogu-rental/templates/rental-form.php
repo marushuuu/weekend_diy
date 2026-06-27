@@ -123,11 +123,27 @@ function kogu_product_img( $name, $base ) {
       <div id="kogu-products" class="kogu-products">
       <?php foreach ( Kogu_Database::get_active_products() as $p ) :
         $img = kogu_product_img( (string) $p->name, $img_base );
+        // ギャラリー画像リスト（モーダル用）
+        $fm_gallery = [];
+        if ( ! empty( $p->gallery ) ) {
+            foreach ( array_map( 'trim', explode( ',', $p->gallery ) ) as $f ) {
+                if ( $f ) $fm_gallery[] = KOGU_PLUGIN_URL . 'assets/images/' . $f;
+            }
+        }
+        if ( empty( $fm_gallery ) && $img ) $fm_gallery[] = $img;
+        $fm_gallery_json  = esc_attr( json_encode( $fm_gallery ) );
+        $fm_contents_list = array_filter( array_map( 'trim', explode( "\n", $p->contents ?? '' ) ) );
+        $fm_contents_json = esc_attr( json_encode( array_values( $fm_contents_list ) ) );
       ?>
-        <div class="kogu-product-card" data-product-id="<?php echo (int) $p->id; ?>">
+        <div class="kogu-product-card kogu-product-card-static"
+             data-product-id="<?php echo (int) $p->id; ?>"
+             data-gallery="<?php echo $fm_gallery_json; ?>"
+             data-product-name="<?php echo esc_attr( $p->name ); ?>"
+             data-contents="<?php echo $fm_contents_json; ?>">
           <?php if ( $img ) : ?>
             <div class="kogu-product-img">
               <img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $p->name ); ?>" loading="lazy" />
+              <div class="kogu-card-overlay"><span>画像を見る</span></div>
             </div>
           <?php endif; ?>
           <div class="kogu-product-name"><?php echo esc_html( $p->name ); ?></div>
