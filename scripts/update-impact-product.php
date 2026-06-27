@@ -35,10 +35,22 @@ $new_specs = implode( "\n", [
     '標準付属品|充電器・予備電池・ケース・No.2 プラスビット・電池カバー×2個',
 ] );
 
+$new_contents = implode( "\n", [
+    'インパクトドライバー本体（FWH 18DGL）',
+    '充電器（UC 18YKSL）',
+    'バッテリー×2（BSL 1815 / 18V 1.5Ah）',
+    'ケース',
+    'No.2 プラスビット',
+    '電池カバー×2個',
+] );
+
 $result = $wpdb->update(
     $table,
-    [ 'specs' => $new_specs ],
-    [ 'id'    => $product->id ]
+    [
+        'specs'    => $new_specs,
+        'contents' => $new_contents,
+    ],
+    [ 'id' => $product->id ]
 );
 
 if ( $result === false ) {
