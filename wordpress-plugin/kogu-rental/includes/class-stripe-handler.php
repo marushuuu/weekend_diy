@@ -12,9 +12,16 @@ class Kogu_Stripe_Handler {
     private static function init() {
         if ( ! class_exists( '\Stripe\Stripe' ) ) {
             $autoload = KOGU_PLUGIN_DIR . 'vendor/autoload.php';
-            if ( file_exists( $autoload ) ) require_once $autoload;
+            if ( ! file_exists( $autoload ) ) {
+                throw new \RuntimeException( 'Stripe ライブラリが見つかりません。プラグインディレクトリで composer install を実行してください。' );
+            }
+            require_once $autoload;
         }
-        \Stripe\Stripe::setApiKey( get_option( 'kogu_stripe_secret_key', '' ) );
+        $secret_key = get_option( 'kogu_stripe_secret_key', '' );
+        if ( empty( $secret_key ) ) {
+            throw new \RuntimeException( 'Stripe 秘密鍵が設定されていません。管理画面の「工具レンタル設定」で入力してください。' );
+        }
+        \Stripe\Stripe::setApiKey( $secret_key );
     }
 
     // ── PaymentIntent 作成（レンタル料金 + デポジット） ──────────────────────

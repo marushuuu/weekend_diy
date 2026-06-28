@@ -217,9 +217,9 @@ class Kogu_Public {
         } catch ( \Stripe\Exception\ApiErrorException $e ) {
             error_log( 'Kogu Stripe API error: ' . $e->getMessage() );
             wp_send_json_error( '決済処理でエラーが発生しました。しばらく経ってから再度お試しください。' );
-        } catch ( \Exception $e ) {
+        } catch ( \Throwable $e ) {
             error_log( 'Kogu create_intent error: ' . $e->getMessage() );
-            wp_send_json_error( '決済の準備に失敗しました。お手数ですがお問い合わせください。' );
+            wp_send_json_error( $e->getMessage() );
         }
 
         wp_send_json_success( array_merge( $result, [
