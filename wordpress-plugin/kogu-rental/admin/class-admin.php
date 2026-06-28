@@ -1712,17 +1712,40 @@ class Kogu_Admin {
               ?>
                   <tr>
                     <th><label for="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label></th>
-                    <td>
+                    <td style="display:flex;align-items:center;gap:8px;">
                       <input
                         type="<?php echo $is_secret ? 'password' : 'text'; ?>"
                         id="<?php echo esc_attr( $key ); ?>"
                         name="<?php echo esc_attr( $key ); ?>"
                         value="<?php echo esc_attr( get_option( $key ) ); ?>"
                         class="regular-text"
+                        autocomplete="new-password"
                       />
+                      <?php if ( $is_secret ) : ?>
+                        <button type="button" class="button kogu-peek-btn"
+                                data-target="<?php echo esc_attr( $key ); ?>"
+                                style="user-select:none;-webkit-user-select:none;">
+                          👁 押している間だけ表示
+                        </button>
+                      <?php endif; ?>
                     </td>
                   </tr>
               <?php endforeach; ?>
+              <script>
+              (function(){
+                document.querySelectorAll('.kogu-peek-btn').forEach(function(btn){
+                  var input = document.getElementById(btn.dataset.target);
+                  function show(e){ e.preventDefault(); input.type = 'text'; }
+                  function hide(){ input.type = 'password'; }
+                  btn.addEventListener('mousedown',  show);
+                  btn.addEventListener('touchstart', show, {passive:false});
+                  btn.addEventListener('mouseup',    hide);
+                  btn.addEventListener('mouseleave', hide);
+                  btn.addEventListener('touchend',   hide);
+                  btn.addEventListener('touchcancel',hide);
+                });
+              })();
+              </script>
                   <tr>
                     <th><label for="kogu_gsc_verification">Google Search Console 検証コード</label></th>
                     <td>
