@@ -18,12 +18,7 @@ function kogu_product_img( $name, $base ) {
   <?php foreach ( Kogu_Database::get_active_products() as $p ) :
     $img = kogu_product_img( (string) $p->name, $img_base );
     // ギャラリー画像リスト
-    $gallery_imgs = [];
-    if ( ! empty( $p->gallery ) ) {
-        foreach ( array_map( 'trim', explode( ',', $p->gallery ) ) as $f ) {
-            if ( $f ) $gallery_imgs[] = KOGU_PLUGIN_URL . 'assets/images/' . $f;
-        }
-    }
+    $gallery_imgs = Kogu_Database::resolve_gallery_urls( $p->gallery ?? '' );
     if ( empty( $gallery_imgs ) && $img ) $gallery_imgs[] = $img;
     // 同梱物リスト
     $contents_list = array_filter( array_map( 'trim', explode( "\n", $p->contents ?? '' ) ) );
@@ -124,12 +119,7 @@ function kogu_product_img( $name, $base ) {
       <?php foreach ( Kogu_Database::get_active_products() as $p ) :
         $img = kogu_product_img( (string) $p->name, $img_base );
         // ギャラリー画像リスト（モーダル用）
-        $fm_gallery = [];
-        if ( ! empty( $p->gallery ) ) {
-            foreach ( array_map( 'trim', explode( ',', $p->gallery ) ) as $f ) {
-                if ( $f ) $fm_gallery[] = KOGU_PLUGIN_URL . 'assets/images/' . $f;
-            }
-        }
+        $fm_gallery = Kogu_Database::resolve_gallery_urls( $p->gallery ?? '' );
         if ( empty( $fm_gallery ) && $img ) $fm_gallery[] = $img;
         $fm_gallery_json  = esc_attr( json_encode( $fm_gallery ) );
         $fm_contents_list = array_filter( array_map( 'trim', explode( "\n", $p->contents ?? '' ) ) );
@@ -241,9 +231,11 @@ function kogu_product_img( $name, $base ) {
         <div class="kogu-addon-card<?php echo $soldout ? ' kogu-addon-card-soldout' : ''; ?>"
              data-addon-id="<?php echo (int) $a->id; ?>">
 
-          <?php if ( $a->image ) : ?>
+          <?php if ( $a->image ) :
+            $addon_img_src = ctype_digit( $a->image ) ? wp_get_attachment_url( (int) $a->image ) : $a->image;
+          ?>
           <div class="kogu-addon-card-img">
-            <img src="<?php echo esc_url( $a->image ); ?>" alt="<?php echo esc_attr( $a->name ); ?>" loading="lazy" />
+            <img src="<?php echo esc_url( $addon_img_src ); ?>" alt="<?php echo esc_attr( $a->name ); ?>" loading="lazy" />
           </div>
           <?php else : ?>
           <div class="kogu-addon-card-img kogu-addon-card-img-placeholder">

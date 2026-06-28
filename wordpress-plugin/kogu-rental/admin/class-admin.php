@@ -15,6 +15,14 @@ class Kogu_Admin {
         add_action( 'admin_post_kogu_toggle_addon',      [ __CLASS__, 'handle_toggle_addon' ] );
         add_action( 'admin_post_kogu_delete_unit',       [ __CLASS__, 'handle_delete_unit' ] );
         add_action( 'admin_init',                          [ __CLASS__, 'register_settings' ] );
+        add_action( 'admin_enqueue_scripts',               [ __CLASS__, 'enqueue_media_on_product_pages' ] );
+    }
+
+    public static function enqueue_media_on_product_pages() {
+        $page = $_GET['page'] ?? '';
+        if ( in_array( $page, [ 'kogu-products', 'kogu-addon-products' ], true ) ) {
+            wp_enqueue_media();
+        }
     }
 
     // ── 在庫ユニット削除 ──────────────────────────────────────────────────────
@@ -817,12 +825,63 @@ class Kogu_Admin {
                   </td>
                 </tr>
                 <tr>
-                  <th><label for="pgallery">画像ギャラリー</label></th>
+                  <th>画像ギャラリー</th>
                   <td>
-                    <input type="text" id="pgallery" name="gallery" class="large-text"
-                           value="<?php echo esc_attr( $edit->gallery ?? '' ); ?>"
-                           placeholder="例: product_impact.jpg,product_bitset.jpg" />
-                    <p class="description">プラグインの <code>assets/images/</code> 内のファイル名をカンマ区切りで入力してください。左から順に表示されます。</p>
+                    <input type="hidden" id="pgallery" name="gallery" value="<?php echo esc_attr( $edit->gallery ?? '' ); ?>" />
+                    <div id="pgallery-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                      <?php foreach ( array_filter( array_map( 'trim', explode( ',', $edit->gallery ?? '' ) ) ) as $item ) :
+                        if ( ctype_digit( $item ) ) :
+                          $thumb = wp_get_attachment_image( (int) $item, [ 80, 80 ] );
+                          $thumb_url = wp_get_attachment_url( (int) $item ) ?: '';
+                        else :
+                          $thumb_url = KOGU_PLUGIN_URL . 'assets/images/' . $item;
+                          $thumb = '<img src="' . esc_url( $thumb_url ) . '" width="80" height="80" style="object-fit:cover;">';
+                        endif;
+                        if ( $thumb_url ) : ?>
+                          <span class="kogu-gthumb" data-id="<?php echo esc_attr( $item ); ?>" style="display:inline-block;position:relative;">
+                            <?php echo $thumb; ?>
+                            <button type="button" class="kogu-gremove" data-id="<?php echo esc_attr( $item ); ?>"
+                                    style="position:absolute;top:0;right:0;background:#a00;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;padding:0;">×</button>
+                          </span>
+                      <?php endif; endforeach; ?>
+                    </div>
+                    <button type="button" id="pgallery-btn" class="button">＋ 画像を追加</button>
+                    <p class="description" style="margin-top:6px;">WordPressメディアライブラリから選択します。複数選択可。左から順に表示されます。</p>
+                    <script>
+                    jQuery(function($){
+                      var frame;
+                      $('#pgallery-btn').on('click', function(e){
+                        e.preventDefault();
+                        if(frame){ frame.open(); return; }
+                        frame = wp.media({ title:'商品画像を選択', button:{text:'追加する'}, multiple:true });
+                        frame.on('select', function(){
+                          var sel = frame.state().get('selection');
+                          var existing = $('#pgallery').val().split(',').filter(Boolean);
+                          sel.each(function(att){
+                            var id = String(att.id);
+                            if(existing.indexOf(id)!==-1) return;
+                            existing.push(id);
+                            var sizes = att.get('sizes');
+                            var thumb = (sizes&&sizes.thumbnail) ? sizes.thumbnail.url : att.get('url');
+                            $('#pgallery-preview').append(
+                              '<span class="kogu-gthumb" data-id="'+id+'" style="display:inline-block;position:relative;">'
+                              +'<img src="'+thumb+'" width="80" height="80" style="object-fit:cover;border-radius:4px;">'
+                              +'<button type="button" class="kogu-gremove" data-id="'+id+'" style="position:absolute;top:0;right:0;background:#a00;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;padding:0;">×</button>'
+                              +'</span>'
+                            );
+                          });
+                          $('#pgallery').val(existing.join(','));
+                        });
+                        frame.open();
+                      });
+                      $(document).on('click','.kogu-gremove',function(){
+                        var id = String($(this).data('id'));
+                        $(this).closest('.kogu-gthumb').remove();
+                        var ids = $('#pgallery').val().split(',').filter(function(i){ return i && i!==id; });
+                        $('#pgallery').val(ids.join(','));
+                      });
+                    });
+                    </script>
                   </td>
                 </tr>
                 <tr>
@@ -1028,19 +1087,47 @@ class Kogu_Admin {
                              placeholder="個・袋・箱" /></td>
                 </tr>
                 <tr>
-                  <th><label for="aimage">商品画像URL</label></th>
+                  <th>商品画像</th>
                   <td>
-                    <input type="text" id="aimage" name="image" class="large-text"
-                           value="<?php echo esc_attr( $edit->image ?? '' ); ?>"
-                           placeholder="例: /wp-content/plugins/kogu-rental/assets/images/addon_screw.jpg" />
-                    <p class="description">
-                      画像ファイルをサーバーの <code>wp-content/plugins/kogu-rental/assets/images/</code> に置いてパスを入力してください。<br>
-                      またはWordPressメディアライブラリのURLをそのまま貼り付けてもOKです。
-                    </p>
+                    <input type="hidden" id="aimage" name="image" value="<?php echo esc_attr( $edit->image ?? '' ); ?>" />
+                    <div id="aimage-preview" style="margin-bottom:8px;">
+                      <?php if ( ! empty( $edit->image ) ) :
+                        $ai_src = ctype_digit( $edit->image ?? '' ) ? wp_get_attachment_url( (int) $edit->image ) : ( $edit->image ?? '' );
+                      ?>
+                        <img src="<?php echo esc_url( $ai_src ); ?>"
+                             style="max-width:120px;border-radius:6px;border:1px solid #ddd;display:block;" />
+                      <?php endif; ?>
+                    </div>
+                    <button type="button" id="aimage-btn" class="button">画像を選択</button>
                     <?php if ( ! empty( $edit->image ) ) : ?>
-                      <img src="<?php echo esc_url( $edit->image ); ?>" alt="プレビュー"
-                           style="max-width:120px;margin-top:8px;border-radius:6px;border:1px solid #ddd;" />
+                      <button type="button" id="aimage-clear" class="button-link" style="margin-left:8px;color:#a00;">削除</button>
+                    <?php else : ?>
+                      <button type="button" id="aimage-clear" class="button-link" style="margin-left:8px;color:#a00;display:none;">削除</button>
                     <?php endif; ?>
+                    <script>
+                    jQuery(function($){
+                      var frame;
+                      $('#aimage-btn').on('click', function(e){
+                        e.preventDefault();
+                        if(frame){ frame.open(); return; }
+                        frame = wp.media({ title:'商品画像を選択', button:{text:'選択する'}, multiple:false });
+                        frame.on('select', function(){
+                          var att = frame.state().get('selection').first();
+                          var sizes = att.get('sizes');
+                          var url = (sizes&&sizes.medium) ? sizes.medium.url : att.get('url');
+                          $('#aimage').val(String(att.id));
+                          $('#aimage-preview').html('<img src="'+url+'" style="max-width:120px;border-radius:6px;border:1px solid #ddd;display:block;">');
+                          $('#aimage-clear').show();
+                        });
+                        frame.open();
+                      });
+                      $('#aimage-clear').on('click', function(){
+                        $('#aimage').val('');
+                        $('#aimage-preview').empty();
+                        $(this).hide();
+                      });
+                    });
+                    </script>
                   </td>
                 </tr>
                 <tr>

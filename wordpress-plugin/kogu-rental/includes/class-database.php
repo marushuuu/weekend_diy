@@ -435,6 +435,23 @@ class Kogu_Database {
         ) ?: [];
     }
 
+    /**
+     * gallery フィールド（カンマ区切りの attachment ID または旧ファイル名）を URL 配列に解決する。
+     * 数値 → wp_get_attachment_url() / 非数値 → assets/images/ 配下のファイル名（後方互換）
+     */
+    public static function resolve_gallery_urls( string $gallery ): array {
+        $urls = [];
+        foreach ( array_filter( array_map( 'trim', explode( ',', $gallery ) ) ) as $item ) {
+            if ( ctype_digit( $item ) ) {
+                $url = wp_get_attachment_url( (int) $item );
+                if ( $url ) $urls[] = $url;
+            } else {
+                $urls[] = KOGU_PLUGIN_URL . 'assets/images/' . $item;
+            }
+        }
+        return $urls;
+    }
+
     // 商品別集計
     public static function get_addon_sales_summary(): array {
         global $wpdb;

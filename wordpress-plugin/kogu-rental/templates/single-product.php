@@ -4,13 +4,8 @@ defined( 'ABSPATH' ) || exit;
 $product = $GLOBALS['kogu_current_product'] ?? null;
 if ( ! $product ) { wp_redirect( home_url( '/' ) ); exit; }
 
-$img_base      = KOGU_PLUGIN_URL . 'assets/images/';
-$gallery_imgs  = [];
-if ( ! empty( $product->gallery ) ) {
-    foreach ( array_map( 'trim', explode( ',', $product->gallery ) ) as $f ) {
-        if ( $f ) $gallery_imgs[] = $img_base . $f;
-    }
-}
+$img_base     = KOGU_PLUGIN_URL . 'assets/images/';
+$gallery_imgs = Kogu_Database::resolve_gallery_urls( $product->gallery ?? '' );
 // フォールバック: 商品名から推定
 if ( empty( $gallery_imgs ) ) {
     if ( mb_strpos( $product->name, 'インパクト' ) !== false ) {
