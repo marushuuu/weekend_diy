@@ -203,6 +203,10 @@ class Kogu_Public {
         $shipping_fee = $subtotal < (int) get_option( 'kogu_free_shipping_threshold', 3000 ) ? (int) get_option( 'kogu_shipping_fee', 2500 ) : 0;
         $total        = $subtotal + $shipping_fee;
 
+        if ( $total < 50 ) {
+            wp_send_json_error( '合計金額が最低決済金額（¥50）を下回っています。商品価格を確認してください。' );
+        }
+
         try {
             $customer_id = Kogu_Stripe_Handler::get_or_create_customer( $email, $name );
             $result      = Kogu_Stripe_Handler::create_payment_intent( $total, $customer_id, [
