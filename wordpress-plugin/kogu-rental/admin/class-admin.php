@@ -320,29 +320,56 @@ class Kogu_Admin {
 
           <!-- 返却手続き登録 -->
           <?php if ( in_array( $rental->status, [ 'shipped_to_customer', 'active', 'overdue' ], true ) ) : ?>
-          <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
-            <input type="hidden" name="action"       value="kogu_admin_action">
-            <input type="hidden" name="op"           value="submit_return">
-            <input type="hidden" name="rental_id"    value="<?php echo (int) $rental->id; ?>">
-            <input type="hidden" name="tracking_return" value="<?php echo esc_attr( $rental->tracking_return ); ?>">
-            <input type="hidden" name="_wpnonce"     value="<?php echo esc_attr( $nonce ); ?>">
+          <div style="margin-top:16px;">
             <h3>返却手続き</h3>
             <?php if ( ! empty( $rental->tracking_return ) ) : ?>
+              <!-- ケース1: 同梱の返送票を使った場合（ワンタッチ） -->
               <p style="font-size:13px;color:#555;margin-bottom:10px;">
                 同梱した返送票（追跡番号: <strong><?php echo esc_html( $rental->tracking_return ); ?></strong>）が使われた場合はそのまま登録できます。
               </p>
-              <button type="submit" class="button button-primary" style="font-size:14px;padding:6px 18px;">
-                ✅ 返送票で返却された — 返却確認中にする
-              </button>
+              <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>">
+                <input type="hidden" name="action"          value="kogu_admin_action">
+                <input type="hidden" name="op"              value="submit_return">
+                <input type="hidden" name="rental_id"       value="<?php echo (int) $rental->id; ?>">
+                <input type="hidden" name="tracking_return" value="<?php echo esc_attr( $rental->tracking_return ); ?>">
+                <input type="hidden" name="_wpnonce"        value="<?php echo esc_attr( $nonce ); ?>">
+                <button type="submit" class="button button-primary" style="font-size:14px;padding:6px 18px;">
+                  ✅ 返送票で返却された — 返却確認中にする
+                </button>
+              </form>
+              <!-- ケース2: 別の配送方法で返送された場合 -->
+              <details style="margin-top:14px;border:1px solid #ddd;border-radius:6px;padding:10px 16px;">
+                <summary style="cursor:pointer;font-size:13px;font-weight:bold;color:#555;">📦 別の配送方法で返送された場合</summary>
+                <div style="margin-top:12px;">
+                  <p style="font-size:12px;color:#666;margin-bottom:8px;">顧客が別途手配した配送会社を利用した場合、追跡番号を入力して証跡を残せます。空欄でも登録可能です。</p>
+                  <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>">
+                    <input type="hidden" name="action"    value="kogu_admin_action">
+                    <input type="hidden" name="op"        value="submit_return">
+                    <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
+                    <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                      <input type="text" name="tracking_return" placeholder="追跡番号（空欄可）" style="width:240px;padding:6px 10px;" />
+                      <button type="submit" class="button button-secondary">返却確認中にする</button>
+                    </div>
+                  </form>
+                </div>
+              </details>
             <?php else : ?>
+              <!-- tracking_return未設定の場合 -->
               <p style="font-size:13px;color:#666;margin-bottom:8px;">返送票が使われた場合はボタンを押すだけです。別の手段で返送された場合は追跡番号を入力してください。</p>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <button type="submit" class="button button-primary">✅ 返却確認中にする（追跡番号なし）</button>
-                <span style="color:#aaa;font-size:12px;">または追跡番号を入力：</span>
-                <input type="text" name="tracking_return" placeholder="ゆうパック追跡番号" style="width:240px;padding:6px 10px;" />
-              </div>
+              <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>">
+                <input type="hidden" name="action"    value="kogu_admin_action">
+                <input type="hidden" name="op"        value="submit_return">
+                <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
+                <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <button type="submit" class="button button-primary">✅ 返却確認中にする（追跡番号なし）</button>
+                  <span style="color:#aaa;font-size:12px;">または追跡番号を入力：</span>
+                  <input type="text" name="tracking_return" placeholder="追跡番号" style="width:240px;padding:6px 10px;" />
+                </div>
+              </form>
             <?php endif; ?>
-          </form>
+          </div>
           <?php endif; ?>
 
           <!-- 返却確認・精算（管理者が延滞・損害費用を入力してカードに請求） -->
