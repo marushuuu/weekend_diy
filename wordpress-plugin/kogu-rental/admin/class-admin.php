@@ -414,12 +414,17 @@ class Kogu_Admin {
         // シリアル番号・状態の保存
         if ( isset( $_POST['kogu_save_units'] ) && check_admin_referer( 'kogu_inventory_action' ) ) {
             foreach ( $_POST['serial'] as $id => $serial ) {
-                $wpdb->update( $inv_table, [
+                $data = [
                     'serial_number' => sanitize_text_field( $serial ),
                     'condition'     => sanitize_text_field( $_POST['condition'][ $id ] ?? 'excellent' ),
-                    'status'        => sanitize_text_field( $_POST['unit_status'][ $id ] ?? 'available' ),
                     'notes'         => sanitize_textarea_field( $_POST['notes'][ $id ] ?? '' ),
-                ], [ 'id' => (int) $id ] );
+                ];
+                // disabled selectはPOSTに含まれないため、送信された時だけstatusを更新する
+                // （貸出中ユニットを「変更を保存」で誤ってavailableに戻してしまうバグを防ぐ）
+                if ( isset( $_POST['unit_status'][ $id ] ) ) {
+                    $data['status'] = sanitize_text_field( $_POST['unit_status'][ $id ] );
+                }
+                $wpdb->update( $inv_table, $data, [ 'id' => (int) $id ] );
             }
             echo '<div class="notice notice-success"><p>保存しました。</p></div>';
         }
