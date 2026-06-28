@@ -252,17 +252,17 @@ class Kogu_Admin {
           </form>
           <?php endif; ?>
 
-          <!-- 管理者による返却手続き（顧客が追跡番号を提出しない場合） -->
+          <!-- 返却手続き登録 -->
           <?php if ( in_array( $rental->status, [ 'shipped_to_customer', 'active', 'overdue' ], true ) ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
             <input type="hidden" name="action"    value="kogu_admin_action">
             <input type="hidden" name="op"        value="submit_return">
             <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
             <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
-            <h3>返却手続き（管理者入力）</h3>
-            <p style="font-size:13px;color:#666;margin-bottom:8px;">顧客が追跡番号を提出しない場合、管理者がここから入力できます。</p>
+            <h3>返却手続き</h3>
+            <p style="font-size:13px;color:#666;margin-bottom:8px;">顧客が同梱の着払い伝票で発送後、追跡番号を入力して登録してください。登録すると「返却確認中」ステータスに移行します。</p>
             <div style="display:flex;gap:8px;align-items:center;">
-              <input type="text" name="tracking_return" placeholder="ゆうパック追跡番号" required style="width:280px;padding:6px 10px;" />
+              <input type="text" name="tracking_return" placeholder="ゆうパック追跡番号（任意）" style="width:280px;padding:6px 10px;" />
               <button type="submit" class="button button-primary">返却手続きを登録する</button>
             </div>
           </form>
