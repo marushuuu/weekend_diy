@@ -1542,7 +1542,7 @@ class Kogu_Admin {
         $reservation    = esc_html( $reservation_number );
         $from_email     = esc_html( get_option( 'kogu_from_email', 'support@weekend-diy.com' ) );
         $return_address = get_option( 'kogu_return_address', '' );
-        $service_name   = get_option( 'kogu_service_name', 'みんなのレンタル工具' );
+        $service_name   = get_option( 'kogu_service_name', 'みんなの工具レンタル' );
         $addr_lines     = $return_address
             ? nl2br( esc_html( $return_address ) ) . '<br><strong>' . esc_html( $service_name ) . ' 行</strong>'
             : '<span style="color:#c0392b;">（管理画面 → 設定 → 返送先住所を設定してください）</span>';
@@ -1593,7 +1593,7 @@ class Kogu_Admin {
 </div>
 <div class="slip">
   <div class="header">
-    <span class="title">みんなのレンタル工具</span>
+    <span class="title">みんなの工具レンタル</span>
     <span class="label">返却のしおり</span>
   </div>
   <div class="thank-you">
@@ -1827,7 +1827,7 @@ class Kogu_Admin {
                     <th><label for="kogu_service_name">サービス名</label></th>
                     <td>
                       <input type="text" id="kogu_service_name" name="kogu_service_name"
-                             value="<?php echo esc_attr( get_option( 'kogu_service_name', 'みんなのレンタル工具' ) ); ?>"
+                             value="<?php echo esc_attr( get_option( 'kogu_service_name', 'みんなの工具レンタル' ) ); ?>"
                              class="regular-text" />
                       <p class="description">返送先住所の末尾に「〇〇 行」として表示されます。同梱紙・確認メールに反映。</p>
                     </td>
