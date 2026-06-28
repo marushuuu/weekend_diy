@@ -3,7 +3,7 @@ defined( 'ABSPATH' ) || exit;
 
 // ── メンテナンスモード ────────────────────────────────────────────────────────
 // 解除するには下の true を false に変えてデプロイ
-define( 'KOGU_MAINTENANCE', true );
+define( 'KOGU_MAINTENANCE', false );
 
 add_action( 'template_redirect', function() {
 	if ( ! KOGU_MAINTENANCE ) return;
