@@ -349,6 +349,162 @@ class Kogu_Email_Handler {
         self::send( $email, $name, '【工具レンタル】返却完了のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
 
+    // ── 予約確認（複数商品まとめて1通） ─────────────────────────────────────
+    public static function send_booking_confirmation_multi( array $rental_ids ) {
+        if ( empty( $rental_ids ) ) return;
+
+        $rentals = array_values( array_filter( array_map( [ 'Kogu_Rental_Manager', 'get' ], $rental_ids ) ) );
+        if ( empty( $rentals ) ) return;
+
+        $first              = $rentals[0];
+        $email              = self::get_rental_email( $first );
+        $name               = self::get_rental_name( $first );
+        $reservation_number = $first->reservation_number ?? '';
+        $mypage_url         = home_url( '/my-page/' );
+        $count              = count( $rentals );
+        $weeks              = (int) $first->rental_weeks;
+        $latest_end_date    = max( array_map( fn( $r ) => $r->rental_end_date, $rentals ) );
+
+        // 商品行
+        $product_rows = '';
+        foreach ( $rentals as $rental ) {
+            $product = Kogu_Database::get_product( (int) $rental->product_id );
+            $pname   = $product ? esc_html( $product->name ) : '工具';
+            $fee     = number_format( (int) $rental->rental_fee );
+            $product_rows .= "
+              <tr>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;'>{$pname}</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;'>{$rental->rental_start_date}〜{$rental->rental_end_date}（{$weeks}週間）</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;text-align:right;'>¥{$fee}</td>
+              </tr>";
+        }
+
+        // アドオン行（最初のレンタルに紐付け）
+        $addon_rows  = '';
+        $addon_total = 0;
+        $addons      = Kogu_Database::get_rental_addons( $first->id );
+        foreach ( $addons as $addon ) {
+            $subtotal     = (int) $addon->unit_price * (int) $addon->quantity;
+            $addon_total += $subtotal;
+            $addon_rows  .= "
+              <tr>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;color:#555;'>{$addon->name}（×{$addon->quantity}）</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;color:#555;'>購入品</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;text-align:right;color:#555;'>¥" . number_format( $subtotal ) . "</td>
+              </tr>";
+        }
+
+        // 送料逆算
+        $total_rental_fee = array_sum( array_map( fn( $r ) => (int) $r->rental_fee, $rentals ) );
+        $shipping_fee     = max( 0, (int) $first->total_charged - $total_rental_fee - $addon_total );
+        $shipping_row     = $shipping_fee > 0
+            ? "<tr><td colspan='2' style='padding:8px 12px;border:1px solid #e0d8c8;font-weight:bold;'>送料</td><td style='padding:8px 12px;border:1px solid #e0d8c8;text-align:right;color:#c0392b;'>¥" . number_format( $shipping_fee ) . "</td></tr>"
+            : "<tr><td colspan='2' style='padding:8px 12px;border:1px solid #e0d8c8;font-weight:bold;'>送料</td><td style='padding:8px 12px;border:1px solid #e0d8c8;text-align:right;color:#27ae60;'>無料</td></tr>";
+        $total = number_format( (int) $first->total_charged );
+
+        $content = "
+            <h2 style='color:#e85a2b;'>ご予約を承りました</h2>
+            <p>{$name} 様</p>
+            <p>{$count}点のレンタルをご予約いただきありがとうございます。</p>
+
+            <div style='background:#fff9f6;border:2px solid #e85a2b;border-radius:8px;padding:20px 24px;margin:20px 0;text-align:center;'>
+              <p style='margin:0 0 6px;font-size:13px;color:#888;'>あなたの予約番号</p>
+              <p style='margin:0;font-size:32px;font-weight:900;letter-spacing:3px;color:#e85a2b;'>{$reservation_number}</p>
+              <p style='margin:8px 0 0;font-size:12px;color:#888;'>ご不明な点はメールにてお問い合わせください</p>
+            </div>
+
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'>
+                <th style='padding:8px 12px;text-align:left;border:1px solid #e0d8c8;'>商品</th>
+                <th style='padding:8px 12px;text-align:left;border:1px solid #e0d8c8;'>レンタル期間</th>
+                <th style='padding:8px 12px;text-align:right;border:1px solid #e0d8c8;'>料金</th>
+              </tr>
+              {$product_rows}
+              {$addon_rows}
+              {$shipping_row}
+              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'>
+                <td colspan='2' style='padding:8px 12px;border:1px solid #e0d8c8;font-weight:bold;'>お支払い合計</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;font-size:18px;font-weight:bold;text-align:right;'>¥{$total}</td>
+              </tr>
+            </table>
+
+            <p style='margin:12px 0;'>返却期限日：<strong style='color:#e85a2b;font-size:15px;'>{$latest_end_date}</strong>（この日までに発送してください）</p>
+
+            <h3 style='margin-top:24px;font-size:15px;'>追加費用について</h3>
+            <p>以下に該当する場合のみ、ご登録のカードに別途請求いたします。</p>
+            <table style='width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:13px;'>
+              <tr style='background:#f6f1e6;'><td style='padding:6px 12px;font-weight:bold;width:40%;'>延滞料金</td><td style='padding:6px 12px;'>返却期限日を過ぎた場合、<strong>レンタル料金を日割りした金額</strong>（1日あたり）</td></tr>
+              <tr><td style='padding:6px 12px;font-weight:bold;'>損害費用</td><td style='padding:6px 12px;'>商品の破損・紛失・著しい汚損があった場合、損害の程度に応じた実費</td></tr>
+            </table>
+            <p style='font-size:12px;color:#888;'>※ 延滞・損傷がなければ追加費用は一切かかりません。</p>
+            <p>商品は準備が整い次第、ゆうパックにてお届けします。追跡番号が確定しましたら別途ご連絡いたします。</p>
+            " . self::return_instructions_block( $first ) . "
+            <p>ご不明な点はお問い合わせください。</p>
+            <p style='margin-top:20px;'>
+              <a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで予約を確認する</a>
+            </p>";
+
+        self::send( $email, $name, "【工具レンタル】ご予約確認 {$reservation_number}（{$count}点）", self::wrap( $content ) );
+    }
+
+    // ── 管理者：新規予約通知（複数商品まとめて1通） ──────────────────────────
+    public static function send_admin_new_booking_multi( array $rental_ids ) {
+        if ( empty( $rental_ids ) ) return;
+
+        $rentals = array_values( array_filter( array_map( [ 'Kogu_Rental_Manager', 'get' ], $rental_ids ) ) );
+        if ( empty( $rentals ) ) return;
+
+        $first              = $rentals[0];
+        $admin_email        = get_option( 'admin_email' );
+        $name               = $first->user_id ? get_userdata( $first->user_id )->display_name : $first->guest_name;
+        $reservation_number = $first->reservation_number ?? '';
+        $count              = count( $rentals );
+        $total              = number_format( (int) $first->total_charged );
+
+        $rows = '';
+        foreach ( $rentals as $rental ) {
+            $product    = Kogu_Database::get_product( (int) $rental->product_id );
+            $pname      = $product ? esc_html( $product->name ) : '工具';
+            $fee        = number_format( (int) $rental->rental_fee );
+            $detail_url = admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental->id );
+            $rows .= "
+              <tr>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;'>#{$rental->id}</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;'>{$pname}</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;'>¥{$fee}</td>
+                <td style='padding:8px 12px;border:1px solid #e0d8c8;'><a href='{$detail_url}'>詳細</a></td>
+              </tr>";
+        }
+
+        $packing_url = admin_url( 'admin.php?page=kogu-packing-slip&reservation_number=' . rawurlencode( $reservation_number ) );
+
+        $content = "
+            <h2 style='color:#e85a2b;'>新規レンタル予約が入りました（{$count}点）</h2>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-size:16px;font-weight:bold;'>{$reservation_number}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>お客様</td><td style='padding:8px 12px;'>{$name}（{$first->guest_email}）</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>電話</td><td style='padding:8px 12px;'>{$first->guest_phone}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>住所</td><td style='padding:8px 12px;'>{$first->guest_postal_code} {$first->guest_address}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>貸出開始</td><td style='padding:8px 12px;'>{$first->rental_start_date}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>返却期限</td><td style='padding:8px 12px;font-weight:bold;color:#e85a2b;'>{$first->rental_end_date}</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>合計</td><td style='padding:8px 12px;font-size:16px;font-weight:bold;'>¥{$total}</td></tr>
+            </table>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'>
+                <th style='padding:8px 12px;border:1px solid #e0d8c8;text-align:left;'>#</th>
+                <th style='padding:8px 12px;border:1px solid #e0d8c8;text-align:left;'>商品</th>
+                <th style='padding:8px 12px;border:1px solid #e0d8c8;text-align:left;'>料金</th>
+                <th style='padding:8px 12px;border:1px solid #e0d8c8;text-align:left;'>操作</th>
+              </tr>
+              {$rows}
+            </table>
+            <p>
+              <a href='{$packing_url}' style='background:#e85a2b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>同梱紙を印刷する</a>
+            </p>";
+
+        self::send( $admin_email, get_bloginfo( 'name' ), "【要対応】新規レンタル予約 {$reservation_number}（{$count}点）", self::wrap( $content ) );
+    }
+
     // ── 延長確認メール ────────────────────────────────────────────────────────
     public static function send_extension_confirmation( $rental_id, $new_end_date, $ext_fee, $new_weeks ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );

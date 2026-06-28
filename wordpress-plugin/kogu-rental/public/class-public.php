@@ -307,6 +307,7 @@ class Kogu_Public {
                 'stripe_payment_intent_id' => $pi_id,
                 'stripe_customer_id'       => $customer_id,
                 'stripe_payment_method_id' => $pm_id,
+                'skip_email'               => true,
             ] );
 
             if ( ! $rental_id ) {
@@ -325,6 +326,17 @@ class Kogu_Public {
                 if ( $qty > 0 ) {
                     Kogu_Database::deduct_addon_stock( (int) $a['id'], $qty );
                 }
+            }
+        }
+
+        // 予約確認メール（複数商品はまとめて1通、単品はそのまま）
+        if ( ! empty( $rental_ids ) ) {
+            if ( count( $rental_ids ) === 1 ) {
+                Kogu_Email_Handler::send_booking_confirmation( $rental_ids[0] );
+                Kogu_Email_Handler::send_admin_new_booking( $rental_ids[0] );
+            } else {
+                Kogu_Email_Handler::send_booking_confirmation_multi( $rental_ids );
+                Kogu_Email_Handler::send_admin_new_booking_multi( $rental_ids );
             }
         }
 

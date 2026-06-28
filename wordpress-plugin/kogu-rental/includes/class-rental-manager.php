@@ -51,8 +51,11 @@ class Kogu_Rental_Manager {
         $rental_id = $wpdb->insert_id;
 
         Kogu_Inventory::set_unit_status( $unit_id, 'rented' );
-        Kogu_Email_Handler::send_booking_confirmation( $rental_id );
-        Kogu_Email_Handler::send_admin_new_booking( $rental_id );
+
+        if ( empty( $args['skip_email'] ) ) {
+            Kogu_Email_Handler::send_booking_confirmation( $rental_id );
+            Kogu_Email_Handler::send_admin_new_booking( $rental_id );
+        }
 
         return $rental_id;
     }
