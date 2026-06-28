@@ -3,7 +3,7 @@ Theme Name: みんなの工具レンタル
 Theme URI: https://weekend-diy.com
 Description: 電動工具レンタルサイト用テーマ。kogu-rental プラグインと連動し、トップページ・申込フォーム・マイページ・規約ページを統一デザインで表示します。
 Author: Weekend DIY
-Version: 1.0.1
+Version: 1.0.2
 Text Domain: minna-kogu
 */
 
@@ -172,7 +172,7 @@ body {
 
 .hero-img {
   width: 100%;
-  height: 240px;
+  height: 240px !important; /* WooCommerce の .woocommerce img{height:auto} に勝たせる */
   object-fit: cover;
   object-position: center;
   display: block;
@@ -241,7 +241,7 @@ body {
 }
 
 @media (max-width: 640px) {
-  .hero-img { height: 300px; }
+  .hero-img { height: 300px !important; }
   .hero-copy { padding: 28px 20px; }
   .hero-copy h1 { font-size: 26px; }
 }
