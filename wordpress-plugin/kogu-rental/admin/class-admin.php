@@ -19,8 +19,8 @@ class Kogu_Admin {
 
     // ── 在庫ユニット削除 ──────────────────────────────────────────────────────
     public static function handle_delete_unit() {
-        $unit_id    = isset( $_POST['unit_id'] )    ? (int) $_POST['unit_id']    : 0;
-        $product_id = isset( $_POST['product_id'] ) ? (int) $_POST['product_id'] : 0;
+        $unit_id    = isset( $_REQUEST['unit_id'] )    ? (int) $_REQUEST['unit_id']    : 0;
+        $product_id = isset( $_REQUEST['product_id'] ) ? (int) $_REQUEST['product_id'] : 0;
         check_admin_referer( 'kogu_delete_unit_' . $unit_id );
         if ( ! current_user_can( 'manage_options' ) || ! $unit_id ) wp_die( '権限がありません。' );
 
@@ -491,17 +491,15 @@ class Kogu_Admin {
                     </td>
                     <td>
                       <?php if ( $u->status !== 'rented' ) :
-                        $del_nonce = wp_create_nonce( 'kogu_delete_unit_' . (int) $u->id );
+                        $del_url = wp_nonce_url(
+                            admin_url( 'admin-post.php?action=kogu_delete_unit&unit_id=' . (int) $u->id . '&product_id=' . (int) $selected_pid ),
+                            'kogu_delete_unit_' . (int) $u->id
+                        );
                       ?>
-                      <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>"
-                            onsubmit="return confirm('<?php echo esc_js( (int) $u->unit_number . '台目を削除します。この操作は取り消せません。よろしいですか？' ); ?>')">
-                        <input type="hidden" name="action"     value="kogu_delete_unit">
-                        <input type="hidden" name="unit_id"    value="<?php echo (int) $u->id; ?>">
-                        <input type="hidden" name="product_id" value="<?php echo (int) $selected_pid; ?>">
-                        <input type="hidden" name="_wpnonce"   value="<?php echo esc_attr( $del_nonce ); ?>">
-                        <button type="submit" class="button button-small"
-                                style="color:#c0392b;border-color:#c0392b;">削除</button>
-                      </form>
+                        <a href="<?php echo esc_url( $del_url ); ?>"
+                           class="button button-small"
+                           style="color:#c0392b;border-color:#c0392b;"
+                           onclick="return confirm('<?php echo esc_js( (int) $u->unit_number . '台目を削除します。この操作は取り消せません。よろしいですか？' ); ?>')">削除</a>
                       <?php else : ?>
                         <span style="color:#aaa;font-size:11px;">貸出中</span>
                       <?php endif; ?>
