@@ -118,8 +118,8 @@ class Kogu_Public {
             'week_discount_rate'       => 0.70,
             'late_fee_per_day'         => 500,
             'rental_page_url'          => home_url( '/rental/' ),
-            'shipping_fee'             => 2500,
-            'free_shipping_threshold'  => 3000,
+            'shipping_fee'             => (int) get_option( 'kogu_shipping_fee', 2500 ),
+            'free_shipping_threshold'  => (int) get_option( 'kogu_free_shipping_threshold', 3000 ),
         ] );
     }
 
@@ -199,7 +199,7 @@ class Kogu_Public {
             $addon_total += (int) $ap->price * $qty;
         }
         $subtotal     = $rental_fee + $addon_total;
-        $shipping_fee = $subtotal < 3000 ? 2500 : 0;
+        $shipping_fee = $subtotal < (int) get_option( 'kogu_free_shipping_threshold', 3000 ) ? (int) get_option( 'kogu_shipping_fee', 2500 ) : 0;
         $total        = $subtotal + $shipping_fee;
 
         try {
@@ -279,7 +279,7 @@ class Kogu_Public {
             }
         }
         $subtotal     = $total_rental_fee + $addon_total;
-        $shipping_fee = $subtotal < 3000 ? 2500 : 0;
+        $shipping_fee = $subtotal < (int) get_option( 'kogu_free_shipping_threshold', 3000 ) ? (int) get_option( 'kogu_shipping_fee', 2500 ) : 0;
         $total        = $subtotal + $shipping_fee;
 
         $rental_ids = [];

@@ -1476,6 +1476,8 @@ class Kogu_Admin {
             'kogu_from_name'             => '送信元名',
             'kogu_noindex_slugs'         => 'noindex にするページスラッグ（カンマ区切り）',
             'kogu_service_name'          => 'サービス名（返送先の「〇〇 行」に使用）',
+            'kogu_shipping_fee'          => '送料（円）',
+            'kogu_free_shipping_threshold' => '送料無料しきい値（円）',
             'kogu_return_buffer_days'    => '折り返しバッファ日数（返却期限後に在庫をブロックする日数）',
             'kogu_return_address'        => '返送先住所（予約確認メール・同梱紙に表示）',
             'kogu_gsc_verification'      => 'Google Search Console 検証コード',
@@ -1537,6 +1539,24 @@ class Kogu_Admin {
                              value="<?php echo esc_attr( get_option( 'kogu_gtm_container_id' ) ); ?>"
                              class="regular-text" placeholder="例: GTM-XXXXXXX" />
                       <p class="description">GTMダッシュボードで確認できるコンテナID（GTM-から始まる）を入力してください。</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th><label for="kogu_shipping_fee">送料（円）</label></th>
+                    <td>
+                      <input type="number" id="kogu_shipping_fee" name="kogu_shipping_fee"
+                             value="<?php echo (int) get_option( 'kogu_shipping_fee', 2500 ); ?>"
+                             min="0" class="small-text" /> 円
+                      <p class="description">送料無料しきい値未満のとき加算される送料。<strong>0にすると常に送料無料</strong>になります。</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th><label for="kogu_free_shipping_threshold">送料無料しきい値（円）</label></th>
+                    <td>
+                      <input type="number" id="kogu_free_shipping_threshold" name="kogu_free_shipping_threshold"
+                             value="<?php echo (int) get_option( 'kogu_free_shipping_threshold', 3000 ); ?>"
+                             min="0" class="small-text" /> 円以上で送料無料
+                      <p class="description"><strong>0にすると常に送料無料</strong>（テスト時に便利）。通常は 3000。</p>
                     </td>
                   </tr>
                   <tr>
