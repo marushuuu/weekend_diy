@@ -241,7 +241,7 @@ body {
 }
 
 @media (max-width: 640px) {
-  .hero-img { height: 150px; }
+  .hero-img { height: 300px; }
   .hero-copy { padding: 28px 20px; }
   .hero-copy h1 { font-size: 26px; }
 }
