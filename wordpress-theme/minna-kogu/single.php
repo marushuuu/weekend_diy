@@ -54,7 +54,7 @@
           <p class="single-post-cta-title">🔧 工具はレンタルで試してみませんか？</p>
           <p class="single-post-cta-desc">
             インパクトドライバーを1週間¥4,900からレンタル。<br>
-            バッテリー2個・急速充電器付きで最短翌日お届け。3,000円以上送料無料。
+            3,000円以上送料無料。返却はゆうパックで送り返すだけ。
           </p>
           <div class="single-post-cta-buttons">
             <a href="<?php echo esc_url( home_url( '/rental/' ) ); ?>" class="kogu-btn kogu-btn-primary">
