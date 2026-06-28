@@ -1670,6 +1670,7 @@ class Kogu_Admin {
     }
 
     public static function register_settings() {
+        register_setting( 'kogu_settings', 'kogu_maintenance_mode' );
         $fields = [
             'kogu_stripe_public_key'     => 'Stripe 公開鍵（pk_live_...）',
             'kogu_stripe_secret_key'     => 'Stripe 秘密鍵（sk_live_...）',
@@ -1697,6 +1698,30 @@ class Kogu_Admin {
           <h1>工具レンタル 設定</h1>
           <form method="post" action="options.php">
             <?php settings_fields( 'kogu_settings' ); ?>
+            <?php $maint_on = (int) get_option( 'kogu_maintenance_mode', 0 ); ?>
+            <h2 style="margin-top:1em;">サイト公開状態</h2>
+            <table class="form-table">
+              <tr>
+                <th><label for="kogu_maintenance_mode">準備中（非公開）モード</label></th>
+                <td>
+                  <input type="hidden" name="kogu_maintenance_mode" value="0" />
+                  <label style="font-size:15px;">
+                    <input type="checkbox" id="kogu_maintenance_mode" name="kogu_maintenance_mode"
+                           value="1" <?php checked( $maint_on, 1 ); ?> />
+                    チェックすると、一般訪問者には「ただいま準備中です」ページを表示します。
+                  </label>
+                  <p class="description">
+                    <?php if ( $maint_on ) : ?>
+                      <strong style="color:#b32d2e;">● 現在: 非公開（準備中）</strong> — 管理者としてログイン中のあなたには通常サイトが表示されますが、一般訪問者には準備中ページが表示されています。公開するにはチェックを外して保存してください。
+                    <?php else : ?>
+                      <strong style="color:#1a7f37;">● 現在: 公開中</strong> — 誰でもサイトを閲覧できます。
+                    <?php endif; ?>
+                    <br>※ ログイン済みの管理者は、このモードに関わらず常に通常サイトを閲覧できます。
+                  </p>
+                </td>
+              </tr>
+            </table>
+            <h2 style="margin-top:1.5em;">外部サービス・基本設定</h2>
             <table class="form-table">
               <?php
               $fields = [

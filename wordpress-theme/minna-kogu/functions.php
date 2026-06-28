@@ -2,11 +2,10 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── メンテナンスモード ────────────────────────────────────────────────────────
-// 解除するには下の true を false に変えてデプロイ
-define( 'KOGU_MAINTENANCE', false );
-
+// 公開/非公開は WordPress 管理画面「工具レンタル → 設定 → サイト公開状態」で切り替えます。
+// （旧 KOGU_MAINTENANCE 定数による制御は廃止し、DBオプションで制御）
 add_action( 'template_redirect', function() {
-	if ( ! KOGU_MAINTENANCE ) return;
+	if ( ! (int) get_option( 'kogu_maintenance_mode', 0 ) ) return;
 	if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) return;
 	http_response_code( 503 );
 	header( 'Retry-After: 86400' );
