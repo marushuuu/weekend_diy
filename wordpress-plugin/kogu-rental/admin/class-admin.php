@@ -13,7 +13,33 @@ class Kogu_Admin {
         add_action( 'admin_post_kogu_notify_tool_request', [ __CLASS__, 'handle_notify_tool_request' ] );
         add_action( 'admin_post_kogu_toggle_product',    [ __CLASS__, 'handle_toggle_product' ] );
         add_action( 'admin_post_kogu_toggle_addon',      [ __CLASS__, 'handle_toggle_addon' ] );
+        add_action( 'admin_post_kogu_delete_unit',       [ __CLASS__, 'handle_delete_unit' ] );
         add_action( 'admin_init',                          [ __CLASS__, 'register_settings' ] );
+    }
+
+    // ── 在庫ユニット削除 ──────────────────────────────────────────────────────
+    public static function handle_delete_unit() {
+        $unit_id    = isset( $_POST['unit_id'] )    ? (int) $_POST['unit_id']    : 0;
+        $product_id = isset( $_POST['product_id'] ) ? (int) $_POST['product_id'] : 0;
+        check_admin_referer( 'kogu_delete_unit_' . $unit_id );
+        if ( ! current_user_can( 'manage_options' ) || ! $unit_id ) wp_die( '権限がありません。' );
+
+        global $wpdb;
+        $inv_table = Kogu_Database::inventory_table();
+        $unit = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $inv_table WHERE id = %d", $unit_id ) );
+
+        if ( ! $unit ) {
+            wp_redirect( admin_url( 'admin.php?page=kogu-inventory&product_id=' . $product_id . '&delete_error=not_found' ) );
+            exit;
+        }
+        if ( $unit->status === 'rented' ) {
+            wp_redirect( admin_url( 'admin.php?page=kogu-inventory&product_id=' . $product_id . '&delete_error=rented' ) );
+            exit;
+        }
+
+        $wpdb->delete( $inv_table, [ 'id' => $unit_id ] );
+        wp_redirect( admin_url( 'admin.php?page=kogu-inventory&product_id=' . $product_id . '&deleted=1' ) );
+        exit;
     }
 
     // ── 商品・購入商品のステータス即時切り替え ─────────────────────────────────
@@ -366,6 +392,14 @@ class Kogu_Admin {
             $wpdb->update( $inv_table, [ 'serial_number' => $auto_serial ], [ 'id' => $new_unit_id ] );
         }
 
+        if ( isset( $_GET['deleted'] ) ) {
+            echo '<div class="notice notice-success"><p>削除しました。</p></div>';
+        }
+        if ( isset( $_GET['delete_error'] ) ) {
+            $msg = $_GET['delete_error'] === 'rented' ? '貸出中のユニットは削除できません。' : '対象が見つかりませんでした。';
+            echo '<div class="notice notice-error"><p>' . esc_html( $msg ) . '</p></div>';
+        }
+
         // シリアル番号・状態の保存
         if ( isset( $_POST['kogu_save_units'] ) && check_admin_referer( 'kogu_inventory_action' ) ) {
             foreach ( $_POST['serial'] as $id => $serial ) {
@@ -418,6 +452,7 @@ class Kogu_Admin {
                   <th style="width:120px">状態</th>
                   <th style="width:130px">ステータス</th>
                   <th>メモ</th>
+                  <th style="width:70px"></th>
                 </tr>
               </thead>
               <tbody>
@@ -453,6 +488,23 @@ class Kogu_Admin {
                       <input type="text" name="notes[<?php echo (int) $u->id; ?>]"
                              value="<?php echo esc_attr( $u->notes ); ?>"
                              placeholder="メモ" style="width:100%;padding:4px 8px;" />
+                    </td>
+                    <td>
+                      <?php if ( $u->status !== 'rented' ) :
+                        $del_nonce = wp_create_nonce( 'kogu_delete_unit_' . (int) $u->id );
+                      ?>
+                      <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>"
+                            onsubmit="return confirm('<?php echo esc_js( (int) $u->unit_number . '台目を削除します。この操作は取り消せません。よろしいですか？' ); ?>')">
+                        <input type="hidden" name="action"     value="kogu_delete_unit">
+                        <input type="hidden" name="unit_id"    value="<?php echo (int) $u->id; ?>">
+                        <input type="hidden" name="product_id" value="<?php echo (int) $selected_pid; ?>">
+                        <input type="hidden" name="_wpnonce"   value="<?php echo esc_attr( $del_nonce ); ?>">
+                        <button type="submit" class="button button-small"
+                                style="color:#c0392b;border-color:#c0392b;">削除</button>
+                      </form>
+                      <?php else : ?>
+                        <span style="color:#aaa;font-size:11px;">貸出中</span>
+                      <?php endif; ?>
                     </td>
                   </tr>
                 <?php endforeach; ?>
