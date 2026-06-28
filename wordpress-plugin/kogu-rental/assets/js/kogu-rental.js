@@ -78,6 +78,13 @@
       return;
     }
 
+    if (start < KoguData.date_min) {
+      $summary.hide();
+      $goBtn.hide();
+      $unavail.text('貸出開始日は ' + KoguData.date_min + ' 以降の日付を選択してください。').show();
+      return;
+    }
+
     var avail    = isAvailable(start, weeks, topAvail[pid] || {});
     var fee      = calcFee(weeks, product.price_per_week);
     var shipping = fee < KoguData.free_shipping_threshold ? KoguData.shipping_fee : 0;
@@ -274,6 +281,15 @@
     if (!state.product_ids.length || !start || !weeks) {
       $('#kogu-date-summary').hide();
       $('#btn-to-info').prop('disabled', true);
+      return;
+    }
+
+    if (start < KoguData.date_min) {
+      $('#kogu-date-summary').hide();
+      $('#btn-to-info').prop('disabled', true);
+      $('#kogu-stock-badge').text('日付エラー').attr('class', 'kogu-badge kogu-badge-empty');
+      $('#kogu-unavailable-msg').text('貸出開始日は ' + KoguData.date_min + ' 以降の日付を選択してください。').show();
+      $('#kogu-date-summary').show();
       return;
     }
 

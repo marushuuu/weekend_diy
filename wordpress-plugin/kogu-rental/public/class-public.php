@@ -120,6 +120,7 @@ class Kogu_Public {
             'rental_page_url'          => home_url( '/rental/' ),
             'shipping_fee'             => (int) get_option( 'kogu_shipping_fee', 2500 ),
             'free_shipping_threshold'  => (int) get_option( 'kogu_free_shipping_threshold', 3000 ),
+            'date_min'                 => date( 'Y-m-d', strtotime( '+' . max( 1, (int) get_option( 'kogu_return_buffer_days', 4 ) ) . ' days' ) ),
         ] );
     }
 
