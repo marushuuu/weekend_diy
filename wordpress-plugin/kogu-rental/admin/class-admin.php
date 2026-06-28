@@ -255,16 +255,27 @@ class Kogu_Admin {
           <!-- 返却手続き登録 -->
           <?php if ( in_array( $rental->status, [ 'shipped_to_customer', 'active', 'overdue' ], true ) ) : ?>
           <form method="post" action="<?php echo admin_url( 'admin-post.php' ); ?>" style="margin-top:16px;">
-            <input type="hidden" name="action"    value="kogu_admin_action">
-            <input type="hidden" name="op"        value="submit_return">
-            <input type="hidden" name="rental_id" value="<?php echo (int) $rental->id; ?>">
-            <input type="hidden" name="_wpnonce"  value="<?php echo esc_attr( $nonce ); ?>">
+            <input type="hidden" name="action"       value="kogu_admin_action">
+            <input type="hidden" name="op"           value="submit_return">
+            <input type="hidden" name="rental_id"    value="<?php echo (int) $rental->id; ?>">
+            <input type="hidden" name="tracking_return" value="<?php echo esc_attr( $rental->tracking_return ); ?>">
+            <input type="hidden" name="_wpnonce"     value="<?php echo esc_attr( $nonce ); ?>">
             <h3>返却手続き</h3>
-            <p style="font-size:13px;color:#666;margin-bottom:8px;">顧客が同梱の着払い伝票で発送後、追跡番号を入力して登録してください。登録すると「返却確認中」ステータスに移行します。</p>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <input type="text" name="tracking_return" placeholder="ゆうパック追跡番号（任意）" style="width:280px;padding:6px 10px;" />
-              <button type="submit" class="button button-primary">返却手続きを登録する</button>
-            </div>
+            <?php if ( ! empty( $rental->tracking_return ) ) : ?>
+              <p style="font-size:13px;color:#555;margin-bottom:10px;">
+                同梱した返送票（追跡番号: <strong><?php echo esc_html( $rental->tracking_return ); ?></strong>）が使われた場合はそのまま登録できます。
+              </p>
+              <button type="submit" class="button button-primary" style="font-size:14px;padding:6px 18px;">
+                ✅ 返送票で返却された — 返却確認中にする
+              </button>
+            <?php else : ?>
+              <p style="font-size:13px;color:#666;margin-bottom:8px;">返送票が使われた場合はボタンを押すだけです。別の手段で返送された場合は追跡番号を入力してください。</p>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button type="submit" class="button button-primary">✅ 返却確認中にする（追跡番号なし）</button>
+                <span style="color:#aaa;font-size:12px;">または追跡番号を入力：</span>
+                <input type="text" name="tracking_return" placeholder="ゆうパック追跡番号" style="width:240px;padding:6px 10px;" />
+              </div>
+            <?php endif; ?>
           </form>
           <?php endif; ?>
 
