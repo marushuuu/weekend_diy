@@ -66,9 +66,12 @@ class Kogu_Email_Handler {
         $from_email = get_option( 'kogu_from_email', 'info@weekend-diy.com' );
         $from_name  = get_option( 'kogu_from_name', get_bloginfo( 'name' ) );
 
+        $bcc_email = get_option( 'admin_email' );
+
         $headers = [
             'Content-Type: text/html; charset=UTF-8',
             "From: {$from_name} <{$from_email}>",
+            "Bcc: {$bcc_email}",
         ];
 
         wp_mail( $to_email, $subject, $html_body, $headers );
