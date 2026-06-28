@@ -538,7 +538,6 @@
   // ── マイページ: レンタル延長 ──────────────────────────────────────────────
   $(document).on('click', '.kogu-btn-extend', function() {
     var $btn   = $(this);
-    var rid    = $btn.data('rental-id');
     var rn     = $btn.data('reservation-number');
     var fee    = $btn.data('ext-fee');
     var newEnd = $btn.data('new-end');
@@ -552,7 +551,6 @@
     $.post(KoguData.ajax_url, {
       action:             'kogu_extend_rental',
       nonce:              KoguData.nonce,
-      rental_id:          rid,
       reservation_number: rn
     }, function(res) {
       if (res.success) {

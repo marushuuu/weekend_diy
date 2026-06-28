@@ -408,29 +408,49 @@ class Kogu_Public {
     public static function ajax_extend_rental() {
         check_ajax_referer( 'kogu_nonce', 'nonce' );
 
-        $rental_id          = (int) ( $_POST['rental_id']          ?? 0 );
         $reservation_number = strtoupper( sanitize_text_field( $_POST['reservation_number'] ?? '' ) );
 
-        if ( ! $rental_id || ! $reservation_number ) {
+        if ( ! $reservation_number ) {
             wp_send_json_error( 'パラメータが不足しています。' );
         }
 
-        $rental = Kogu_Rental_Manager::get( $rental_id );
-        if ( ! $rental || $rental->reservation_number !== $reservation_number ) {
+        $rentals = Kogu_Database::get_rentals_by_reservation_number( $reservation_number );
+        if ( empty( $rentals ) ) {
             wp_send_json_error( '予約が見つかりません。' );
         }
 
-        if ( ! Kogu_Rental_Manager::can_extend( $rental_id ) ) {
-            wp_send_json_error( 'この予約は現在延長できません。在庫状況をご確認ください。' );
+        foreach ( $rentals as $r ) {
+            if ( ! Kogu_Rental_Manager::can_extend( (int) $r->id ) ) {
+                wp_send_json_error( 'この予約は現在延長できません。在庫状況をご確認ください。' );
+            }
         }
 
-        $result = Kogu_Rental_Manager::extend_rental( $rental_id, $reservation_number );
-
-        if ( ! $result ) {
-            wp_send_json_error( '延長処理に失敗しました。決済情報をご確認いただくか、お問い合わせください。' );
+        $results    = [];
+        $rental_ids = [];
+        foreach ( $rentals as $r ) {
+            $result = Kogu_Rental_Manager::extend_rental( (int) $r->id, $reservation_number, true /* skip_email */ );
+            if ( $result === false ) {
+                wp_send_json_error( '延長処理に失敗しました。決済情報をご確認いただくか、お問い合わせください。' );
+            }
+            $results[]    = $result;
+            $rental_ids[] = (int) $r->id;
         }
 
-        wp_send_json_success( $result );
+        $new_end_date  = max( array_column( $results, 'new_end_date' ) );
+        $total_ext_fee = array_sum( array_column( $results, 'ext_fee' ) );
+        $new_weeks     = $results[0]['new_weeks'];
+
+        if ( count( $rental_ids ) === 1 ) {
+            Kogu_Email_Handler::send_extension_confirmation( $rental_ids[0], $new_end_date, $total_ext_fee, $new_weeks );
+        } else {
+            Kogu_Email_Handler::send_extension_confirmation_multi( $rental_ids, $new_end_date, $total_ext_fee, $new_weeks );
+        }
+
+        wp_send_json_success( [
+            'new_end_date' => $new_end_date,
+            'ext_fee'      => $total_ext_fee,
+            'new_weeks'    => $new_weeks,
+        ] );
     }
 
     // ── AJAX: 工具リクエスト送信 ──────────────────────────────────────────────

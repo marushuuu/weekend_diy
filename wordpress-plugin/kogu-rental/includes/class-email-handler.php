@@ -535,4 +535,42 @@ class Kogu_Email_Handler {
             </p>";
         self::send( $email, $name, '【工具レンタル】レンタル期間延長のお知らせ #' . $rental_id, self::wrap( $content ) );
     }
+
+    public static function send_extension_confirmation_multi( array $rental_ids, string $new_end_date, int $total_ext_fee, int $new_weeks ) {
+        if ( empty( $rental_ids ) ) return;
+        $rentals = array_values( array_filter( array_map( [ 'Kogu_Rental_Manager', 'get' ], $rental_ids ) ) );
+        if ( empty( $rentals ) ) return;
+
+        $first      = $rentals[0];
+        $email      = self::get_rental_email( $first );
+        $name       = self::get_rental_name( $first );
+        $mypage_url = home_url( '/my-page/' );
+        $fee_fmt    = number_format( $total_ext_fee );
+
+        $product_rows = '';
+        foreach ( $rentals as $r ) {
+            $pn      = self::get_product_name( $r );
+            $prd     = Kogu_Database::get_product( (int) $r->product_id );
+            $ef      = $prd ? (int) round( (int) $prd->price_per_week * Kogu_Rental_Manager::WEEK_DISCOUNT_RATE ) : 0;
+            $product_rows .= "<tr><td style='padding:8px 12px;'>{$pn}</td><td style='padding:8px 12px;'>¥" . number_format( $ef ) . "</td></tr>";
+        }
+
+        $content = "
+            <h2 style='color:#e85a2b;'>レンタル期間を延長しました</h2>
+            <p>{$name} 様</p>
+            <p>以下のレンタル商品を1週間延長しました。</p>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>予約番号</td><td style='padding:8px 12px;font-size:16px;font-weight:bold;'>{$first->reservation_number}</td></tr>
+              <tr><td style='padding:8px 12px;font-weight:bold;'>延長後の週数</td><td style='padding:8px 12px;'>{$new_weeks}週間</td></tr>
+              <tr style='background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>新しい返却期限</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#e85a2b;'>{$new_end_date}</td></tr>
+              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><th colspan='2' style='padding:8px 12px;text-align:left;'>商品別 延長料金</th></tr>
+              {$product_rows}
+              <tr style='border-top:2px solid #1f1d1a;background:#f6f1e6;'><td style='padding:8px 12px;font-weight:bold;'>合計 延長料金</td><td style='padding:8px 12px;font-size:16px;font-weight:bold;'>¥{$fee_fmt}</td></tr>
+            </table>
+            <p style='font-size:13px;color:#666;'>延長料金はご登録のクレジットカードに請求されます。</p>
+            <p style='margin-top:20px;'>
+              <a href='{$mypage_url}' style='background:#1f1d1a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;'>マイページで確認する</a>
+            </p>";
+        self::send( $email, $name, '【工具レンタル】レンタル期間延長のお知らせ', self::wrap( $content ) );
+    }
 }
