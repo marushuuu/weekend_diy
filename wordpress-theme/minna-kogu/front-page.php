@@ -6,7 +6,7 @@
 <section class="hero">
 	<img class="hero-img" src="<?php echo esc_url( $banner ); ?>" alt="工具レンタルのイメージ" width="1400" height="480" />
 	<div class="hero-overlay"></div>
-	<div class="hero-copy">
+	<div class="container"><div class="hero-copy">
 		<h1>はじめての工具、<br />借りるからはじめよう。</h1>
 		<p>
 			必要な日だけ、お手頃に。<br />
@@ -14,7 +14,7 @@
 			<small>※北海道・沖縄・離島へのお届けは承っておりません。</small>
 		</p>
 		<a href="#tools" class="hero-cta">▶ 工具を探す</a>
-	</div>
+	</div></div>
 </section>
 
 <!-- ── Features ── -->
