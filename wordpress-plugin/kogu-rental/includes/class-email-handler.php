@@ -34,10 +34,11 @@ class Kogu_Email_Handler {
     // ── 返却手順ブロック（予約確認・発送通知・リマインダーで共用）─────────────
     private static function return_instructions_block( $rental ): string {
         $return_address = get_option( 'kogu_return_address', '' );
+        $service_name   = get_option( 'kogu_service_name', 'みんなのレンタル工具' );
         $addr_html = $return_address
             ? "<div style='background:#f6f1e6;border-left:3px solid #e85a2b;padding:10px 14px;margin:10px 0;font-size:13px;line-height:1.9;'>"
               . nl2br( esc_html( $return_address ) )
-              . "<br><strong>みんなのレンタル工具 行</strong></div>"
+              . "<br><strong>" . esc_html( $service_name ) . " 行</strong></div>"
             : '';
         $end_date    = esc_html( $rental->rental_end_date );
         $reservation = esc_html( $rental->reservation_number ?? '' );

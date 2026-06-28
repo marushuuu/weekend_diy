@@ -1289,8 +1289,9 @@ class Kogu_Admin {
         $reservation    = esc_html( $reservation_number );
         $from_email     = esc_html( get_option( 'kogu_from_email', 'support@weekend-diy.com' ) );
         $return_address = get_option( 'kogu_return_address', '' );
+        $service_name   = get_option( 'kogu_service_name', 'みんなのレンタル工具' );
         $addr_lines     = $return_address
-            ? nl2br( esc_html( $return_address ) ) . '<br><strong>みんなのレンタル工具 行</strong>'
+            ? nl2br( esc_html( $return_address ) ) . '<br><strong>' . esc_html( $service_name ) . ' 行</strong>'
             : '<span style="color:#c0392b;">（管理画面 → 設定 → 返送先住所を設定してください）</span>';
 
         // 複数商品で最も遅い返却期限を代表値として使用
@@ -1424,6 +1425,7 @@ class Kogu_Admin {
             'kogu_from_email'            => '送信元メールアドレス',
             'kogu_from_name'             => '送信元名',
             'kogu_noindex_slugs'         => 'noindex にするページスラッグ（カンマ区切り）',
+            'kogu_service_name'          => 'サービス名（返送先の「〇〇 行」に使用）',
             'kogu_return_buffer_days'    => '折り返しバッファ日数（返却期限後に在庫をブロックする日数）',
             'kogu_return_address'        => '返送先住所（予約確認メール・同梱紙に表示）',
             'kogu_gsc_verification'      => 'Google Search Console 検証コード',
@@ -1498,6 +1500,15 @@ class Kogu_Admin {
                         例: <code>4</code> → 返却期限 6/1 の場合、6/5 以降が次の貸し出し可能日になります。<br>
                         <strong>デフォルト: 4日</strong>（郵送3日＋検品1日想定）
                       </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th><label for="kogu_service_name">サービス名</label></th>
+                    <td>
+                      <input type="text" id="kogu_service_name" name="kogu_service_name"
+                             value="<?php echo esc_attr( get_option( 'kogu_service_name', 'みんなのレンタル工具' ) ); ?>"
+                             class="regular-text" />
+                      <p class="description">返送先住所の末尾に「〇〇 行」として表示されます。同梱紙・確認メールに反映。</p>
                     </td>
                   </tr>
                   <tr>
