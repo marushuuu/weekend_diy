@@ -308,7 +308,7 @@ class Kogu_Email_Handler {
     }
 
     // ── 返却完了・精算通知 ────────────────────────────────────────────────────
-    public static function send_return_complete( $rental_id, $total_charged, $late_fee, $damage_fee, $damage_reason = '' ) {
+    public static function send_return_complete( $rental_id, $total_charged, $late_fee, $damage_fee, $damage_reason = '', $billing_note = '' ) {
         $rental = Kogu_Rental_Manager::get( $rental_id );
         if ( ! $rental ) return;
         $email   = self::get_rental_email( $rental );
@@ -327,9 +327,11 @@ class Kogu_Email_Handler {
               <tr style='background:#ffeaea;'><td style='padding:8px 12px;font-size:12px;color:#666;'>損害内容</td><td style='padding:8px 12px;font-size:12px;color:#666;'>{$reason_text}</td></tr>";
             }
             $late_row = $late_fee > 0 ? "<tr style='background:#ffeaea;'><td style='padding:8px 12px;'>延滞料金</td><td style='padding:8px 12px;'>¥{$l_fmt}</td></tr>" : '';
+            $billing_note_row = $billing_note ? "<tr><td style='padding:8px 12px;font-size:12px;color:#666;'>請求備考</td><td style='padding:8px 12px;font-size:12px;color:#666;'>" . nl2br( esc_html( $billing_note ) ) . "</td></tr>" : '';
             $charge_block = "
               {$late_row}
               {$damage_row}
+              {$billing_note_row}
               <tr style='border-top:2px solid #c0392b;background:#ffeaea;'><td style='padding:8px 12px;font-weight:bold;'>登録カードへの請求額</td><td style='padding:8px 12px;font-size:18px;font-weight:bold;color:#c0392b;'>¥{$c_fmt}</td></tr>";
             $charge_note = "<p style='color:#c0392b;'>上記金額を登録カードに請求いたしました（反映まで3〜7営業日）。</p>";
         } else {

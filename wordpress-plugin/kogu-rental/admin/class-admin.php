@@ -292,6 +292,9 @@ class Kogu_Admin {
             <?php if ( $rental->damage_fee > 0 ) : ?>
             <tr><th>損害費用</th><td style="color:#c0392b;">¥<?php echo number_format( $rental->damage_fee ); ?></td></tr>
             <?php endif; ?>
+            <?php if ( ! empty( $rental->billing_note ) ) : ?>
+            <tr><th>請求備考</th><td><?php echo nl2br( esc_html( $rental->billing_note ) ); ?></td></tr>
+            <?php endif; ?>
             <tr><th>返送追跡番号</th><td><?php echo esc_html( $rental->tracking_return ?: '—' ); ?></td></tr>
           </table>
 
@@ -395,6 +398,10 @@ class Kogu_Admin {
             <label style="display:block;margin-bottom:12px;">
               損害内容・理由：<br>
               <textarea name="damage_reason" rows="3" style="width:100%;max-width:480px;padding:6px;margin-top:4px;" placeholder="例：本体に打痕あり、バッテリーが充電不可になっていた など（損害費用が0円の場合は空欄でOK）"></textarea>
+            </label>
+            <label style="display:block;margin-bottom:12px;">
+              請求備考（任意）：<br>
+              <textarea name="billing_note" rows="3" style="width:100%;max-width:480px;padding:6px;margin-top:4px;" placeholder="例：延滞の背景、損傷の詳細、お客様との確認事項など。メールに記載されます。"></textarea>
             </label>
             <p style="font-size:12px;color:#666;">
               合計請求額: ¥<strong id="total-charge-preview"><?php echo number_format( $combined_late_fee ); ?></strong>
@@ -1790,8 +1797,9 @@ class Kogu_Admin {
             $damage_fee        = (int) ( $_POST['damage_fee'] ?? 0 );
             $late_fee_override = isset( $_POST['late_fee_override'] ) ? (int) $_POST['late_fee_override'] : null;
             $damage_reason     = sanitize_textarea_field( $_POST['damage_reason'] ?? '' );
+            $billing_note      = sanitize_textarea_field( $_POST['billing_note'] ?? '' );
             // メイン：Stripe請求含む（late_fee_overrideは全商品合計を渡す）
-            Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee, $late_fee_override, $damage_reason );
+            Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee, $late_fee_override, $damage_reason, $billing_note );
             // 兄弟：在庫解放＋ステータス更新のみ（Stripe二重請求しない）
             foreach ( $siblings as $s ) {
                 if ( $s->status === 'return_evidence_submitted' ) {
@@ -1799,6 +1807,7 @@ class Kogu_Admin {
                     Kogu_Rental_Manager::update_status( $s->id, 'returned', [
                         'damage_fee'     => 0,
                         'damage_reason'  => '',
+                        'billing_note'   => '',
                         'late_fee_total' => 0,
                     ] );
                 }
