@@ -283,7 +283,7 @@ class Kogu_Rental_Manager {
      * Stripe で追加決済し、rental_end_date / rental_weeks / rental_fee を更新する。
      * 成功時は ['new_end_date', 'ext_fee', 'new_weeks'] を返す。失敗時は false。
      */
-    public static function extend_rental( int $rental_id, string $reservation_number, bool $skip_email = false ) {
+    public static function extend_rental( int $rental_id, string $reservation_number, bool $skip_email = false, bool $skip_stripe = false ) {
         $rental = self::get( $rental_id );
         if ( ! $rental ) return false;
         if ( $rental->reservation_number !== $reservation_number ) return false;
@@ -296,8 +296,8 @@ class Kogu_Rental_Manager {
         $new_weeks = (int) $rental->rental_weeks + 1;
         $ext_fee   = (int) round( (int) $product->price_per_week * self::WEEK_DISCOUNT_RATE );
 
-        // 登録カードに追加決済（Stripe秘密鍵が未設定のテスト環境ではスキップ）
-        if ( $rental->stripe_customer_id && $rental->stripe_payment_method_id ) {
+        // Stripe請求（呼び出し元が一括請求する場合はスキップ）
+        if ( ! $skip_stripe && $rental->stripe_customer_id && $rental->stripe_payment_method_id ) {
             $charge_id = Kogu_Stripe_Handler::charge_additional(
                 $rental->stripe_customer_id,
                 $rental->stripe_payment_method_id,

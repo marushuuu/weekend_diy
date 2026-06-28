@@ -430,10 +430,32 @@ class Kogu_Public {
             }
         }
 
+        // 延長料金を先に計算して合計を1回だけStripeに請求する
+        $first_rental  = $rentals[0];
+        $total_ext_fee = 0;
+        foreach ( $rentals as $r ) {
+            $prd = Kogu_Database::get_product( (int) $r->product_id );
+            $total_ext_fee += $prd ? (int) round( (int) $prd->price_per_week * Kogu_Rental_Manager::WEEK_DISCOUNT_RATE ) : 0;
+        }
+
+        if ( $total_ext_fee >= 50 && $first_rental->stripe_customer_id && $first_rental->stripe_payment_method_id ) {
+            $new_weeks_preview = (int) $first_rental->rental_weeks + 1;
+            $charge_id = Kogu_Stripe_Handler::charge_additional(
+                $first_rental->stripe_customer_id,
+                $first_rental->stripe_payment_method_id,
+                $total_ext_fee,
+                "予約#{$reservation_number} 1週間延長（{$new_weeks_preview}週目）"
+            );
+            if ( $charge_id === false ) {
+                wp_send_json_error( '延長処理に失敗しました。決済情報をご確認いただくか、お問い合わせください。' );
+            }
+        }
+
+        // DB更新はStripe請求成功後に各レンタルへ適用（skip_stripe=true）
         $results    = [];
         $rental_ids = [];
         foreach ( $rentals as $r ) {
-            $result = Kogu_Rental_Manager::extend_rental( (int) $r->id, $reservation_number, true /* skip_email */ );
+            $result = Kogu_Rental_Manager::extend_rental( (int) $r->id, $reservation_number, true /* skip_email */, true /* skip_stripe */ );
             if ( $result === false ) {
                 wp_send_json_error( '延長処理に失敗しました。決済情報をご確認いただくか、お問い合わせください。' );
             }
@@ -442,7 +464,6 @@ class Kogu_Public {
         }
 
         $new_end_date  = max( array_column( $results, 'new_end_date' ) );
-        $total_ext_fee = array_sum( array_column( $results, 'ext_fee' ) );
         $new_weeks     = $results[0]['new_weeks'];
 
         if ( count( $rental_ids ) === 1 ) {
