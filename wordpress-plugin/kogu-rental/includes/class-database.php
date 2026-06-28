@@ -24,6 +24,7 @@ class Kogu_Database {
             id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             name             VARCHAR(200) NOT NULL DEFAULT '',
             slug             VARCHAR(200) NOT NULL DEFAULT '' COMMENT 'URLスラッグ（英数字・ハイフン）',
+            category         VARCHAR(10)  NOT NULL DEFAULT 'XX' COMMENT '商品カテゴリコード（EL/HT/CT/GR/XX）',
             description      TEXT DEFAULT '',
             contents         TEXT DEFAULT ''   COMMENT 'レンタルに含まれるもの（改行区切り）',
             specs            TEXT DEFAULT ''   COMMENT '仕様スペック（改行区切り、key|value形式）',
@@ -40,6 +41,8 @@ class Kogu_Database {
         dbDelta( "CREATE TABLE " . self::addon_products_table() . " (
             id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             name           VARCHAR(200) NOT NULL DEFAULT '',
+            category       VARCHAR(10)  NOT NULL DEFAULT 'CS' COMMENT '商品カテゴリコード（CS/EL/HT/XX）',
+            serial_number  VARCHAR(50)  NOT NULL DEFAULT '' COMMENT '自動生成シリアル番号',
             description    TEXT DEFAULT '',
             price          INT UNSIGNED NOT NULL DEFAULT 0,
             unit           VARCHAR(50) NOT NULL DEFAULT '個',
@@ -228,6 +231,62 @@ class Kogu_Database {
                 'condition'   => 'excellent',
             ] );
         }
+    }
+
+    // ── シリアル番号生成 ──────────────────────────────────────────────────────
+    /**
+     * シリアル番号を生成する。
+     *
+     * フォーマット:
+     *   レンタル品 : R-[CAT]-[PROD(3桁)]-[UNIT(4桁)]-[YY]
+     *   購入オプション: A-[CAT]-[PROD(3桁)]-[YY]
+     *
+     * 例: R-EL-001-0003-25 / A-CS-005-25
+     *
+     * @param string   $type        'R'=レンタル / 'A'=購入オプション
+     * @param string   $category    カテゴリコード（EL / HT / CT / GR / CS / XX）
+     * @param int      $product_id  商品ID
+     * @param int|null $unit_number レンタル品の台番号（購入オプションは null）
+     * @param int|null $year        登録年（省略時は現在の年）
+     */
+    public static function generate_serial(
+        string $type,
+        string $category,
+        int    $product_id,
+        ?int   $unit_number = null,
+        ?int   $year        = null
+    ): string {
+        $t    = strtoupper( $type );
+        $cat  = strtoupper( $category ?: 'XX' );
+        $prod = str_pad( (string) $product_id, 3, '0', STR_PAD_LEFT );
+        $yy   = str_pad( (string) ( $year ?? (int) date( 'y' ) ), 2, '0', STR_PAD_LEFT );
+
+        if ( $unit_number !== null ) {
+            $unit = str_pad( (string) $unit_number, 4, '0', STR_PAD_LEFT );
+            return "{$t}-{$cat}-{$prod}-{$unit}-{$yy}";
+        }
+        return "{$t}-{$cat}-{$prod}-{$yy}";
+    }
+
+    // ── カテゴリ一覧 ──────────────────────────────────────────────────────────
+    public static function product_categories(): array {
+        return [
+            'EL' => '電動工具',
+            'HT' => '手工具',
+            'CT' => '切断工具',
+            'GR' => '研磨工具',
+            'CS' => '消耗品',
+            'XX' => 'その他',
+        ];
+    }
+
+    public static function addon_categories(): array {
+        return [
+            'CS' => '消耗品',
+            'EL' => '電動工具部品',
+            'HT' => '手工具部品',
+            'XX' => 'その他',
+        ];
     }
 
     // ── Product helpers ───────────────────────────────────────────────────────

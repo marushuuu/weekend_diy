@@ -348,12 +348,22 @@ class Kogu_Admin {
                 "SELECT MAX(unit_number) FROM $inv_table WHERE product_id = %d",
                 $selected_pid
             ) );
+            $new_unit = $max + 1;
             $wpdb->insert( $inv_table, [
                 'product_id'  => $selected_pid,
-                'unit_number' => $max + 1,
+                'unit_number' => $new_unit,
                 'status'      => 'available',
                 'condition'   => 'excellent',
             ] );
+            $new_unit_id = $wpdb->insert_id;
+            $product_for_serial = Kogu_Database::get_product( $selected_pid );
+            $auto_serial = Kogu_Database::generate_serial(
+                'R',
+                $product_for_serial->category ?? 'XX',
+                $selected_pid,
+                $new_unit
+            );
+            $wpdb->update( $inv_table, [ 'serial_number' => $auto_serial ], [ 'id' => $new_unit_id ] );
         }
 
         // シリアル番号・状態の保存
@@ -600,6 +610,20 @@ class Kogu_Admin {
                              value="<?php echo esc_attr( $edit->name ?? '' ); ?>" /></td>
                 </tr>
                 <tr>
+                  <th><label for="pcat">カテゴリ <em>*</em></label></th>
+                  <td>
+                    <select id="pcat" name="category">
+                      <?php foreach ( Kogu_Database::product_categories() as $code => $label ) : ?>
+                        <option value="<?php echo esc_attr( $code ); ?>"
+                          <?php selected( $edit->category ?? 'XX', $code ); ?>>
+                          <?php echo esc_html( "{$code} — {$label}" ); ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                    <p class="description">シリアル番号の先頭カテゴリコードに使われます。</p>
+                  </td>
+                </tr>
+                <tr>
                   <th><label for="pslug">URLスラッグ <em>*</em></label></th>
                   <td>
                     <input type="text" id="pslug" name="slug" required class="regular-text"
@@ -792,10 +816,33 @@ class Kogu_Admin {
               <input type="hidden" name="addon_id" value="<?php echo $edit_id > 0 ? $edit_id : 0; ?>">
               <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
               <table class="form-table">
+                <?php if ( $edit && ! empty( $edit->serial_number ) ) : ?>
+                <tr>
+                  <th>シリアル番号</th>
+                  <td>
+                    <code style="font-size:14px;font-weight:700;letter-spacing:1px;"><?php echo esc_html( $edit->serial_number ); ?></code>
+                    <p class="description">自動生成済み。変更不可。</p>
+                  </td>
+                </tr>
+                <?php endif; ?>
                 <tr>
                   <th><label for="aname">商品名 <em>*</em></label></th>
                   <td><input type="text" id="aname" name="name" required class="regular-text"
                              value="<?php echo esc_attr( $edit->name ?? '' ); ?>" /></td>
+                </tr>
+                <tr>
+                  <th><label for="acat">カテゴリ <em>*</em></label></th>
+                  <td>
+                    <select id="acat" name="category">
+                      <?php foreach ( Kogu_Database::addon_categories() as $code => $label ) : ?>
+                        <option value="<?php echo esc_attr( $code ); ?>"
+                          <?php selected( $edit->category ?? 'CS', $code ); ?>>
+                          <?php echo esc_html( "{$code} — {$label}" ); ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                    <p class="description">シリアル番号の先頭カテゴリコードに使われます（新規登録時のみ適用）。</p>
+                  </td>
                 </tr>
                 <tr>
                   <th><label for="adesc">説明</label></th>
@@ -863,6 +910,7 @@ class Kogu_Admin {
             <thead>
               <tr>
                 <th style="width:50px">ID</th>
+                <th>シリアル番号</th>
                 <th>商品名</th>
                 <th>説明</th>
                 <th>単価</th>
@@ -884,6 +932,7 @@ class Kogu_Admin {
               ?>
                 <tr style="<?php echo $a_is_active ? '' : 'opacity:.55;'; ?>">
                   <td><?php echo (int) $a->id; ?></td>
+                  <td><code style="font-size:11px;"><?php echo esc_html( $a->serial_number ?? '—' ); ?></code></td>
                   <td><strong><?php echo esc_html( $a->name ); ?></strong></td>
                   <td><?php echo esc_html( $a->description ); ?></td>
                   <td>¥<?php echo number_format( $a->price ); ?></td>
@@ -911,7 +960,7 @@ class Kogu_Admin {
                 </tr>
               <?php endforeach; ?>
               <?php if ( empty( $all ) ) : ?>
-                <tr><td colspan="7" style="text-align:center;padding:24px;">購入商品が登録されていません。</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:24px;">購入商品が登録されていません。</td></tr>
               <?php endif; ?>
             </tbody>
           </table>
@@ -1538,8 +1587,12 @@ class Kogu_Admin {
             ? null
             : max( 0, (int) $stock_input );
 
+        $allowed_addon_cats = array_keys( Kogu_Database::addon_categories() );
+        $category = in_array( $_POST['category'] ?? '', $allowed_addon_cats, true ) ? $_POST['category'] : 'CS';
+
         $data = [
             'name'           => sanitize_text_field( $_POST['name'] ?? '' ),
+            'category'       => $category,
             'description'    => sanitize_text_field( $_POST['description'] ?? '' ),
             'price'          => max( 0, (int) ( $_POST['price'] ?? 0 ) ),
             'unit'           => sanitize_text_field( $_POST['unit'] ?? '個' ),
@@ -1553,6 +1606,13 @@ class Kogu_Admin {
             $wpdb->update( Kogu_Database::addon_products_table(), $data, [ 'id' => $addon_id ] );
         } else {
             $wpdb->insert( Kogu_Database::addon_products_table(), $data );
+            $new_addon_id = $wpdb->insert_id;
+            $auto_serial  = Kogu_Database::generate_serial( 'A', $category, $new_addon_id );
+            $wpdb->update(
+                Kogu_Database::addon_products_table(),
+                [ 'serial_number' => $auto_serial ],
+                [ 'id' => $new_addon_id ]
+            );
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-addons&updated=1' ) );
@@ -1577,7 +1637,9 @@ class Kogu_Admin {
         $contents = sanitize_textarea_field( $_POST['contents'] ?? '' );
         $specs    = sanitize_textarea_field( $_POST['specs']    ?? '' );
         $gallery  = sanitize_text_field( $_POST['gallery'] ?? '' );
-        $data = compact( 'name', 'slug', 'description', 'contents', 'specs', 'gallery', 'price_per_week', 'deposit_amount', 'status' );
+        $allowed_cats = array_keys( Kogu_Database::product_categories() );
+        $category = in_array( $_POST['category'] ?? '', $allowed_cats, true ) ? $_POST['category'] : 'XX';
+        $data = compact( 'name', 'slug', 'category', 'description', 'contents', 'specs', 'gallery', 'price_per_week', 'deposit_amount', 'status' );
         $data['allows_addons'] = isset( $_POST['allows_addons'] ) ? 1 : 0;
 
         if ( $product_id ) {
