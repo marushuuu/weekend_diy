@@ -105,13 +105,26 @@ class Kogu_Admin {
         $status_filter = sanitize_text_field( $_GET['status'] ?? '' );
         $where = $status_filter ? $wpdb->prepare( 'WHERE r.status = %s', $status_filter ) : '';
 
-        $rentals = $wpdb->get_results(
+        $all_rentals = $wpdb->get_results(
             "SELECT r.*, p.name AS product_name
              FROM $table r
              LEFT JOIN $ptbl p ON p.id = r.product_id
              $where
-             ORDER BY r.created_at DESC LIMIT 200"
+             ORDER BY r.created_at DESC, r.id ASC
+             LIMIT 400"
         );
+
+        // 予約番号で集約（複数商品を1行に）
+        $groups      = [];
+        $group_order = [];
+        foreach ( $all_rentals as $r ) {
+            $key = $r->reservation_number ?: ( '__solo__' . $r->id );
+            if ( ! isset( $groups[ $key ] ) ) {
+                $groups[ $key ] = [];
+                $group_order[]  = $key;
+            }
+            $groups[ $key ][] = $r;
+        }
 
         $status_labels = [
             'pending'                    => '確認中',
@@ -139,47 +152,60 @@ class Kogu_Admin {
           <table class="wp-list-table widefat fixed striped">
             <thead>
               <tr>
-                <th style="width:50px">#</th>
+                <th style="width:110px">予約番号</th>
                 <th>お客様</th>
                 <th>商品</th>
                 <th>期間</th>
-                <th>料金</th>
-                <th>デポジット</th>
-                <th>ステータス</th>
-                <th>追跡（往路）</th>
-                <th>操作</th>
+                <th style="width:80px">料金</th>
+                <th style="width:90px">ステータス</th>
+                <th style="width:80px">追跡（往路）</th>
+                <th style="width:60px">操作</th>
               </tr>
             </thead>
             <tbody>
-              <?php foreach ( $rentals as $r ) :
-                $label = $status_labels[ $r->status ] ?? $r->status;
-                $name  = $r->user_id ? get_userdata( $r->user_id )->display_name : $r->guest_name;
-                $email = $r->user_id ? get_userdata( $r->user_id )->user_email   : $r->guest_email;
-                $weeks = (int) $r->rental_weeks ?: 1;
+              <?php foreach ( $group_order as $group_key ) :
+                // 同一予約内はID昇順（作成順）に並べ直す
+                $group = $groups[ $group_key ];
+                usort( $group, fn( $a, $b ) => (int) $a->id - (int) $b->id );
+                $first = $group[0];
+                $count = count( $group );
+
+                $product_names = implode( '・', array_unique( array_map( fn( $r ) => $r->product_name ?? '工具', $group ) ) );
+                $total         = array_sum( array_map( fn( $r ) => (int) $r->total_charged, $group ) );
+                $status        = $first->status;
+                $label         = $status_labels[ $status ] ?? $status;
+                $name          = $first->user_id ? get_userdata( $first->user_id )->display_name : $first->guest_name;
+                $email         = $first->user_id ? get_userdata( $first->user_id )->user_email   : $first->guest_email;
+                $weeks         = (int) $first->rental_weeks ?: 1;
+                $reservation   = esc_html( $first->reservation_number ?: '#' . $first->id );
               ?>
                 <tr>
-                  <td><?php echo (int) $r->id; ?></td>
+                  <td style="font-size:11px;font-weight:bold;color:#e85a2b;"><?php echo $reservation; ?></td>
                   <td>
                     <strong><?php echo esc_html( $name ); ?></strong><br>
                     <small><?php echo esc_html( $email ); ?></small>
                   </td>
-                  <td><?php echo esc_html( $r->product_name ?? '—' ); ?></td>
                   <td>
-                    <?php echo esc_html( $r->rental_start_date ); ?> 〜<br>
-                    <strong style="color:#e85a2b;"><?php echo esc_html( $r->rental_end_date ); ?></strong>
+                    <?php echo esc_html( $product_names ); ?>
+                    <?php if ( $count > 1 ) : ?>
+                      <span style="background:#e85a2b;color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;"><?php echo $count; ?>点</span>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?php echo esc_html( $first->rental_start_date ); ?> 〜<br>
+                    <strong style="color:#e85a2b;"><?php echo esc_html( $first->rental_end_date ); ?></strong>
                     <small>(<?php echo $weeks; ?>週間)</small>
                   </td>
-                  <td>¥<?php echo number_format( $r->rental_fee ); ?></td>
-                  <td>¥<?php echo number_format( $r->deposit_amount ); ?></td>
-                  <td><span class="kogu-status-<?php echo esc_attr( $r->status ); ?>"><?php echo esc_html( $label ); ?></span></td>
-                  <td><?php echo esc_html( $r->tracking_outbound ?: '—' ); ?></td>
+                  <td>¥<?php echo number_format( $total ); ?></td>
+                  <td><span class="kogu-status-<?php echo esc_attr( $status ); ?>"><?php echo esc_html( $label ); ?></span></td>
+                  <td><?php echo esc_html( $first->tracking_outbound ?: '—' ); ?></td>
                   <td>
-                    <a href="?page=kogu-rentals&detail=<?php echo (int) $r->id; ?>" class="button button-small">詳細</a>
+                    <a href="?page=kogu-rentals&detail=<?php echo (int) $first->id; ?>" class="button button-small">詳細</a>
                   </td>
                 </tr>
               <?php endforeach; ?>
-              <?php if ( empty( $rentals ) ) : ?>
-                <tr><td colspan="9" style="text-align:center;padding:24px;">該当するレンタルはありません。</td></tr>
+              <?php if ( empty( $group_order ) ) : ?>
+                <tr><td colspan="8" style="text-align:center;padding:24px;">該当するレンタルはありません。</td></tr>
               <?php endif; ?>
             </tbody>
           </table>
@@ -203,26 +229,66 @@ class Kogu_Admin {
         ) );
         if ( ! $rental ) return;
 
+        // 同一予約の全レンタルを取得（複数商品対応）
+        $res_rentals = [];
+        if ( $rental->reservation_number ) {
+            $res_rentals = Kogu_Database::get_rentals_by_reservation_number( $rental->reservation_number );
+            foreach ( $res_rentals as &$rr ) {
+                $p = Kogu_Database::get_product( (int) $rr->product_id );
+                $rr->product_name_display = $p ? $p->name : '工具';
+            }
+            unset( $rr );
+        }
+        if ( empty( $res_rentals ) ) {
+            $fallback = clone $rental;
+            $fallback->product_name_display = $rental->product_name ?? '工具';
+            $res_rentals = [ $fallback ];
+        }
+        $is_multi          = count( $res_rentals ) > 1;
+        $combined_late_fee = array_sum( array_map( fn( $r ) => (int) $r->late_fee_total, $res_rentals ) );
+        $combined_total    = array_sum( array_map( fn( $r ) => (int) $r->total_charged, $res_rentals ) );
+        $combined_fee      = array_sum( array_map( fn( $r ) => (int) $r->rental_fee, $res_rentals ) );
+
         $nonce = wp_create_nonce( 'kogu_admin_action' );
         $weeks = (int) $rental->rental_weeks ?: 1;
+        $title = $is_multi
+            ? '予約 ' . esc_html( $rental->reservation_number ) . '（' . count( $res_rentals ) . '点）詳細'
+            : 'レンタル #' . (int) $rental->id . ' 詳細';
         ?>
         <div style="margin-top:32px;background:#fff;border:1px solid #ddd;padding:24px;border-radius:8px;max-width:700px;">
-          <h2>レンタル #<?php echo (int) $rental->id; ?> 詳細
+          <h2><?php echo $title; ?>
             <a href="<?php echo esc_url( admin_url( 'admin.php?page=kogu-packing-slip&reservation_number=' . urlencode( $rental->reservation_number ) . '&rental_id=' . $rental_id ) ); ?>"
                target="_blank" class="button button-secondary" style="float:right;font-size:13px;">🖨 同梱紙を印刷</a>
           </h2>
 
           <table class="form-table">
             <tr><th>ステータス</th><td><?php echo esc_html( $rental->status ); ?></td></tr>
+            <?php if ( $is_multi ) : ?>
+            <tr>
+              <th>商品（<?php echo count( $res_rentals ); ?>点）</th>
+              <td>
+                <table style="border-collapse:collapse;width:100%;">
+                  <?php foreach ( $res_rentals as $rr ) : ?>
+                  <tr>
+                    <td style="padding:3px 0;"><?php echo esc_html( $rr->product_name_display ); ?></td>
+                    <td style="padding:3px 0 3px 16px;color:#888;white-space:nowrap;">¥<?php echo number_format( (int) $rr->rental_fee ); ?></td>
+                    <td style="padding:3px 0 3px 12px;color:#888;font-size:12px;">#<?php echo (int) $rr->id; ?></td>
+                  </tr>
+                  <?php endforeach; ?>
+                </table>
+              </td>
+            </tr>
+            <?php else : ?>
             <tr><th>商品</th><td><?php echo esc_html( $rental->product_name ?? '—' ); ?></td></tr>
+            <?php endif; ?>
             <tr><th>お名前</th><td><?php echo esc_html( $rental->user_id ? get_userdata( $rental->user_id )->display_name : $rental->guest_name ); ?></td></tr>
             <tr><th>メール</th><td><?php echo esc_html( $rental->guest_email ); ?></td></tr>
             <tr><th>電話</th><td><?php echo esc_html( $rental->guest_phone ); ?></td></tr>
             <tr><th>住所</th><td><?php echo esc_html( $rental->guest_postal_code . ' ' . $rental->guest_address ); ?></td></tr>
             <tr><th>期間</th><td><?php echo esc_html( $rental->rental_start_date ); ?> 〜 <?php echo esc_html( $rental->rental_end_date ); ?>（<?php echo $weeks; ?>週間）</td></tr>
-            <tr><th>レンタル料金</th><td>¥<?php echo number_format( $rental->rental_fee ); ?></td></tr>
-            <tr><th>デポジット</th><td>¥<?php echo number_format( $rental->deposit_amount ); ?></td></tr>
-            <tr><th>延滞料金</th><td>¥<?php echo number_format( $rental->late_fee_total ); ?>（<?php echo (int) $rental->late_fee_days; ?>日）</td></tr>
+            <tr><th>レンタル料金合計</th><td>¥<?php echo number_format( $combined_fee ); ?></td></tr>
+            <tr><th>お支払い合計</th><td>¥<?php echo number_format( $combined_total ); ?></td></tr>
+            <tr><th>延滞料金</th><td>¥<?php echo number_format( $combined_late_fee ); ?><?php if ( $is_multi && $combined_late_fee > 0 ) echo '（全商品合計）'; ?></td></tr>
             <?php if ( $rental->damage_fee > 0 ) : ?>
             <tr><th>損害費用</th><td style="color:#c0392b;">¥<?php echo number_format( $rental->damage_fee ); ?></td></tr>
             <?php endif; ?>
@@ -290,9 +356,9 @@ class Kogu_Admin {
             <label style="display:block;margin-bottom:8px;">
               延滞料金（¥）：
               <input type="number" name="late_fee_override" id="kogu-late-fee-input"
-                     value="<?php echo (int) $rental->late_fee_total; ?>" min="0"
+                     value="<?php echo $combined_late_fee; ?>" min="0"
                      style="width:120px;padding:6px;margin-left:8px;" />
-              <small style="color:#666;">（自動計算: ¥<?php echo number_format( $rental->late_fee_total ); ?>、0にすると免除）</small>
+              <small style="color:#666;">（自動計算: ¥<?php echo number_format( $combined_late_fee ); ?><?php echo $is_multi ? '・全商品合計' : ''; ?>、0にすると免除）</small>
             </label>
             <label style="display:block;margin-bottom:12px;">
               損害費用（¥）：
@@ -304,7 +370,7 @@ class Kogu_Admin {
               <textarea name="damage_reason" rows="3" style="width:100%;max-width:480px;padding:6px;margin-top:4px;" placeholder="例：本体に打痕あり、バッテリーが充電不可になっていた など（損害費用が0円の場合は空欄でOK）"></textarea>
             </label>
             <p style="font-size:12px;color:#666;">
-              合計請求額: ¥<strong id="total-charge-preview"><?php echo number_format( $rental->late_fee_total ); ?></strong>
+              合計請求額: ¥<strong id="total-charge-preview"><?php echo number_format( $combined_late_fee ); ?></strong>
               （延滞・損害がある場合、登録カードに直接請求されます。0円の場合は請求なし）
             </p>
             <script>
@@ -1648,25 +1714,68 @@ class Kogu_Admin {
         $op        = sanitize_text_field( $_POST['op'] ?? '' );
         $rental_id = (int) ( $_POST['rental_id'] ?? 0 );
 
+        // 同一予約の兄弟レンタルIDを取得（複数商品対応）
+        $main_rental = Kogu_Rental_Manager::get( $rental_id );
+        $siblings    = [];
+        if ( $main_rental && $main_rental->reservation_number ) {
+            foreach ( Kogu_Database::get_rentals_by_reservation_number( $main_rental->reservation_number ) as $s ) {
+                if ( (int) $s->id !== $rental_id ) {
+                    $siblings[] = $s;
+                }
+            }
+        }
+
         if ( $op === 'ship' ) {
             $tracking_out    = sanitize_text_field( $_POST['tracking_outbound'] ?? '' );
             $tracking_return = sanitize_text_field( $_POST['tracking_return_label'] ?? '' );
             if ( $tracking_out === '' || $tracking_return === '' ) {
                 wp_die( '往路追跡番号と返却用送り状番号の両方を入力してください。', '入力エラー', [ 'back_link' => true ] );
             }
+            // メイン（メール送信あり）
             Kogu_Rental_Manager::mark_shipped_to_customer( $rental_id, $tracking_out, $tracking_return );
+            // 兄弟は同じ荷物なのでステータスだけ更新（重複メール送らない）
+            foreach ( $siblings as $s ) {
+                if ( in_array( $s->status, [ 'confirmed', 'pending' ], true ) ) {
+                    Kogu_Rental_Manager::update_status( $s->id, 'shipped_to_customer', [
+                        'tracking_outbound' => $tracking_out,
+                        'tracking_return'   => $tracking_return,
+                    ] );
+                }
+            }
         }
 
         if ( $op === 'submit_return' ) {
             $tracking = sanitize_text_field( $_POST['tracking_return'] ?? '' );
+            // メイン（メール送信あり）
             Kogu_Rental_Manager::submit_return_evidence( $rental_id, $tracking );
+            // 兄弟はステータスだけ更新
+            foreach ( $siblings as $s ) {
+                if ( in_array( $s->status, [ 'shipped_to_customer', 'active', 'overdue' ], true ) ) {
+                    Kogu_Rental_Manager::update_status( $s->id, 'return_evidence_submitted', [
+                        'tracking_return'    => $tracking,
+                        'actual_return_date' => date( 'Y-m-d' ),
+                    ] );
+                }
+            }
         }
 
         if ( $op === 'confirm_return' ) {
             $damage_fee        = (int) ( $_POST['damage_fee'] ?? 0 );
             $late_fee_override = isset( $_POST['late_fee_override'] ) ? (int) $_POST['late_fee_override'] : null;
             $damage_reason     = sanitize_textarea_field( $_POST['damage_reason'] ?? '' );
+            // メイン：Stripe請求含む（late_fee_overrideは全商品合計を渡す）
             Kogu_Rental_Manager::confirm_return( $rental_id, $damage_fee, $late_fee_override, $damage_reason );
+            // 兄弟：在庫解放＋ステータス更新のみ（Stripe二重請求しない）
+            foreach ( $siblings as $s ) {
+                if ( $s->status === 'return_evidence_submitted' ) {
+                    Kogu_Inventory::set_unit_status( (int) $s->inventory_unit_id, 'available' );
+                    Kogu_Rental_Manager::update_status( $s->id, 'returned', [
+                        'damage_fee'     => 0,
+                        'damage_reason'  => '',
+                        'late_fee_total' => 0,
+                    ] );
+                }
+            }
         }
 
         wp_redirect( admin_url( 'admin.php?page=kogu-rentals&detail=' . $rental_id . '&updated=1' ) );
