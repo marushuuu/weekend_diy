@@ -153,9 +153,34 @@ function minna_kogu_seo_head() {
 		$og_title  = get_the_title() . '｜' . $site_name;
 		$og_type   = 'article';
 		$output_jsonld = false;
+	} elseif ( is_singular() ) {
+		// 個別投稿・カスタム投稿タイプ — canonical を各記事の本来のURLに設定
+		$excerpt   = wp_trim_words( strip_tags( get_the_excerpt() ?: get_the_content() ), 55, '…' );
+		$desc      = $excerpt ?: ( get_the_title() . '｜' . $site_name );
+		$canonical = get_permalink();
+		$og_title  = get_the_title() . '｜' . $site_name;
+		$og_type   = 'article';
+		$output_jsonld = false;
+	} elseif ( is_home() || is_archive() ) {
+		// ブログ一覧・カテゴリー・タグアーカイブ
+		if ( is_category() ) {
+			$cat_name = single_cat_title( '', false );
+			$og_title = $cat_name . '｜' . $site_name;
+			$desc     = $cat_name . 'のDIYコラム一覧｜' . $site_name;
+		} elseif ( is_tag() ) {
+			$tag_name = single_tag_title( '', false );
+			$og_title = $tag_name . '｜' . $site_name;
+			$desc     = $tag_name . 'のDIYコラム一覧｜' . $site_name;
+		} else {
+			$og_title = 'DIYコラム｜' . $site_name;
+			$desc     = 'DIYと工具に関するコラム一覧｜' . $site_name;
+		}
+		$canonical = get_pagenum_link();
+		$og_type   = 'website';
+		$output_jsonld = false;
 	} else {
 		$desc      = 'インパクトドライバーなど電動工具を1週間¥4,900からレンタル。3,000円以上で送料無料（北海道・沖縄・離島除く）。';
-		$canonical = home_url( '/' );
+		$canonical = get_pagenum_link();
 		$og_title  = $site_name;
 		$og_type   = 'website';
 		$output_jsonld = false;
