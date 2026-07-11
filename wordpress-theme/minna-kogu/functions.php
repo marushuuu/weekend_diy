@@ -251,29 +251,6 @@ function minna_kogu_seo_head() {
 	}
 }
 
-// VK All in One Expansion Unit の SNSシェアボタンのみ無効化
-add_filter( 'vkExUnit_common_settings', function( $settings ) {
-	foreach ( [ 'social_bookmarks', 'SNS_bookmarks', 'sns_bookmarks' ] as $key ) {
-		if ( isset( $settings[ $key ] ) ) {
-			$settings[ $key ]['active'] = false;
-		}
-	}
-	return $settings;
-} );
-// the_content フィルター経由で追加される場合の除去
-add_action( 'wp', function() {
-	global $wp_filter;
-	if ( empty( $wp_filter['the_content'] ) ) return;
-	foreach ( $wp_filter['the_content']->callbacks as $priority => $callbacks ) {
-		foreach ( $callbacks as $key => $cb ) {
-			$func = $cb['function'];
-			$class = is_array( $func ) && is_object( $func[0] ) ? get_class( $func[0] ) : '';
-			if ( $class && stripos( $class, 'social' ) !== false && stripos( $class, 'bookmark' ) !== false ) {
-				unset( $wp_filter['the_content']->callbacks[ $priority ][ $key ] );
-			}
-		}
-	}
-}, 99 );
 
 // ── Theme helpers ─────────────────────────────────────────────────────────────
 
