@@ -254,17 +254,24 @@ function minna_kogu_seo_head() {
 }
 
 /**
- * 旧・日付ベースURL（/YYYY/MM/DD/slug/）を新URL（/slug/）へ301リダイレクト。
- * パーマリンク構造を変更した後、旧URLが404になった場合のみ発動する。
+ * 旧URL（日付あり /YYYY/MM/DD/slug/、日付なし /slug/ など）を
+ * 現在のパーマリンク構造の正しいURLへ301リダイレクトする。
+ * 404になったリクエストの末尾セグメントを投稿スラッグとして解決するため、
+ * 今後パーマリンク構造を再変更しても個別に手を入れる必要がない。
  */
 add_action( 'template_redirect', function() {
 	if ( ! is_404() ) return;
 	$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), '/' );
-	if ( ! preg_match( '#^\d{4}/\d{2}/\d{2}/([^/]+)$#', $path, $m ) ) return;
-	$post = get_page_by_path( $m[1], OBJECT, 'post' );
+	if ( '' === $path ) return;
+	$segments = explode( '/', $path );
+	$slug     = end( $segments );
+	$post     = get_page_by_path( $slug, OBJECT, 'post' );
 	if ( $post && 'publish' === $post->post_status ) {
-		wp_safe_redirect( home_url( '/' . $m[1] . '/' ), 301 );
-		exit;
+		$target = get_permalink( $post );
+		if ( $target ) {
+			wp_safe_redirect( $target, 301 );
+			exit;
+		}
 	}
 } );
 
