@@ -46,6 +46,8 @@ if ( ! function_exists( 'minna_kogu_setup' ) ) {
 		register_nav_menus( [
 			'primary' => 'ヘッダーメニュー',
 		] );
+		// WordPressコア標準のcanonical出力を無効化（minna_kogu_seo_head()で独自出力するため、重複を防ぐ）
+		remove_action( 'wp_head', 'rel_canonical' );
 	}
 }
 add_action( 'after_setup_theme', 'minna_kogu_setup' );
