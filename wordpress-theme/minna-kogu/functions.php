@@ -253,6 +253,21 @@ function minna_kogu_seo_head() {
 	}
 }
 
+/**
+ * 旧・日付ベースURL（/YYYY/MM/DD/slug/）を新URL（/slug/）へ301リダイレクト。
+ * パーマリンク構造を変更した後、旧URLが404になった場合のみ発動する。
+ */
+add_action( 'template_redirect', function() {
+	if ( ! is_404() ) return;
+	$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), '/' );
+	if ( ! preg_match( '#^\d{4}/\d{2}/\d{2}/([^/]+)$#', $path, $m ) ) return;
+	$post = get_page_by_path( $m[1], OBJECT, 'post' );
+	if ( $post && 'publish' === $post->post_status ) {
+		wp_safe_redirect( home_url( '/' . $m[1] . '/' ), 301 );
+		exit;
+	}
+} );
+
 
 // ── Theme helpers ─────────────────────────────────────────────────────────────
 
