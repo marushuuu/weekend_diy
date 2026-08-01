@@ -119,6 +119,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 HTML;
 } );
 
+/** サイトマップから不要なエントリを除外（著者ページ・WooCommerce商品） */
+add_filter( 'wp_sitemaps_add_provider', function( $provider, $name ) {
+	return in_array( $name, [ 'users' ], true ) ? false : $provider;
+}, 10, 2 );
+
 /** noindex 対象ページに robots タグを出力 */
 add_action( 'wp_head', function() {
 	if ( ! is_page() ) return;
