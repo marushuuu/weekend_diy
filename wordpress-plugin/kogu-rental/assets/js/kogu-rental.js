@@ -1,270 +1,419 @@
-/* global KoguData, Stripe */
+/* global KoguData, Stripe, jQuery */
 (function ($) {
   'use strict';
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  const state = {
-    startDate:        null,
-    endDate:          null,
-    rentalFee:        0,
-    clientSecret:     null,
-    paymentIntentId:  null,
-    customerId:       null,
-    stripe:           null,
-    paymentElement:   null,
-    customerInfo:     {},
-  };
+  // ── Utility ────────────────────────────────────────────────────────────────
+  function fmt(n) { return '¥' + Number(n).toLocaleString('ja-JP'); }
+
+  function addDays(dateStr, days) {
+    var d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function calcFee(weeks, pricePerWeek) {
+    if (weeks <= 0) return 0;
+    var discounted = Math.round(pricePerWeek * KoguData.week_discount_rate);
+    return pricePerWeek + (weeks - 1) * discounted;
+  }
+
+  function isAvailable(start, weeks, availability) {
+    if (!start || weeks <= 0) return false;
+    var cursor = new Date(start + 'T00:00:00');
+    var endDt  = new Date(addDays(start, weeks * 7 - 1) + 'T00:00:00');
+    while (cursor <= endDt) {
+      var d = cursor.toISOString().slice(0, 10);
+      if (d in availability && availability[d] < 1) return false;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return true;
+  }
 
   // ── Init ───────────────────────────────────────────────────────────────────
   $(document).ready(function () {
+    // DOM が確実に揃ってから判定
+    var isTopMode = !!$('.kogu-top-block').length;
+
     if ($('#kogu-rental-app').length) {
-      initRentalForm();
+      if (isTopMode) {
+        initTopMode();
+      } else {
+        initRentalForm();
+        applyUrlParams();
+      }
     }
     if ($('.kogu-mypage').length) {
       initMyPage();
     }
   });
 
-  // ── Rental Form ────────────────────────────────────────────────────────────
-  function initRentalForm() {
-    if (KoguData.stripe_public_key) {
-      state.stripe = Stripe(KoguData.stripe_public_key);
+  // ── TOP MODE: 商品ごとに独立した日付・週数入力 ──────────────────────────────
+  function initTopMode() {
+    var topAvail = {};
+
+    $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
+      if (res.success) { topAvail = res.data; }
+    });
+
+    $(document).on('change', '.kogu-top-start-date, .kogu-top-rental-weeks', function () {
+      var $block = $(this).closest('.kogu-top-block');
+      updateTopBlock($block, topAvail);
+    });
+  }
+
+  function updateTopBlock($block, topAvail) {
+    var pid   = parseInt($block.data('product-id'), 10);
+    var start = $block.find('.kogu-top-start-date').val();
+    var weeks = parseInt($block.find('.kogu-top-rental-weeks').val(), 10) || 0;
+
+    var product = null;
+    $.each(KoguData.products, function (_, p) { if (p.id === pid) { product = p; return false; } });
+
+    var $summary = $block.find('.kogu-top-summary');
+    var $unavail = $block.find('.kogu-top-unavail');
+    var $goBtn   = $block.find('.kogu-top-go-btn');
+
+    if (!product || !start || !weeks) {
+      $summary.hide(); $goBtn.hide(); $unavail.hide();
+      return;
     }
 
-    loadCalendar();
+    if (start < KoguData.date_min) {
+      $summary.hide();
+      $goBtn.hide();
+      $unavail.text('貸出開始日は ' + KoguData.date_min + ' 以降の日付を選択してください。').show();
+      return;
+    }
 
-    $('#btn-to-info').on('click', function () {
-      showStep('step-info');
+    var avail    = isAvailable(start, weeks, topAvail[pid] || {});
+    var fee      = calcFee(weeks, product.price_per_week);
+    var shipping = fee < KoguData.free_shipping_threshold ? KoguData.shipping_fee : 0;
+
+    $block.find('.kogu-top-disp-start').text(start);
+    $block.find('.kogu-top-disp-end').text(addDays(start, weeks * 7 - 1));
+    $block.find('.kogu-top-disp-fee').text(fmt(fee));
+    if (shipping > 0) {
+      $block.find('.kogu-top-disp-shipping').text(fmt(shipping)).css('color', '#c0392b');
+    } else {
+      $block.find('.kogu-top-disp-shipping').text('無料').css('color', '#27ae60');
+    }
+    $summary.show();
+
+    if (avail) {
+      var url = KoguData.rental_page_url + '?product_id=' + pid +
+                '&start_date=' + start + '&weeks=' + weeks;
+      $goBtn.attr('href', url).show();
+      $unavail.hide();
+    } else {
+      $goBtn.hide();
+      $unavail.show();
+    }
+  }
+
+  // ── URLパラメータから自動入力（/rental/ ページ用） ──────────────────────────
+  function applyUrlParams() {
+    var params = new URLSearchParams(window.location.search);
+    var pid    = parseInt(params.get('product_id'), 10);
+    var date   = params.get('start_date');
+    var weeks  = params.get('weeks');
+    if (!pid) return;
+    var $card = $('.kogu-product-card[data-product-id="' + pid + '"]');
+    if ($card.length) {
+      $card.trigger('click');
+      if (date)  { setTimeout(function(){ $('#start-date').val(date).trigger('change'); }, 300); }
+      if (weeks) { setTimeout(function(){ $('#rental-weeks').val(weeks).trigger('change'); }, 400); }
+    }
+  }
+
+  // ── Full Mode: Rental Form (STEP 1〜4) ─────────────────────────────────────
+  var state = {
+    product_ids: [], products: [],
+    start_date: '', weeks: 0,
+    availability: {}, addons: {},
+    rental_fee: 0, addon_total: 0, deposit: 0,
+    customer_id: '', payment_intent_id: '',
+    stripe: null, stripe_elements: null, customer_info: {},
+  };
+
+  // 在庫データを一度だけ取得してキャッシュ
+  var availabilityLoaded = false;
+
+  function ensureAvailability(callback) {
+    if (availabilityLoaded) {
+      callback();
+      return;
+    }
+    $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
+      if (res.success) {
+        state.availability = res.data;
+        availabilityLoaded = true;
+      }
+      callback();
+    });
+  }
+
+  function initRentalForm() {
+    // 商品カードクリック — #kogu-products 内のカードに直接バインド
+    $('#kogu-products').on('click', '.kogu-product-card', function () {
+      $(this).toggleClass('selected');
+
+      // 選択中のカードから state を再構築
+      state.product_ids = [];
+      state.products    = [];
+      $('.kogu-product-card.selected').each(function () {
+        var pid = parseInt($(this).data('product-id'), 10);
+        state.product_ids.push(pid);
+        $.each(KoguData.products, function (_, p) {
+          if (p.id === pid) { state.products.push(p); return false; }
+        });
+      });
+
+      var hasSelected = state.product_ids.length > 0;
+
+      if (hasSelected) {
+        $('#kogu-select-hint').hide();
+        $('#start-date, #rental-weeks').prop('disabled', false);
+
+        var names = state.products.map(function (p) { return p.name; }).join('・');
+        $('#kogu-stock-product-name').text(names);
+        $('#kogu-stock-banner').show();
+        $('#btn-to-info').show();
+
+        ensureAvailability(function () {
+          updateSummary();
+          if (!$('#start-date').val() || !parseInt($('#rental-weeks').val(), 10)) {
+            $('#kogu-stock-badge').text('日付と週数を選んでください').attr('class', 'kogu-badge');
+          }
+        });
+      } else {
+        $('#kogu-select-hint').show();
+        $('#start-date, #rental-weeks').prop('disabled', true);
+        $('#kogu-stock-banner').hide();
+        $('#kogu-date-summary').hide();
+        $('#kogu-unavailable-msg').hide();
+        $('#kogu-addons-wrap').hide();
+        $('#btn-to-info').hide();
+      }
     });
 
-    $('#btn-back-dates').on('click', function () {
-      showStep('step-dates');
+    // 初期状態：商品未選択なら入力欄を無効化
+    $('#start-date, #rental-weeks').prop('disabled', true);
+
+    $('#start-date, #rental-weeks').on('change', updateSummary);
+
+    $(document).on('click', '.kogu-qty-plus', function () {
+      var id     = $(this).data('addon-id');
+      var $input = $('#addon-qty-' + id);
+      var cur    = parseInt($input.val(), 10) || 0;
+      var stock  = parseInt($input.data('addon-stock'), 10);
+      var maxQty = isNaN(stock) ? 99 : stock;
+      if (cur < maxQty) { $input.val(cur + 1); updateAddons(); }
     });
+    $(document).on('click', '.kogu-qty-minus', function () {
+      var id = $(this).data('addon-id');
+      var $input = $('#addon-qty-' + id);
+      var val = parseInt($input.val(), 10) || 0;
+      if (val > 0) { $input.val(val - 1); updateAddons(); }
+    });
+
+    $('#btn-to-info').on('click', function () { showStep('step-info'); });
+    $('#btn-back-dates').on('click', function () { showStep('step-dates'); });
+    $('#btn-back-info').on('click', function () { showStep('step-info'); });
 
     $('#kogu-info-form').on('submit', function (e) {
       e.preventDefault();
-      state.customerInfo = {
+      state.customer_info = {
         name:        $(this).find('[name=name]').val().trim(),
         email:       $(this).find('[name=email]').val().trim(),
         phone:       $(this).find('[name=phone]').val().trim(),
         postal_code: $(this).find('[name=postal_code]').val().trim(),
-        address:     $(this).find('[name=address]').val().trim(),
+        address:     [$(this).find('[name=address1]').val().trim(), $(this).find('[name=address2]').val().trim()].filter(Boolean).join(' '),
       };
+      showStep('step-payment');
       createPaymentIntent();
     });
 
-    $('#btn-back-info').on('click', function () {
-      showStep('step-info');
+    $('#agree-terms').on('change', function () {
+      $('#btn-pay').prop('disabled', !this.checked || !state.stripe_elements);
     });
 
     $('#btn-pay').on('click', handlePayment);
   }
 
-  // ── Calendar ───────────────────────────────────────────────────────────────
-  function loadCalendar() {
-    $.post(KoguData.ajax_url, { action: 'kogu_availability', nonce: KoguData.nonce }, function (res) {
-      if (res.success) {
-        renderCalendar(res.data);
+  function updateAddons() {
+    state.addons = {}; state.addon_total = 0;
+    $('.kogu-qty-input').each(function () {
+      var qty = parseInt($(this).val(), 10) || 0;
+      var id  = parseInt($(this).data('addon-id'), 10);
+      // カードの selected クラスを数量に連動
+      $('.kogu-addon-card[data-addon-id="' + id + '"]').toggleClass('selected', qty > 0);
+      if (qty > 0) {
+        state.addons[id]   = qty;
+        state.addon_total += (parseInt($(this).data('addon-price'), 10) || 0) * qty;
       }
     });
-  }
-
-  function renderCalendar(availMap) {
-    const $cal    = $('#kogu-calendar');
-    const today   = new Date();
-    today.setHours(0,0,0,0);
-    const months  = 3;
-    let html      = '';
-
-    for (let m = 0; m < months; m++) {
-      const d = new Date(today.getFullYear(), today.getMonth() + m, 1);
-      html += renderMonth(d, availMap, today);
+    if (state.addon_total > 0) {
+      $('#disp-addon-total').text(fmt(state.addon_total));
+      $('#kogu-addon-total-row').show();
+    } else {
+      $('#kogu-addon-total-row').hide();
     }
-    $cal.html(html);
-
-    $cal.on('click', '.kogu-cal-day.available', function () {
-      const date = $(this).data('date');
-      if (!state.startDate || (state.startDate && state.endDate)) {
-        state.startDate = date;
-        state.endDate   = null;
-      } else if (date < state.startDate) {
-        state.startDate = date;
-        state.endDate   = null;
-      } else {
-        state.endDate = date;
-      }
-      highlightRange($cal, availMap);
-      updateDateSummary();
-    });
+    updateShippingDisplay();
   }
 
-  function renderMonth(date, availMap, today) {
-    const y     = date.getFullYear();
-    const m     = date.getMonth();
-    const label = `${y}年${m+1}月`;
-    const days  = new Date(y, m+1, 0).getDate();
-    const first = new Date(y, m, 1).getDay();
-
-    let html = `<div class="kogu-cal-month"><div class="kogu-cal-month-label">${label}</div>
-      <div class="kogu-cal-grid">`;
-
-    // 曜日ヘッダー
-    ['日','月','火','水','木','金','土'].forEach(d => {
-      html += `<div class="kogu-cal-dow">${d}</div>`;
-    });
-
-    // 空白セル
-    for (let i = 0; i < first; i++) html += '<div></div>';
-
-    for (let d = 1; d <= days; d++) {
-      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const cellDate = new Date(y, m, d);
-      const avail    = availMap[dateStr] ?? 0;
-      const isPast   = cellDate < today;
-
-      let cls = 'kogu-cal-day';
-      if (isPast)       cls += ' past';
-      else if (avail > 0) cls += ' available';
-      else               cls += ' soldout';
-
-      const badge = avail > 0 ? `<span class="kogu-avail-count">${avail}</span>` : '';
-      html += `<div class="${cls}" data-date="${dateStr}" data-avail="${avail}">
-        ${d}${badge}
-      </div>`;
-    }
-    html += '</div></div>';
-    return html;
-  }
-
-  function highlightRange($cal, availMap) {
-    $cal.find('.kogu-cal-day').removeClass('selected in-range range-start range-end');
-
-    if (!state.startDate) return;
-
-    $cal.find(`.kogu-cal-day[data-date="${state.startDate}"]`).addClass('selected range-start');
-
-    if (state.endDate) {
-      $cal.find(`.kogu-cal-day[data-date="${state.endDate}"]`).addClass('selected range-end');
-      $cal.find('.kogu-cal-day').each(function () {
-        const d = $(this).data('date');
-        if (d > state.startDate && d < state.endDate) {
-          $(this).addClass('in-range');
-        }
-      });
+  function updateShippingDisplay() {
+    if (!state.rental_fee) return;
+    var subtotal = state.rental_fee + state.addon_total;
+    if (subtotal < KoguData.free_shipping_threshold) {
+      $('#disp-shipping').text(fmt(KoguData.shipping_fee));
+      $('#kogu-shipping-row').show();
+      $('#kogu-free-shipping-row').hide();
+    } else {
+      $('#kogu-shipping-row').hide();
+      $('#kogu-free-shipping-row').show();
     }
   }
 
-  function updateDateSummary() {
-    const $summary = $('#kogu-date-summary');
-    if (!state.startDate) {
-      $summary.hide();
+  function updateSummary() {
+    var start = $('#start-date').val();
+    var weeks = parseInt($('#rental-weeks').val(), 10) || 0;
+
+    if (!state.product_ids.length || !start || !weeks) {
+      $('#kogu-date-summary').hide();
       $('#btn-to-info').prop('disabled', true);
       return;
     }
 
-    $('#disp-start').text(state.startDate);
-
-    if (!state.endDate) {
-      state.endDate = state.startDate;
-    }
-    $('#disp-end').text(state.endDate);
-
-    const days = calcDays(state.startDate, state.endDate);
-    $('#disp-days').text(days);
-
-    state.rentalFee = days * KoguData.price_per_day;
-    const deposit   = KoguData.deposit_amount;
-    const total     = state.rentalFee + deposit;
-
-    $('#disp-rental-fee').text('¥' + fmt(state.rentalFee));
-    $('#disp-deposit').text('¥' + fmt(deposit));
-    $('#disp-total').text('¥' + fmt(total));
-    $('#disp-total-payment').text('¥' + fmt(total));
-
-    $summary.show();
-    $('#btn-to-info').prop('disabled', false);
-  }
-
-  // ── Create PaymentIntent ───────────────────────────────────────────────────
-  function createPaymentIntent() {
-    showStep('step-payment');
-    $('#disp-total-payment').text('¥' + fmt(state.rentalFee + KoguData.deposit_amount));
-
-    $.post(KoguData.ajax_url, {
-      action:     'kogu_create_intent',
-      nonce:      KoguData.nonce,
-      start_date: state.startDate,
-      end_date:   state.endDate,
-      email:      state.customerInfo.email,
-      name:       state.customerInfo.name,
-    }, function (res) {
-      if (!res.success) {
-        showError(res.data);
-        return;
-      }
-      state.clientSecret    = res.data.client_secret;
-      state.paymentIntentId = res.data.payment_intent_id;
-      state.customerId      = res.data.customer_id;
-
-      mountStripeElement();
-    });
-  }
-
-  function mountStripeElement() {
-    if (!state.stripe || !state.clientSecret) return;
-
-    const elements = state.stripe.elements({ clientSecret: state.clientSecret, locale: 'ja' });
-    state.paymentElement = elements.create('payment');
-    state.paymentElement.mount('#stripe-payment-element');
-    state._elements = elements;
-  }
-
-  // ── Payment ────────────────────────────────────────────────────────────────
-  async function handlePayment() {
-    if (!$('#agree-terms').is(':checked')) {
-      showError('利用規約への同意が必要です。');
+    if (start < KoguData.date_min) {
+      $('#kogu-date-summary').hide();
+      $('#btn-to-info').prop('disabled', true);
+      $('#kogu-stock-badge').text('日付エラー').attr('class', 'kogu-badge kogu-badge-empty');
+      $('#kogu-unavailable-msg').text('貸出開始日は ' + KoguData.date_min + ' 以降の日付を選択してください。').show();
+      $('#kogu-date-summary').show();
       return;
     }
 
-    setPayBtnLoading(true);
+    state.start_date = start;
+    state.weeks      = weeks;
 
-    const { error, paymentIntent } = await state.stripe.confirmPayment({
-      elements: state._elements,
+    // 全選択商品の合計料金と在庫チェック
+    state.rental_fee = 0;
+    var allAvailable = true;
+    $.each(state.products, function (_, product) {
+      state.rental_fee += calcFee(weeks, product.price_per_week);
+      if (!isAvailable(start, weeks, state.availability[product.id] || {})) {
+        allAvailable = false;
+      }
+    });
+    state.deposit = 0;
+
+    $('#disp-start').text(start);
+    $('#disp-end').text(addDays(start, weeks * 7 - 1));
+    $('#disp-weeks').text(weeks + '週間（' + (weeks * 7) + '日間）');
+
+    // 料金内訳：複数商品なら商品ごとに表示、1商品なら週割引内訳
+    if (state.products.length > 1) {
+      var breakdown = state.products.map(function (p) {
+        return p.name + '&nbsp;' + fmt(calcFee(weeks, p.price_per_week));
+      }).join('、');
+      $('#kogu-price-breakdown').html('内訳：' + breakdown).show();
+    } else if (weeks >= 2) {
+      var ppw  = state.products[0].price_per_week;
+      var disc = Math.round(ppw * KoguData.week_discount_rate);
+      $('#kogu-price-breakdown')
+        .html('内訳：1週目 ' + fmt(ppw) + ' ＋ 2週目以降 ' + fmt(disc) + '/週×' + (weeks - 1) + '週')
+        .show();
+    } else {
+      $('#kogu-price-breakdown').hide();
+    }
+
+    $('#disp-rental-fee').text(fmt(state.rental_fee));
+    updateShippingDisplay();
+    $('#kogu-date-summary').show();
+
+    if (allAvailable) {
+      var statusText = state.product_ids.length > 1 ? '全商品 在庫あり' : '在庫あり';
+      $('#kogu-stock-badge').text(statusText).attr('class', 'kogu-badge kogu-badge-ok');
+      $('#kogu-unavailable-msg').hide();
+      if (KoguData.addon_products.length > 0) {
+        $('.kogu-qty-input').val(0);
+        $('#kogu-addon-total-row').hide();
+        $('#kogu-addons-wrap').show();
+      }
+      $('#btn-to-info').prop('disabled', false);
+    } else {
+      $('#kogu-stock-badge').text('在庫なし').attr('class', 'kogu-badge kogu-badge-empty');
+      $('#kogu-unavailable-msg').show();
+      $('#kogu-addons-wrap').hide();
+      $('#btn-to-info').prop('disabled', true);
+    }
+  }
+
+  function buildAddonsPayload() {
+    var list = [];
+    $.each(state.addons, function (id, qty) { list.push({ id: id, qty: qty }); });
+    return JSON.stringify(list);
+  }
+
+  function createPaymentIntent() {
+    $.post(KoguData.ajax_url, {
+      action: 'kogu_create_intent', nonce: KoguData.nonce,
+      product_ids: JSON.stringify(state.product_ids),
+      start_date: state.start_date, weeks: state.weeks,
+      name: state.customer_info.name, email: state.customer_info.email,
+      addons: buildAddonsPayload(),
+    }, function (res) {
+      if (!res.success) { showError(res.data); showStep('step-info'); return; }
+      state.customer_id       = res.data.customer_id;
+      state.payment_intent_id = res.data.payment_intent_id;
+      $('#disp-total-payment').text(fmt(res.data.total));
+      var stripe = Stripe(KoguData.stripe_public_key);
+      state.stripe = stripe;
+      var elements = stripe.elements({ clientSecret: res.data.client_secret, locale: 'ja' });
+      state.stripe_elements = elements;
+      elements.create('payment').mount('#stripe-payment-element');
+      $('#agree-terms').trigger('change');
+    }).fail(function () {
+      showError('決済の準備に失敗しました。通信エラーが発生しています。しばらく経ってから再度お試しください。');
+      showStep('step-info');
+    });
+  }
+
+  function handlePayment() {
+    if (!$('#agree-terms').is(':checked')) { showError('利用規約への同意が必要です。'); return; }
+    if (!state.stripe || !state.stripe_elements) return;
+    setPayBtnLoading(true);
+    state.stripe.confirmPayment({
+      elements: state.stripe_elements,
       redirect: 'if_required',
       confirmParams: {
         payment_method_data: {
           billing_details: {
-            name:  state.customerInfo.name,
-            email: state.customerInfo.email,
-            phone: state.customerInfo.phone,
+            name: state.customer_info.name, email: state.customer_info.email, phone: state.customer_info.phone,
           },
         },
       },
+    }).then(function (result) {
+      if (result.error) { showError(result.error.message); setPayBtnLoading(false); return; }
+      confirmRental(result.paymentIntent.id);
     });
+  }
 
-    if (error) {
-      showError(error.message);
-      setPayBtnLoading(false);
-      return;
-    }
-
-    // 決済成功 → サーバーでレンタル確定
+  function confirmRental(piId) {
     $.post(KoguData.ajax_url, {
-      action:             'kogu_confirm_rental',
-      nonce:              KoguData.nonce,
-      payment_intent_id:  paymentIntent.id,
-      customer_id:        state.customerId,
-      start_date:         state.startDate,
-      end_date:           state.endDate,
-      name:               state.customerInfo.name,
-      email:              state.customerInfo.email,
-      phone:              state.customerInfo.phone,
-      postal_code:        state.customerInfo.postal_code,
-      address:            state.customerInfo.address,
+      action: 'kogu_confirm_rental', nonce: KoguData.nonce,
+      product_ids: JSON.stringify(state.product_ids),
+      payment_intent_id: piId, customer_id: state.customer_id,
+      start_date: state.start_date, weeks: state.weeks,
+      name: state.customer_info.name, email: state.customer_info.email,
+      phone: state.customer_info.phone, postal_code: state.customer_info.postal_code,
+      address: state.customer_info.address, addons: buildAddonsPayload(),
     }, function (res) {
       setPayBtnLoading(false);
       if (res.success) {
-        $('#disp-rental-id').text('#' + res.data.rental_id);
+        var rentalId = res.data.rental_id || (res.data.rental_ids && res.data.rental_ids[0]);
+        $('#disp-rental-id').text('#' + rentalId);
+        $('#disp-reservation-number').text(res.data.reservation_number || '—');
         showStep('step-complete');
       } else {
         showError(res.data);
@@ -272,30 +421,24 @@
     });
   }
 
-  // ── My Page: 返却証跡フォーム ──────────────────────────────────────────────
+  // ── My Page ────────────────────────────────────────────────────────────────
   function initMyPage() {
     $(document).on('submit', '.kogu-return-form', function (e) {
       e.preventDefault();
-
-      const $form    = $(this);
-      const rentalId = $form.data('rental-id');
-      const tracking = $form.find('[name=tracking]').val().trim();
-      const email    = $form.find('[name=email]').val().trim();
-      const $msg     = $form.find('.kogu-return-msg');
-
-      if (!tracking) { $msg.text('追跡番号を入力してください。').show(); return; }
-      if (!/^\d{12,13}$/.test(tracking.replace(/\s/g,''))) {
+      var $form             = $(this);
+      var rentalId          = $form.data('rental-id');
+      var reservationNumber = $form.data('reservation-number') || '';
+      var tracking          = $form.find('[name=tracking]').val().trim().replace(/\s/g, '');
+      var $msg              = $form.find('.kogu-return-msg');
+      if (!tracking) { $msg.text('追跡番号を入力してください。').css('color','red').show(); return; }
+      if (!/^\d{12,13}$/.test(tracking)) {
         $msg.text('ゆうパックの追跡番号は12〜13桁の数字です。再確認してください。').css('color','red').show();
         return;
       }
-      tracking = tracking.replace(/\s/g,'');
-
       $.post(KoguData.ajax_url, {
-        action:    'kogu_submit_return',
-        nonce:     KoguData.nonce,
-        rental_id: rentalId,
-        tracking:  tracking,
-        email:     email,
+        action: 'kogu_submit_return', nonce: KoguData.nonce,
+        rental_id: rentalId, tracking: tracking,
+        reservation_number: reservationNumber,
       }, function (res) {
         if (res.success) {
           $msg.text('✅ 返却証跡を提出しました。').css('color','green').show();
@@ -307,30 +450,206 @@
     });
   }
 
+  // ── 郵便番号 → 住所自動入力 ────────────────────────────────────────────────
+  $(document).on('input change', 'input[name="postal_code"]', function () {
+    var raw = $(this).val().replace(/[^0-9]/g, '');
+    if (raw.length !== 7) return;
+    fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + raw)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.results && data.results[0]) {
+          var r = data.results[0];
+          $('input[name="address1"]').val(r.address1 + r.address2 + r.address3);
+        }
+      }).catch(function () {});
+  });
+
   // ── Helpers ────────────────────────────────────────────────────────────────
   function showStep(id) {
     $('.kogu-step').hide();
     $('#' + id).show();
-    window.scrollTo({ top: $('#kogu-rental-app').offset().top - 80, behavior: 'smooth' });
+    $('html, body').animate({ scrollTop: Math.max(0, ($('#kogu-rental-app').offset().top || 0) - 80) }, 300);
   }
-
-  function showError(msg) {
-    $('#stripe-error').text(msg).show();
-  }
-
+  function showError(msg) { $('#stripe-error').text(msg).show(); }
   function setPayBtnLoading(on) {
     $('#btn-pay-text').toggle(!on);
     $('#btn-pay-loading').toggle(on);
     $('#btn-pay').prop('disabled', on);
   }
 
-  function calcDays(start, end) {
-    const s = new Date(start), e = new Date(end);
-    return Math.max(1, Math.round((e - s) / 86400000) + 1);
+})(jQuery);
+
+/* ── 商品詳細モーダル ─────────────────────────────────────────────────────── */
+(function($) {
+  var modal   = $('#kogu-product-modal');
+  var imgs    = [];
+  var current = 0;
+
+  function openModal(card) {
+    imgs    = JSON.parse(card.attr('data-gallery') || '[]');
+    current = 0;
+    modal.find('.kogu-modal-title').text(card.attr('data-product-name') || '');
+
+    // 同梱物
+    var contents = JSON.parse(card.attr('data-contents') || '[]');
+    var ul = modal.find('.kogu-contents-list').empty();
+    if (contents.length) {
+      $.each(contents, function(_, item) { ul.append($('<li>').text(item)); });
+      modal.find('.kogu-modal-contents').show();
+    } else {
+      modal.find('.kogu-modal-contents').hide();
+    }
+
+    // カルーセル
+    renderCarousel();
+    modal.css('display', 'flex');
+    $('body').css('overflow', 'hidden');
   }
 
-  function fmt(n) {
-    return n.toLocaleString('ja-JP');
+  function renderCarousel() {
+    if (!imgs.length) return;
+    modal.find('.kogu-carousel-img').attr('src', imgs[current]).attr('alt', '商品画像 ' + (current + 1));
+
+    // dots
+    var dots = modal.find('.kogu-carousel-dots').empty();
+    if (imgs.length > 1) {
+      $.each(imgs, function(i) {
+        var dot = $('<button class="kogu-carousel-dot">').attr('aria-label', (i+1) + '枚目');
+        if (i === current) dot.addClass('active');
+        dot.on('click', function() { current = i; renderCarousel(); });
+        dots.append(dot);
+      });
+    }
+
+    // 矢印の有効/無効
+    modal.find('.kogu-carousel-prev').prop('disabled', current === 0);
+    modal.find('.kogu-carousel-next').prop('disabled', current === imgs.length - 1);
   }
 
+  function closeModal() {
+    modal.hide();
+    $('body').css('overflow', '');
+  }
+
+  // <a>でないdiv.kogu-product-imgの場合のみモーダルを開く
+  $(document).on('click', 'div.kogu-product-img', function() {
+    openModal($(this).closest('.kogu-product-card-static'));
+  });
+  $(document).on('click', '.kogu-modal-close, .kogu-modal-overlay', function(e) {
+    if (e.target === this) closeModal();
+  });
+  $(document).on('click', '.kogu-carousel-prev', function() {
+    if (current > 0) { current--; renderCarousel(); }
+  });
+  $(document).on('click', '.kogu-carousel-next', function() {
+    if (current < imgs.length - 1) { current++; renderCarousel(); }
+  });
+  $(document).on('keydown', function(e) {
+    if (!modal.is(':visible')) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowLeft' && current > 0) { current--; renderCarousel(); }
+    if (e.key === 'ArrowRight' && current < imgs.length - 1) { current++; renderCarousel(); }
+  });
+
+  // ── マイページ: レンタル延長 ──────────────────────────────────────────────
+  $(document).on('click', '.kogu-btn-extend', function() {
+    var $btn   = $(this);
+    var rn     = $btn.data('reservation-number');
+    var fee    = $btn.data('ext-fee');
+    var newEnd = $btn.data('new-end');
+    var $msg   = $btn.siblings('.kogu-extend-msg');
+
+    if (!confirm('1週間延長します。\n新しい返却期限: ' + newEnd + '\n延長料金: ¥' + Number(fee).toLocaleString('ja-JP') + '\n\nご登録のカードに請求されます。よろしいですか？')) return;
+
+    $btn.prop('disabled', true).text('処理中…');
+    $msg.hide().removeClass('kogu-error kogu-ok');
+
+    $.post(KoguData.ajax_url, {
+      action:             'kogu_extend_rental',
+      nonce:              KoguData.nonce,
+      reservation_number: rn
+    }, function(res) {
+      if (res.success) {
+        $msg.addClass('kogu-ok')
+            .html('✅ 延長完了！新しい返却期限: <strong>' + res.data.new_end_date + '</strong>')
+            .show();
+        $btn.closest('.kogu-extend-section').find('.kogu-extend-info').hide();
+        $btn.hide();
+        // 返却期限表示を更新
+        var $card = $btn.closest('.kogu-rental-card');
+        $card.find('.kogu-info-row').filter(function() {
+          return $(this).find('span').first().text().indexOf('返却期限') !== -1;
+        }).find('strong').contents().first().replaceWith(res.data.new_end_date + ' ');
+      } else {
+        $msg.addClass('kogu-error').text(res.data || '延長に失敗しました。').show();
+        $btn.prop('disabled', false).text('1週間延長する（¥' + Number(fee).toLocaleString('ja-JP') + '）');
+      }
+    }).fail(function() {
+      $msg.addClass('kogu-error').text('通信エラーが発生しました。').show();
+      $btn.prop('disabled', false).text('1週間延長する（¥' + Number(fee).toLocaleString('ja-JP') + '）');
+    });
+  });
+
+  // ── 工具リクエスト ポップアップ ──────────────────────────────────────────
+  var $fab     = $('#kogu-request-btn');
+  var $popup   = $('#kogu-request-popup');
+  var $close   = $popup.find('.kogu-request-popup-close');
+  var $submit  = $('#kogu-request-submit');
+  var $error   = $('#kogu-request-error');
+  var $thanks  = $('#kogu-request-thanks');
+  var $formWrap = $('#kogu-request-form-wrap');
+
+  if ($fab.length) {
+    $fab.on('click keydown', function(e) {
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      var isHidden = $popup.prop('hidden');
+      $popup.prop('hidden', !isHidden);
+      if (isHidden) $popup.find('#kogu-req-tool').focus();
+    });
+
+    $close.on('click', function() { $popup.prop('hidden', true); });
+
+    $(document).on('keydown', function(e) {
+      if (e.key === 'Escape' && !$popup.prop('hidden')) $popup.prop('hidden', true);
+    });
+
+    $(document).on('click', function(e) {
+      if (!$popup.prop('hidden') &&
+          !$(e.target).closest('#kogu-request-popup, #kogu-request-btn').length) {
+        $popup.prop('hidden', true);
+      }
+    });
+
+    $submit.on('click', function() {
+      var toolName = $.trim($('#kogu-req-tool').val());
+      var email    = $.trim($('#kogu-req-email').val());
+
+      $error.prop('hidden', true).text('');
+
+      if (!toolName) { $error.text('希望の工具名を入力してください。').prop('hidden', false); return; }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        $error.text('正しいメールアドレスを入力してください。').prop('hidden', false); return;
+      }
+
+      $submit.prop('disabled', true).text('送信中…');
+
+      $.post(KoguData.ajax_url, {
+        action:    'kogu_tool_request',
+        nonce:     KoguData.nonce,
+        tool_name: toolName,
+        email:     email
+      }, function(res) {
+        if (res.success) {
+          $formWrap.hide();
+          $thanks.prop('hidden', false);
+        } else {
+          $error.text(res.data || '送信に失敗しました。').prop('hidden', false);
+          $submit.prop('disabled', false).text('リクエストする');
+        }
+      }).fail(function() {
+        $error.text('通信エラーが発生しました。').prop('hidden', false);
+        $submit.prop('disabled', false).text('リクエストする');
+      });
+    });
+  }
 })(jQuery);

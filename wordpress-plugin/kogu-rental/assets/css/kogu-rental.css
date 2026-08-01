@@ -10,51 +10,164 @@
   --kogu-radius:  8px;
 }
 
-.kogu-wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; font-family: inherit; }
+.kogu-wrap { max-width: 860px; margin: 0 auto; padding: 0 16px 48px; font-family: inherit; }
 
-/* ── Steps ──────────────────────────────────────────────────────────────── */
-.kogu-step-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: var(--kogu-ink); border-left: 4px solid var(--kogu-accent); padding-left: 12px; }
-
-/* ── Availability banner ─────────────────────────────────────────────────── */
-.kogu-availability-banner { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.kogu-badge { display: inline-block; padding: 5px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; }
-.kogu-badge.in-stock   { background: #d4f4e2; color: var(--kogu-ok); }
-.kogu-badge.soldout-bg { background: #fde8e8; color: var(--kogu-warn); }
-.kogu-badge.checking   { background: var(--kogu-paper2); color: var(--kogu-muted); }
-.kogu-stock-label { font-size: 14px; color: var(--kogu-muted); }
-
-/* ── Calendar ────────────────────────────────────────────────────────────── */
-.kogu-calendar { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 20px; }
-.kogu-cal-month { flex: 1; min-width: 280px; }
-.kogu-cal-month-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; color: var(--kogu-ink); }
-.kogu-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-.kogu-cal-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--kogu-muted); padding: 4px 0; }
-.kogu-cal-day {
-  position: relative; text-align: center; padding: 6px 2px;
-  border-radius: 6px; font-size: 13px; cursor: default; user-select: none;
-  line-height: 1.2;
+/* ── Step titles ─────────────────────────────────────────────────────────── */
+.kogu-step-title {
+  font-size: 20px; font-weight: 700; margin-bottom: 20px;
+  color: var(--kogu-ink); border-left: 4px solid var(--kogu-accent); padding-left: 12px;
 }
-.kogu-cal-day.past        { color: var(--kogu-paper2); }
-.kogu-cal-day.available   { cursor: pointer; background: var(--kogu-paper); color: var(--kogu-ink); }
-.kogu-cal-day.available:hover { background: var(--kogu-paper2); }
-.kogu-cal-day.soldout     { background: #fde8e8; color: #c0a0a0; font-size: 10px; }
-.kogu-cal-day.in-range    { background: #fde8d8; }
-.kogu-cal-day.selected    { background: var(--kogu-accent) !important; color: #fff !important; font-weight: 700; }
-.kogu-avail-count { display: block; font-size: 9px; color: var(--kogu-ok); font-weight: 700; }
-.kogu-cal-day.selected .kogu-avail-count { color: #ffd; }
 
-/* ── Date summary ────────────────────────────────────────────────────────── */
-.kogu-date-summary { background: var(--kogu-paper); border: 1px solid var(--kogu-paper2); border-radius: var(--kogu-radius); padding: 16px 20px; margin-bottom: 16px; }
+/* ── Product cards ───────────────────────────────────────────────────────── */
+.kogu-products {
+  display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;
+}
+.kogu-product-card {
+  flex: 1; min-width: 200px; max-width: 320px;
+  border: 2px solid var(--kogu-paper2); border-radius: var(--kogu-radius);
+  overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+  background: #fff; position: relative;
+}
+/* 複数商品時：未選択カードに「選択」ラベルをオーバーレイ */
+.kogu-products:has(.kogu-product-card:not(.selected)) .kogu-product-card:not(.selected)::after {
+  content: 'タップして選択'; position: absolute; bottom: 8px; right: 8px;
+  background: var(--kogu-accent); color: #fff; font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px; opacity: 0; transition: opacity .2s;
+}
+.kogu-products:has(.kogu-product-card.selected) .kogu-product-card:not(.selected):hover::after {
+  opacity: 1;
+}
+.kogu-product-img {
+  display: block;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: var(--kogu-paper2);
+}
+.kogu-product-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .3s;
+}
+.kogu-product-card:hover .kogu-product-img img { transform: scale(1.04); }
+.kogu-product-card .kogu-product-name,
+.kogu-product-card .kogu-product-desc,
+.kogu-product-card .kogu-product-price,
+.kogu-product-card .kogu-product-price-discount {
+  padding-inline: 14px;
+}
+.kogu-product-card .kogu-product-name { margin-top: 14px; }
+.kogu-product-card .kogu-product-price-discount { padding-bottom: 14px; }
+.kogu-product-card:hover { border-color: var(--kogu-accent); box-shadow: 0 2px 8px rgba(232,90,43,.15); }
+.kogu-product-card.selected {
+  border-color: var(--kogu-accent); background: #fff9f6;
+  box-shadow: 0 2px 12px rgba(232,90,43,.2);
+}
+/* 選択中バッジ */
+.kogu-product-card.selected::after {
+  content: '✓ 選択中';
+  position: absolute; top: 8px; right: 8px;
+  background: var(--kogu-accent); color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+  opacity: 1 !important; pointer-events: none;
+}
+.kogu-product-name { font-size: 16px; font-weight: 700; color: var(--kogu-ink); margin-bottom: 6px; }
+.kogu-product-desc { font-size: 12px; color: var(--kogu-muted); margin-bottom: 10px; line-height: 1.5; }
+.kogu-product-price { display: flex; align-items: baseline; gap: 6px; }
+.kogu-price-label  { font-size: 12px; color: var(--kogu-muted); }
+.kogu-price-amount { font-size: 22px; font-weight: 700; color: var(--kogu-accent); }
+.kogu-product-price-discount {
+  font-size: 12px; color: var(--kogu-muted); margin-top: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.kogu-badge-discount {
+  display: inline-block; padding: 1px 7px; border-radius: 999px;
+  background: #fde8d8; color: var(--kogu-accent); font-size: 11px; font-weight: 700;
+}
+
+/* ── Step1 左右レイアウト ────────────────────────────────────────────────── */
+.kogu-step1-layout {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 24px;
+  align-items: start;
+}
+#kogu-products.kogu-products { margin-bottom: 0; }
+.kogu-step1-right {
+  width: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  position: sticky; top: 80px;
+}
+.kogu-step1-right .kogu-btn { width: 100%; text-align: center; }
+
+/* 商品未選択ヒント */
+.kogu-select-hint {
+  background: var(--kogu-paper); border: 1.5px dashed var(--kogu-paper2);
+  border-radius: var(--kogu-radius); padding: 16px;
+  font-size: 14px; color: var(--kogu-muted); text-align: center;
+}
+
+/* 入力欄が disabled のとき薄く表示 */
+#start-date:disabled, #rental-weeks:disabled { opacity: .45; pointer-events: none; }
+
+/* ── Top mode: 商品ごとのブロックグリッド ────────────────────────────────── */
+.kogu-top-grid {
+  display: flex; flex-wrap: wrap; gap: 20px;
+}
+.kogu-top-block {
+  flex: 1; min-width: 260px; max-width: 340px;
+  display: flex; flex-direction: column;
+}
+.kogu-product-card-static {
+  cursor: default;
+}
+.kogu-product-card-static:hover {
+  border-color: var(--kogu-paper2); box-shadow: none;
+}
+.kogu-product-period {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 0 0;
+}
+.kogu-product-period .kogu-top-go-btn {
+  width: 100%; text-align: center; margin-top: 4px;
+}
+.kogu-top-summary { margin: 4px 0 0; }
+
+/* ── Period wrap ─────────────────────────────────────────────────────────── */
+.kogu-period-wrap { display: flex; flex-direction: column; gap: 14px; }
+.kogu-in-stock-banner { display: flex; align-items: center; gap: 10px; }
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.kogu-badge { display: inline-block; padding: 5px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+.kogu-badge-ok       { background: #d4f4e2; color: var(--kogu-ok); }
+.kogu-badge-empty    { background: #fde8e8; color: var(--kogu-warn); }
+.kogu-badge-checking { background: var(--kogu-paper2); color: var(--kogu-muted); }
+.kogu-stock-label    { font-size: 14px; color: var(--kogu-muted); }
+
+/* ── Date/period summary ─────────────────────────────────────────────────── */
+.kogu-date-summary {
+  background: var(--kogu-paper); border: 1px solid var(--kogu-paper2);
+  border-radius: var(--kogu-radius); padding: 16px 20px; margin: 16px 0;
+}
 .kogu-date-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 14px; }
 .kogu-date-row.kogu-total { font-size: 18px; font-weight: 700; color: var(--kogu-accent); padding-top: 12px; }
 .kogu-divider { border: none; border-top: 1px dashed var(--kogu-paper2); margin: 8px 0; }
+.kogu-price-breakdown {
+  font-size: 12px; color: var(--kogu-muted); padding: 6px 0;
+  border-top: 1px dashed var(--kogu-paper2); margin-top: 4px;
+}
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
-.kogu-btn { display: inline-block; padding: 12px 24px; border-radius: var(--kogu-radius); font-size: 15px; font-weight: 700; border: none; cursor: pointer; transition: opacity .15s; text-decoration: none; }
+.kogu-btn {
+  display: inline-block; padding: 12px 24px; border-radius: var(--kogu-radius);
+  font-size: 15px; font-weight: 700; border: none; cursor: pointer;
+  transition: opacity .15s; text-decoration: none;
+}
 .kogu-btn:disabled { opacity: .5; cursor: not-allowed; }
-.kogu-btn-primary   { background: var(--kogu-accent); color: #fff; }
-.kogu-btn-primary:hover:not(:disabled) { opacity: .85; }
-.kogu-btn-secondary { background: var(--kogu-paper2); color: var(--kogu-ink); margin-right: 10px; }
+.kogu-btn-primary,
+a.kogu-btn-primary   { background: var(--kogu-accent); color: #fff !important; text-decoration: none !important; }
+.kogu-btn-primary:hover:not(:disabled),
+a.kogu-btn-primary:hover { opacity: .85; }
+.kogu-btn-secondary { background: var(--kogu-paper2); color: var(--kogu-ink); }
 .kogu-btn-secondary:hover { background: #ddd; }
 
 /* ── Form ────────────────────────────────────────────────────────────────── */
@@ -62,19 +175,38 @@
 .kogu-form-row { display: flex; flex-direction: column; gap: 5px; }
 .kogu-form-row label { font-size: 13px; font-weight: 600; color: var(--kogu-ink); }
 .kogu-form-row em { color: var(--kogu-accent); font-style: normal; }
-.kogu-form-row input, .kogu-form-row textarea, .kogu-form-row select {
-  padding: 10px 12px; border: 1.5px solid var(--kogu-paper2); border-radius: 6px;
-  font-size: 15px; font-family: inherit; outline: none;
+.kogu-form-row input,
+.kogu-form-row textarea,
+.kogu-form-row select,
+#start-date,
+#rental-weeks {
+  padding: 10px 12px; border: 1.5px solid var(--kogu-paper2);
+  border-radius: 6px; font-size: 15px; font-family: inherit; outline: none;
   transition: border-color .15s;
 }
-.kogu-form-row input:focus, .kogu-form-row textarea:focus { border-color: var(--kogu-accent); }
+.kogu-form-row input:focus,
+.kogu-form-row textarea:focus,
+#start-date:focus,
+#rental-weeks:focus { border-color: var(--kogu-accent); }
 
-/* ── Auth links ──────────────────────────────────────────────────────────── */
+/* period inputs — 確実にフル幅・スタック表示 */
+#start-date, #rental-weeks {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: #fff;
+}
+label[for="start-date"], label[for="rental-weeks"] {
+  display: block; font-size: 13px; font-weight: 600; color: var(--kogu-ink); margin-bottom: 5px;
+}
+label[for="start-date"] em, label[for="rental-weeks"] em { color: var(--kogu-accent); font-style: normal; }
+
+/* ── Auth / notice ───────────────────────────────────────────────────────── */
 .kogu-auth-links { background: var(--kogu-paper); border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
 .kogu-auth-links a { color: var(--kogu-accent); text-decoration: underline; }
 .kogu-notice { background: #d4f4e2; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--kogu-ok); margin-bottom: 14px; }
 
-/* ── Stripe element ──────────────────────────────────────────────────────── */
+/* ── Stripe / error / payment ────────────────────────────────────────────── */
 .kogu-stripe-element { border: 1.5px solid var(--kogu-paper2); border-radius: var(--kogu-radius); padding: 16px; margin: 16px 0; background: #fff; }
 .kogu-error { background: #fde8e8; color: var(--kogu-warn); border-radius: 6px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
 .kogu-payment-summary { background: var(--kogu-paper); border-radius: var(--kogu-radius); padding: 14px 16px; margin-bottom: 16px; font-size: 14px; }
@@ -87,33 +219,592 @@
 #step-complete h2 { font-size: 24px; margin-bottom: 12px; }
 #step-complete p   { font-size: 15px; color: var(--kogu-muted); margin-bottom: 8px; }
 
+/* ── 予約完了画面: 予約番号ボックス ─────────────────────────────────────── */
+.kogu-reservation-box {
+  background: #fff9f6; border: 2px solid var(--kogu-accent);
+  border-radius: var(--kogu-radius); padding: 24px 28px; text-align: center; margin: 20px 0;
+}
+.kogu-reservation-label { font-size: 13px; color: var(--kogu-muted); margin: 0 0 6px; }
+.kogu-reservation-number {
+  display: block; font-size: 36px; font-weight: 900; letter-spacing: 4px;
+  color: var(--kogu-accent);
+}
+.kogu-reservation-note { font-size: 12px; color: var(--kogu-muted); margin: 10px 0 0; line-height: 1.6; }
+.kogu-reservation-note a { color: var(--kogu-accent); }
+
 /* ── My Page ─────────────────────────────────────────────────────────────── */
-.kogu-mypage h2 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+.kogu-mypage h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.kogu-mypage-intro { font-size: 14px; color: var(--kogu-muted); margin-bottom: 20px; }
+
+/* 予約番号入力エリア */
+.kogu-rn-lookup {
+  background: var(--kogu-paper); border-radius: var(--kogu-radius);
+  padding: 20px 24px; margin-bottom: 24px;
+}
+.kogu-rn-form { display: flex; flex-direction: column; gap: 10px; }
+.kogu-rn-input-row { display: flex; gap: 10px; align-items: stretch; }
+.kogu-rn-input {
+  flex: 1; padding: 12px 16px; font-size: 18px; font-weight: 700;
+  letter-spacing: 2px; border: 2px solid var(--kogu-paper2);
+  border-radius: 6px; outline: none; font-family: monospace;
+  transition: border-color .15s;
+}
+.kogu-rn-input:focus { border-color: var(--kogu-accent); }
+.kogu-rn-input::placeholder { font-weight: 400; letter-spacing: 0; font-size: 14px; }
+
+/* 検索結果ヘッダー */
+.kogu-rn-result-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; padding: 12px 16px;
+  background: var(--kogu-paper); border-radius: 6px;
+  border-left: 4px solid var(--kogu-accent);
+}
+.kogu-rn-result-label { font-size: 12px; color: var(--kogu-muted); }
+.kogu-rn-result-number { font-size: 20px; font-weight: 900; letter-spacing: 2px; color: var(--kogu-accent); }
+
 .kogu-mypage h3 { font-size: 18px; font-weight: 700; margin: 24px 0 12px; }
-.kogu-guest-lookup { background: var(--kogu-paper); border-radius: var(--kogu-radius); padding: 20px; margin-bottom: 20px; }
 .kogu-rental-list  { display: flex; flex-direction: column; gap: 16px; }
 .kogu-rental-card  { border: 1.5px solid var(--kogu-paper2); border-radius: var(--kogu-radius); overflow: hidden; background: #fff; }
 .kogu-rental-card.kogu-overdue { border-color: var(--kogu-warn); }
 .kogu-rental-card-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--kogu-paper); border-bottom: 1px solid var(--kogu-paper2); }
 .kogu-rental-id { font-weight: 700; font-size: 14px; }
 .kogu-status-badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--kogu-paper2); color: var(--kogu-ink); }
-.kogu-status-overdue { background: #fde8e8; color: var(--kogu-warn); }
+.kogu-status-overdue  { background: #fde8e8; color: var(--kogu-warn); }
 .kogu-status-returned { background: #d4f4e2; color: var(--kogu-ok); }
 .kogu-rental-card-body { padding: 14px 16px; }
 .kogu-info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; border-bottom: 1px solid var(--kogu-paper); }
 .kogu-info-row.kogu-warn strong { color: var(--kogu-warn); }
 .kogu-return-section { padding: 14px 16px; border-top: 1px solid var(--kogu-paper2); background: var(--kogu-paper); }
 .kogu-return-section h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
-.kogu-return-section p { font-size: 13px; color: var(--kogu-muted); margin-bottom: 10px; }
+.kogu-return-section p  { font-size: 13px; color: var(--kogu-muted); margin-bottom: 10px; }
 .kogu-tracking-row { display: flex; gap: 8px; }
 .kogu-tracking-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--kogu-paper2); border-radius: 6px; font-size: 14px; }
 .kogu-return-msg { margin-top: 8px; font-size: 13px; }
 .kogu-return-complete { padding: 12px 16px; background: #d4f4e2; font-size: 14px; }
 .kogu-empty { color: var(--kogu-muted); font-size: 14px; padding: 24px 0; }
 
+/* ── Add-on purchase options ─────────────────────────────────────────────── */
+.kogu-addons-wrap {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px dashed var(--kogu-paper2);
+}
+.kogu-addons-title { font-size: 17px; font-weight: 700; margin: 0 0 6px; color: var(--kogu-ink); }
+.kogu-addons-desc  { font-size: 13px; color: var(--kogu-muted); margin: 0 0 16px; }
+
+/* カードグリッド */
+.kogu-addon-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+/* 個別カード */
+.kogu-addon-card {
+  border: 2px solid var(--kogu-paper2); border-radius: var(--kogu-radius);
+  overflow: hidden; background: #fff;
+  display: flex; flex-direction: column;
+  transition: border-color .15s, box-shadow .15s;
+}
+.kogu-addon-card:not(.kogu-addon-card-soldout):hover {
+  border-color: var(--kogu-accent); box-shadow: 0 2px 8px rgba(232,90,43,.15);
+}
+.kogu-addon-card.selected {
+  border-color: var(--kogu-accent); background: #fff9f6;
+  box-shadow: 0 2px 12px rgba(232,90,43,.2);
+}
+.kogu-addon-card-soldout { opacity: .55; }
+
+/* カード画像 */
+.kogu-addon-card-img {
+  aspect-ratio: 4/3; overflow: hidden; background: var(--kogu-paper2);
+}
+.kogu-addon-card-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .3s;
+}
+.kogu-addon-card:not(.kogu-addon-card-soldout):hover .kogu-addon-card-img img { transform: scale(1.04); }
+.kogu-addon-card-img-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--kogu-muted);
+}
+
+/* カード本文 */
+.kogu-addon-card-body {
+  padding: 10px 12px; flex: 1; display: flex; flex-direction: column; gap: 4px;
+}
+.kogu-addon-name      { font-size: 14px; font-weight: 700; color: var(--kogu-ink); line-height: 1.4; }
+.kogu-addon-desc-text { font-size: 11px; color: var(--kogu-muted); line-height: 1.4; }
+.kogu-addon-price     { font-size: 16px; font-weight: 700; color: var(--kogu-accent); margin-top: 4px; }
+.kogu-addon-unit      { font-size: 12px; font-weight: 400; color: var(--kogu-muted); }
+
+/* カードフッター（数量コントロール） */
+.kogu-addon-card-footer {
+  padding: 8px 12px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border-top: 1px solid var(--kogu-paper2);
+}
+.kogu-addon-qty    { display: flex; align-items: center; gap: 8px; }
+.kogu-qty-btn {
+  width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--kogu-paper2);
+  background: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--kogu-ink); line-height: 1; transition: border-color .15s, color .15s;
+}
+.kogu-qty-btn:hover { border-color: var(--kogu-accent); color: var(--kogu-accent); }
+.kogu-qty-input {
+  width: 40px; text-align: center; border: 1.5px solid var(--kogu-paper2);
+  border-radius: 6px; padding: 4px; font-size: 15px; font-weight: 700;
+  background: var(--kogu-paper);
+}
+.kogu-addon-soldout {
+  padding: 6px 14px; border-radius: 999px;
+  background: #fde8e8; color: var(--kogu-warn);
+  font-size: 12px; font-weight: 700;
+}
+.kogu-addon-stock-label { font-size: 11px; color: var(--kogu-muted); }
+
+.kogu-addon-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0 0; margin-top: 16px; border-top: 1px dashed var(--kogu-paper2);
+  font-size: 16px; font-weight: 700; color: var(--kogu-accent);
+}
+
+/* 「次へ」ボタン（グリッド外・全幅） */
+.kogu-btn-next { display: block; width: 100%; text-align: center; margin-top: 20px; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .kogu-calendar { flex-direction: column; }
+  .kogu-step1-layout { grid-template-columns: 1fr; }
+  .kogu-step1-right { position: static; }
+  .kogu-products { flex-direction: column; }
+  .kogu-product-card { max-width: 100%; }
   .kogu-tracking-row { flex-direction: column; }
-  .kogu-btn { width: 100%; text-align: center; margin-bottom: 8px; }
-  .kogu-btn-secondary { margin-right: 0; }
+  .kogu-btn { width: 100%; text-align: center; }
+  .kogu-addon-cards { grid-template-columns: repeat(2, 1fr); }
+  .kogu-rn-input-row { flex-direction: column; }
+  .kogu-reservation-number { font-size: 28px; letter-spacing: 2px; }
+  .kogu-btn-next { width: 100%; }
+}
+
+/* ── 商品カード ホバーオーバーレイ ──────────────────────────────────────── */
+.kogu-product-img { position: relative; overflow: hidden; cursor: pointer; }
+.kogu-card-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+.kogu-card-overlay span {
+  color: #fff; font-size: 15px; font-weight: 700;
+  border: 2px solid #fff; border-radius: 24px;
+  padding: 8px 20px; letter-spacing: .5px;
+}
+.kogu-product-card-static:hover .kogu-card-overlay { opacity: 1; }
+
+/* ── 商品詳細モーダル ───────────────────────────────────────────────────── */
+.kogu-modal-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.kogu-modal-box {
+  background: #fff; border-radius: 16px;
+  width: 100%; max-width: 560px; max-height: 90vh;
+  overflow-y: auto; position: relative;
+  padding: 32px 28px 28px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.25);
+}
+.kogu-modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; color: #888; line-height: 1;
+  padding: 4px 8px;
+}
+.kogu-modal-close:hover { color: #333; }
+.kogu-modal-title { font-size: 20px; font-weight: 700; margin: 0 0 20px; }
+.kogu-modal-body { display: flex; flex-direction: column; gap: 24px; }
+
+/* ── カルーセル ────────────────────────────────────────────────────────── */
+.kogu-carousel { position: relative; text-align: center; }
+.kogu-carousel-track {
+  border-radius: 10px; overflow: hidden;
+  background: #f5f3ef;
+  aspect-ratio: 4/3;
+  display: flex; align-items: center; justify-content: center;
+}
+.kogu-carousel-img { width: 100%; height: 100%; object-fit: contain; }
+.kogu-carousel-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.85); border: none;
+  border-radius: 50%; width: 38px; height: 38px;
+  font-size: 22px; cursor: pointer; line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.kogu-carousel-btn:hover { background: #fff; }
+.kogu-carousel-prev { left: 8px; }
+.kogu-carousel-next { right: 8px; }
+.kogu-carousel-btn:disabled { opacity: .3; cursor: default; }
+.kogu-carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+.kogu-carousel-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ccc; border: none; cursor: pointer; padding: 0;
+  transition: background .15s;
+}
+.kogu-carousel-dot.active { background: var(--kogu-accent); }
+
+/* ── 同梱物リスト ───────────────────────────────────────────────────────── */
+.kogu-modal-contents h4 { font-size: 15px; font-weight: 700; margin: 0 0 10px; }
+.kogu-contents-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.kogu-contents-list li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: #333;
+}
+.kogu-contents-list li::before {
+  content: '✓'; color: var(--kogu-accent); font-weight: 700; flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .kogu-modal-box { padding: 24px 16px 20px; }
+  .kogu-carousel-btn { width: 32px; height: 32px; font-size: 18px; }
+}
+
+/* ── パンくず ────────────────────────────────────────────────────────────── */
+.kogu-breadcrumb { margin-bottom: 20px; }
+.kogu-breadcrumb ol {
+  display: flex; flex-wrap: wrap; align-items: center;
+  list-style: none; margin: 0; padding: 0; gap: 4px;
+  font-size: 13px; color: #888;
+}
+.kogu-breadcrumb li + li::before { content: '›'; margin-right: 4px; }
+.kogu-breadcrumb a { color: var(--kogu-accent); text-decoration: none; }
+.kogu-breadcrumb a:hover { text-decoration: underline; }
+.kogu-breadcrumb [aria-current] { color: #555; }
+
+/* ── 商品詳細ページ ──────────────────────────────────────────────────────── */
+.kogu-single-product {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+.kogu-sp-main-img {
+  position: relative;
+  border-radius: 12px; overflow: hidden;
+  background: #f5f3ef;
+  aspect-ratio: 4/3;
+}
+.kogu-sp-main-img img { width: 100%; height: 100%; object-fit: contain; }
+.kogu-sp-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.85); border: none;
+  border-radius: 50%; width: 38px; height: 38px;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center;
+}
+.kogu-sp-prev { left: 8px; }
+.kogu-sp-next { right: 8px; }
+.kogu-sp-thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.kogu-sp-thumb {
+  width: 72px; height: 72px; border: 2px solid transparent;
+  border-radius: 8px; overflow: hidden; cursor: pointer;
+  background: #f5f3ef; padding: 0;
+  transition: border-color .15s;
+}
+.kogu-sp-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.kogu-sp-thumb.active { border-color: var(--kogu-accent); }
+
+.kogu-sp-title { font-size: 26px; font-weight: 700; margin: 0 0 10px; }
+.kogu-sp-desc  { color: #555; margin: 0 0 20px; line-height: 1.7; }
+.kogu-sp-price-box {
+  background: #faf8f5; border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 24px;
+}
+.kogu-sp-price { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.kogu-sp-price-label { font-size: 13px; color: #888; }
+.kogu-sp-price-amount { font-size: 32px; font-weight: 700; color: var(--kogu-accent); }
+.kogu-sp-price-discount { font-size: 14px; color: #555; margin-bottom: 8px; }
+.kogu-sp-shipping { font-size: 12px; color: #888; margin: 0; }
+.kogu-sp-contents { margin-bottom: 24px; }
+.kogu-sp-contents h2 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
+.kogu-sp-contents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.kogu-sp-contents li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.kogu-sp-contents li::before { content: '✓'; color: var(--kogu-accent); font-weight: 700; }
+.kogu-sp-cta { display: block; text-align: center; padding: 15px; font-size: 16px; }
+
+@media (max-width: 768px) {
+  .kogu-single-product { grid-template-columns: 1fr; gap: 24px; }
+  .kogu-sp-title { font-size: 22px; }
+  .kogu-sp-price-amount { font-size: 26px; }
+}
+
+/* ── 商品ページ 共通セクションタイトル ────────────────────────────────────── */
+.kogu-sp-section-title {
+  font-size: 20px; font-weight: 700;
+  margin: 0 0 16px;
+  padding-left: 12px;
+  border-left: 4px solid var(--kogu-accent);
+  color: var(--kogu-ink);
+}
+
+/* ── スペック表 ──────────────────────────────────────────────────────────── */
+.kogu-sp-specs-section { margin: 48px 0; }
+.kogu-sp-specs-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 14px;
+}
+.kogu-sp-specs-table th,
+.kogu-sp-specs-table td {
+  padding: 11px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--kogu-paper2);
+  vertical-align: top;
+}
+.kogu-sp-specs-table th {
+  width: 40%; font-weight: 700; color: #444;
+  background: var(--kogu-paper);
+}
+.kogu-sp-specs-table td { color: var(--kogu-ink); }
+.kogu-sp-specs-table tr:last-child th,
+.kogu-sp-specs-table tr:last-child td { border-bottom: none; }
+
+/* ── 使用シーン ──────────────────────────────────────────────────────────── */
+.kogu-sp-usecase-section { margin: 48px 0; }
+.kogu-sp-usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.kogu-sp-usecase-item {
+  text-align: center;
+  padding: 20px 12px;
+  background: var(--kogu-paper);
+  border-radius: var(--kogu-radius);
+}
+.kogu-sp-usecase-icon { font-size: 32px; display: block; margin-bottom: 10px; }
+.kogu-sp-usecase-item p { font-size: 13px; color: #444; margin: 0; line-height: 1.5; }
+
+/* ── FAQ ─────────────────────────────────────────────────────────────────── */
+.kogu-sp-faq-section { margin: 48px 0; }
+.kogu-sp-faq-list { display: flex; flex-direction: column; gap: 12px; }
+.kogu-sp-faq-item {
+  border: 1px solid var(--kogu-paper2);
+  border-radius: var(--kogu-radius);
+  overflow: hidden;
+}
+.kogu-sp-faq-q {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 14px; font-weight: 700;
+  background: var(--kogu-paper);
+  color: var(--kogu-ink);
+}
+.kogu-sp-faq-q::before { content: 'Q. '; color: var(--kogu-accent); }
+.kogu-sp-faq-a {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #444;
+  background: #fff;
+}
+.kogu-sp-faq-a::before { content: 'A. '; font-weight: 700; color: var(--kogu-ok); }
+
+/* ── 下部CTA ─────────────────────────────────────────────────────────────── */
+.kogu-sp-bottom-cta {
+  text-align: center;
+  margin: 56px 0 32px;
+  padding: 40px;
+  background: var(--kogu-paper);
+  border-radius: 12px;
+}
+.kogu-sp-bottom-cta-text {
+  font-size: 18px; font-weight: 700;
+  color: var(--kogu-ink);
+  margin: 0 0 20px;
+}
+.kogu-sp-bottom-cta .kogu-sp-cta {
+  display: inline-block;
+  padding: 16px 40px;
+  font-size: 17px;
+}
+
+@media (max-width: 640px) {
+  .kogu-sp-usecase-grid { grid-template-columns: repeat(2, 1fr); }
+  .kogu-sp-specs-table th { width: 45%; font-size: 13px; }
+  .kogu-sp-bottom-cta { padding: 24px 16px; }
+}
+
+/* ── 残り日数バッジ ──────────────────────────────────────────────────────── */
+.kogu-days-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+  background: #e8f5e9;
+  color: var(--kogu-ok);
+  vertical-align: middle;
+}
+.kogu-days-badge.kogu-days-soon {
+  background: #fff3e0;
+  color: #e67e22;
+}
+.kogu-days-badge.kogu-days-today {
+  background: #fff0e0;
+  color: var(--kogu-accent);
+}
+.kogu-days-badge.kogu-days-overdue {
+  background: #fdecea;
+  color: var(--kogu-warn);
+}
+
+/* ── 延長セクション ──────────────────────────────────────────────────────── */
+.kogu-extend-section {
+  border-top: 1px solid var(--kogu-paper2);
+  padding: 16px 20px;
+  background: #fdf9f4;
+}
+.kogu-extend-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--kogu-ink);
+  margin: 0 0 6px;
+}
+.kogu-extend-desc {
+  font-size: 13px;
+  color: #444;
+  margin: 0 0 4px;
+}
+.kogu-extend-note {
+  font-size: 12px;
+  color: #999;
+  margin: 0 0 12px;
+}
+.kogu-btn-extend {
+  display: inline-block;
+  padding: 10px 20px;
+  background: var(--kogu-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.kogu-btn-extend:hover:not(:disabled) { opacity: .85; }
+.kogu-btn-extend:disabled { opacity: .55; cursor: default; }
+
+.kogu-extend-msg {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.kogu-extend-msg.kogu-ok    { background: #e8f5e9; color: var(--kogu-ok); }
+.kogu-extend-msg.kogu-error { background: #fdecea; color: var(--kogu-warn); }
+
+/* ── 工具リクエスト FABボタン ──────────────────────────────────────────────── */
+.kogu-request-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--kogu-ink);
+  color: #fff;
+  border-radius: 50px;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  transition: transform .15s, box-shadow .15s;
+  user-select: none;
+}
+.kogu-request-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+.kogu-request-fab-icon { font-size: 18px; line-height: 1; }
+.kogu-request-fab-label { font-size: 14px; font-weight: 700; white-space: nowrap; }
+
+/* ── 工具リクエスト ポップアップ ───────────────────────────────────────────── */
+.kogu-request-popup {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  z-index: 9001;
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  overflow: hidden;
+  animation: koguPopupIn .2s ease;
+}
+.kogu-request-popup[hidden] { display: none; }
+
+@keyframes koguPopupIn {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.kogu-request-popup-inner { padding: 24px 20px 20px; position: relative; }
+.kogu-request-popup-close {
+  position: absolute;
+  top: 10px; right: 12px;
+  background: none; border: none;
+  font-size: 22px; color: #999;
+  cursor: pointer; line-height: 1; padding: 0;
+}
+.kogu-request-popup-close:hover { color: #333; }
+.kogu-request-popup-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; color: var(--kogu-ink); }
+.kogu-request-popup-desc  { font-size: 13px; color: #666; margin: 0 0 16px; line-height: 1.5; }
+
+.kogu-request-field { margin-bottom: 12px; }
+.kogu-request-field label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: #555; margin-bottom: 4px;
+}
+.kogu-request-field label .req { color: var(--kogu-accent); }
+.kogu-request-field input {
+  width: 100%; padding: 9px 11px;
+  border: 1.5px solid #ddd; border-radius: 6px;
+  font-size: 14px; box-sizing: border-box;
+  transition: border-color .15s;
+}
+.kogu-request-field input:focus { outline: none; border-color: var(--kogu-accent); }
+
+.kogu-request-error {
+  font-size: 13px; color: var(--kogu-warn);
+  margin: 0 0 10px; padding: 8px 10px;
+  background: #fff0f0; border-radius: 6px;
+}
+.kogu-request-error[hidden] { display: none; }
+
+.kogu-request-submit {
+  width: 100%; padding: 11px;
+  background: var(--kogu-accent); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.kogu-request-submit:hover:not(:disabled) { opacity: .88; }
+.kogu-request-submit:disabled { opacity: .55; cursor: default; }
+
+.kogu-request-thanks {
+  text-align: center; padding: 8px 0 4px;
+  font-size: 15px; color: var(--kogu-ok);
+  line-height: 1.6;
+}
+.kogu-request-thanks[hidden] { display: none; }
+
+@media (max-width: 400px) {
+  .kogu-request-popup { width: calc(100vw - 32px); right: 16px; }
+  .kogu-request-fab   { right: 16px; bottom: 16px; }
 }

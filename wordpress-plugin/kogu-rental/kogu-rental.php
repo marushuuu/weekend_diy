@@ -6,12 +6,12 @@
  * Version:     1.0.0
  * Author:      Your Name
  * Text Domain: kogu-rental
- * Requires Plugins: woocommerce
+ * Requires Plugins:
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'KOGU_VERSION',    '1.0.0' );
+define( 'KOGU_VERSION',    '1.11.0' );
 define( 'KOGU_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KOGU_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -26,18 +26,18 @@ require_once KOGU_PLUGIN_DIR . 'admin/class-admin.php';
 require_once KOGU_PLUGIN_DIR . 'public/class-public.php';
 
 // ── Activation / Deactivation ─────────────────────────────────────────────────
-register_activation_hook( __FILE__, [ 'Kogu_Database', 'install' ] );
-register_deactivation_hook( __FILE__, [ 'Kogu_Cron', 'deactivate' ] );
+register_activation_hook( __FILE__, function() {
+    Kogu_Database::install();
+    Kogu_Public::register_rewrite_rules();
+    flush_rewrite_rules();
+} );
+register_deactivation_hook( __FILE__, function() {
+    Kogu_Cron::deactivate();
+    flush_rewrite_rules();
+} );
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 add_action( 'plugins_loaded', function () {
-    if ( ! class_exists( 'WooCommerce' ) ) {
-        add_action( 'admin_notices', function () {
-            echo '<div class="error"><p>工具レンタルプラグインにはWooCommerceが必要です。</p></div>';
-        } );
-        return;
-    }
-
     Kogu_Admin::init();
     Kogu_Public::init();
     Kogu_Cron::init();
